@@ -3,7 +3,7 @@
  * Suporta funcionamento offline completo
  */
 
-import { Cliente, Lancamento, ConfiguracaoApp } from '@/types';
+import { Cliente, Lancamento, ConfiguracaoApp, Usuario } from '@/types';
 
 const DB_NAME = 'CaderninhoDigital';
 const DB_VERSION = 1;
@@ -52,6 +52,13 @@ export async function initDB(): Promise<IDBDatabase> {
       // Criar store de configuração
       if (!database.objectStoreNames.contains('configuracao')) {
         database.createObjectStore('configuracao', { keyPath: 'id' });
+      }
+
+      // Criar store de usuários
+      if (!database.objectStoreNames.contains('usuarios')) {
+        const usuariosStore = database.createObjectStore('usuarios', { keyPath: 'id' });
+        usuariosStore.createIndex('email', 'email', { unique: true });
+        usuariosStore.createIndex('tipo', 'tipo', { unique: false });
       }
     };
   });
@@ -246,4 +253,55 @@ export async function importarDados(jsonString: string): Promise<void> {
     console.error('Erro ao importar dados:', error);
     throw new Error('Falha ao importar dados. Verifique o arquivo.');
   }
+}
+
+// ============ USUÁRIOS ============
+
+export async function adicionarUsuario(usuario: Usuario): Promise<Usuario> {
+  const database = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(['usuarios'], 'readwrite');
+    const store = transaction.objectStore('usuarios');
+    const request = store.add(usuario);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(usuario);
+  });
+}
+
+export async function obterUsuarioPorEmail(email: string): Promise<Usuario | undefined> {
+  const database = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(['usuarios'], 'readonly');
+    const store = transaction.objectStore('usuarios');
+    const index = store.index('email');
+    const request = index.get(email);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+export async function obterUsuarioPorId(id: string): Promise<Usuario | undefined> {
+  const database = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(['usuarios'], 'readonly');
+    const store = transaction.objectStore('usuarios');
+    const request = store.get(id);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+export async function obterTodosUsuarios(): Promise<Usuario[]> {
+  const database = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(['usuarios'], 'readonly');
+    const store = transaction.objectStore('usuarios');
+    const request = store.getAll();
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
 }

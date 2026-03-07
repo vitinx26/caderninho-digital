@@ -92,6 +92,7 @@ export function useLancamentos(clienteId?: string) {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [versao, setVersao] = useState(0); // Força recarregamento
 
   const carregar = useCallback(async () => {
     try {
@@ -115,7 +116,7 @@ export function useLancamentos(clienteId?: string) {
 
   useEffect(() => {
     carregar();
-  }, [carregar]);
+  }, [carregar, versao]);
 
   const adicionarLancamento = useCallback(
     async (
@@ -137,6 +138,8 @@ export function useLancamentos(clienteId?: string) {
         };
         await db.adicionarLancamento(novoLancamento);
         setLancamentos((prev) => [novoLancamento, ...prev]);
+        // Forçar recarregamento para sincronizar com outros hooks
+        setVersao((prev) => prev + 1);
         return novoLancamento;
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Erro ao adicionar lançamento');
@@ -163,6 +166,7 @@ export function useLancamentos(clienteId?: string) {
     adicionarLancamento,
     deletarLancamento,
     recarregar: carregar,
+    forcarRecarregamento: () => setVersao((prev) => prev + 1),
   };
 }
 

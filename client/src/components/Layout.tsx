@@ -5,12 +5,27 @@
  */
 
 import React, { useState } from 'react';
-import { Menu, X, Home, Users, FileText, Settings } from 'lucide-react';
+import { Menu, X, Home, FileText, Settings, LogOut } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { FAB } from './FAB';
 
 interface LayoutProps {
   children: React.ReactNode;
+}
+
+function LogoutButton({ sidebarAberta }: { sidebarAberta: boolean }) {
+  const { fazer_logout } = useAuth();
+
+  return (
+    <button
+      onClick={fazer_logout}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors text-sm"
+    >
+      <LogOut size={20} />
+      {sidebarAberta && <span>Sair</span>}
+    </button>
+  );
 }
 
 export function Layout({ children }: LayoutProps) {
@@ -72,8 +87,9 @@ export function Layout({ children }: LayoutProps) {
         </nav>
 
         {/* Footer da Sidebar */}
-        <div className="p-4 border-t border-sidebar-border text-xs text-sidebar-foreground/60">
-          {sidebarAberta && <p>v1.0.0</p>}
+        <div className="p-4 border-t border-sidebar-border space-y-3">
+          {sidebarAberta && <p className="text-xs text-sidebar-foreground/60">v1.0.0</p>}
+          <LogoutButton sidebarAberta={sidebarAberta} />
         </div>
       </aside>
 

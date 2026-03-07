@@ -3,6 +3,24 @@
  * Design: Minimalismo Funcional com Tipografia Forte
  */
 
+export type TipoUsuario = 'admin' | 'cliente';
+
+export interface Usuario {
+  id: string;
+  email: string;
+  senha: string; // Hash em produção
+  nome: string;
+  tipo: TipoUsuario;
+  dataCriacao: number;
+}
+
+export interface UsuarioLogado {
+  id: string;
+  email: string;
+  nome: string;
+  tipo: TipoUsuario;
+}
+
 export interface Cliente {
   id: string;
   nome: string;
@@ -10,6 +28,7 @@ export interface Cliente {
   email?: string;
   dataCriacao: number; // timestamp
   ativo: boolean;
+  adminId?: string; // ID do admin que criou (para clientes criados por admin)
 }
 
 export interface Lancamento {
@@ -20,6 +39,7 @@ export interface Lancamento {
   descricao: string;
   data: number; // timestamp
   dataCriacao: number; // timestamp
+  adminId?: string; // ID do admin que registrou
 }
 
 export interface Saldo {
