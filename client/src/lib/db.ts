@@ -263,7 +263,8 @@ export async function adicionarUsuario(usuario: Usuario): Promise<Usuario> {
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(['usuarios'], 'readwrite');
     const store = transaction.objectStore('usuarios');
-    const request = store.add(usuario);
+    // Usar put em vez de add para permitir atualização se já existe
+    const request = store.put(usuario);
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(usuario);

@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: usuario.email,
         nome: usuario.nome,
         tipo: usuario.tipo,
+        telefone: usuario.telefone,
       };
 
       setUsuarioLogado(usuarioLogado);
