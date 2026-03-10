@@ -69,23 +69,22 @@ export default function Configuracoes() {
   };
 
   const handleInstalarApp = async () => {
-    if (!deferredPrompt) {
-      toast.info('O app já está instalado ou seu navegador não suporta PWA');
-      return;
-    }
-
-    try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        toast.success('App instalado com sucesso!');
-        setDeferredPrompt(null);
-        setPwaInstalavel(false);
-      } else {
-        toast.info('Instalação cancelada');
+    if (deferredPrompt) {
+      try {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          toast.success('App instalado com sucesso!');
+          setDeferredPrompt(null);
+          setPwaInstalavel(false);
+        } else {
+          toast.info('Instalação cancelada');
+        }
+      } catch (error) {
+        toast.error('Erro ao instalar o app');
       }
-    } catch (error) {
-      toast.error('Erro ao instalar o app');
+    } else {
+      toast.info('Use o menu do navegador (⋮) e selecione "Instalar app" ou "Adicionar à tela inicial"');
     }
   };
 
@@ -141,17 +140,16 @@ export default function Configuracoes() {
         </p>
         <Button
           onClick={handleInstalarApp}
-          disabled={!pwaInstalavel}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
         >
           <Download size={20} />
-          {pwaInstalavel ? 'Instalar App' : 'App já instalado ou não disponível'}
+          Instalar App
         </Button>
-        {!pwaInstalavel && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Se o app não estiver instalado, tente usar o menu do navegador (⋮) e selecione "Instalar app" ou "Adicionar à tela inicial".
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground mt-2">
+          {pwaInstalavel
+            ? 'Clique no botão acima para instalar o app no seu dispositivo'
+            : 'Se o botão não funcionar, use o menu do navegador (⋮) e selecione "Instalar app" ou "Adicionar à tela inicial".'}
+        </p>
       </div>
 
       {/* Seção de Informações */}

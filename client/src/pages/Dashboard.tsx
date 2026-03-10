@@ -4,7 +4,7 @@
  * Design: Minimalismo Funcional com Tipografia Forte
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, TrendingUp, AlertCircle, MessageCircle } from 'lucide-react';
 import { useClientes } from '@/hooks/useDB';
 import { useLancamentos } from '@/hooks/useDB';
@@ -16,17 +16,29 @@ import { toast } from 'sonner';
 type FiltroType = 'todos' | 'vencidos' | 'pagos' | 'alfabetico';
 
 export default function Dashboard() {
-  const { clientes, carregando } = useClientes();
-  const { lancamentos } = useLancamentos();
+  const { clientes, carregando, recarregar: recarregarClientes } = useClientes();
+  const { lancamentos, recarregar: recarregarLancamentos } = useLancamentos();
   const saldos = useSaldos(clientes, lancamentos);
   const { irPara } = useNavigation();
   const [filtro, setFiltro] = useState<FiltroType>('todos');
 
-  // Calcular total a receber
+  // Recarregar dados a cada 5 segundos para sincronizar com Conta Geral
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      recarregarClientes();
+      recarregarLancamentos();
+    }, 5000);
+
+    return () => clearInterval(intervalo);
+  }, [recarregarClientes, recarregarLancamentos]);
+
+  // Calcular total a receber (filtrando apenas clientes com saldo > 0)
   const totalReceber = Array.from(saldos.values()).reduce((acc, s) => acc + s.saldoTotal, 0);
 
   // Filtrar e ordenar devedores
   const devedoresFiltrados = Array.from(saldos.values()).filter((saldo) => {
+    // Sempre filtrar para mostrar apenas clientes com saldo > 0
+    if (saldo.saldoTotal === 0) return false;
     if (filtro === 'vencidos') return saldo.status === 'vencido';
     if (filtro === 'pagos') return saldo.status === 'pago';
     return true;
@@ -38,6 +50,9 @@ export default function Dashboard() {
     // Ordenar por saldo (maior primeiro)
     devedoresFiltrados.sort((a, b) => b.saldoTotal - a.saldoTotal);
   }
+
+  // Filtrar devedores com saldo > 0 para exibição
+  const devedoresComSaldo = devedoresFiltrados.filter((s) => s.saldoTotal > 0);
 
   const statusBadgeClass = (status: string) => {
     switch (status) {
@@ -125,14 +140,14 @@ export default function Dashboard() {
 
         {carregando ? (
           <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-        ) : devedoresFiltrados.length === 0 ? (
+        ) : devedoresComSaldo.length === 0 ? (
           <div className="card-minimal p-8 text-center">
             <AlertCircle size={32} className="mx-auto text-muted-foreground mb-2" />
             <p className="text-muted-foreground">Nenhum devedor encontrado</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {devedoresFiltrados.map((saldo) => (
+            {devedoresComSaldo.map((saldo) => (
               <button
                 key={saldo.clienteId}
                 onClick={() => irPara('cliente', saldo.clienteId)}
