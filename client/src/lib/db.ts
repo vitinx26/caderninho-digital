@@ -33,6 +33,7 @@ export async function initDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const database = (event.target as IDBOpenDBRequest).result;
+      const oldVersion = event.oldVersion;
 
       // Criar store de clientes
       if (!database.objectStoreNames.contains('clientes')) {
@@ -304,4 +305,62 @@ export async function obterTodosUsuarios(): Promise<Usuario[]> {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
   });
+}
+
+
+// ============ RECUPERAÇÃO DE DADOS ANTIGOS ============
+
+export async function recuperarDadosAntigos(): Promise<void> {
+  try {
+    // Tentar abrir banco antigo com versão 1
+    const request = indexedDB.open(DB_NAME, 1);
+    
+    request.onsuccess = async () => {
+      const oldDb = request.result;
+      
+      // Verificar se há dados no banco antigo
+      if (oldDb.objectStoreNames.contains('clientes') && oldDb.objectStoreNames.contains('lancamentos')) {
+        const clientesAntigos = await new Promise<any[]>((resolve) => {
+          const tx = oldDb.transaction(['clientes'], 'readonly');
+          const store = tx.objectStore('clientes');
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve([]);
+        });
+
+        const lancamentosAntigos = await new Promise<any[]>((resolve) => {
+          const tx = oldDb.transaction(['lancamentos'], 'readonly');
+          const store = tx.objectStore('lancamentos');
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve([]);
+        });
+
+        // Migrar dados para o novo banco
+        if (clientesAntigos.length > 0 || lancamentosAntigos.length > 0) {
+          const newDb = await initDB();
+          
+          // Adicionar clientes antigos
+          for (const cliente of clientesAntigos) {
+            await adicionarCliente(cliente);
+          }
+
+          // Adicionar lançamentos antigos
+          for (const lancamento of lancamentosAntigos) {
+            await adicionarLancamento(lancamento);
+          }
+
+          console.log('Dados antigos migrados com sucesso');
+        }
+      }
+      
+      oldDb.close();
+    };
+
+    request.onerror = () => {
+      console.log('Nenhum banco antigo encontrado');
+    };
+  } catch (error) {
+    console.error('Erro ao recuperar dados antigos:', error);
+  }
 }

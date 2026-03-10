@@ -3,6 +3,7 @@
  * Design: Minimalismo Funcional com Tipografia Forte
  */
 
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -18,10 +19,16 @@ import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import ErrorBoundary from "./components/ErrorBoundary";
+import * as db from "./lib/db";
 
 function RouterContent() {
   const { usuarioLogado, carregando, usuarioGeral } = useAuth();
   const { paginaAtual } = useNavigation();
+
+  // Recuperar dados antigos na primeira carga
+  useEffect(() => {
+    db.recuperarDadosAntigos().catch(console.error);
+  }, []);
 
   if (carregando) {
     return (
@@ -63,6 +70,11 @@ function RouterContent() {
 }
 
 function App() {
+  // Recuperar dados antigos na primeira carga do app
+  useEffect(() => {
+    db.recuperarDadosAntigos().catch(console.error);
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">

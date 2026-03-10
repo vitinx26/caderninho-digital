@@ -4,15 +4,22 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Smartphone, Info } from 'lucide-react';
+import { Settings, Smartphone, Info, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import * as db from '@/lib/db';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;  
+}
+
 export default function Configuracoes() {
   const [diasParaVencer, setDiasParaVencer] = useState(30);
   const [carregando, setCarregando] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [pwaInstalavel, setPwaInstalavel] = useState(false);
 
   useEffect(() => {
     const carregarConfig = async () => {
@@ -26,6 +33,26 @@ export default function Configuracoes() {
       }
     };
     carregarConfig();
+
+    // Registrar Service Worker e detectar PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        console.log('Service Worker não registrado');
+      });
+    }
+
+    // Detectar evento beforeinstallprompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setPwaInstalavel(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   const handleSalvarConfig = async () => {
@@ -42,11 +69,23 @@ export default function Configuracoes() {
   };
 
   const handleInstalarApp = async () => {
-    // Verificar se o navegador suporta PWA
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      toast.success('App já está pronto para ser instalado!');
-    } else {
-      toast.error('Seu navegador não suporta PWA');
+    if (!deferredPrompt) {
+      toast.info('O app já está instalado ou seu navegador não suporta PWA');
+      return;
+    }
+
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        toast.success('App instalado com sucesso!');
+        setDeferredPrompt(null);
+        setPwaInstalavel(false);
+      } else {
+        toast.info('Instalação cancelada');
+      }
+    } catch (error) {
+      toast.error('Erro ao instalar o app');
     }
   };
 
@@ -102,10 +141,17 @@ export default function Configuracoes() {
         </p>
         <Button
           onClick={handleInstalarApp}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          disabled={!pwaInstalavel}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          Instalar App
+          <Download size={20} />
+          {pwaInstalavel ? 'Instalar App' : 'App já instalado ou não disponível'}
         </Button>
+        {!pwaInstalavel && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Se o app não estiver instalado, tente usar o menu do navegador (⋮) e selecione "Instalar app" ou "Adicionar à tela inicial".
+          </p>
+        )}
       </div>
 
       {/* Seção de Informações */}
