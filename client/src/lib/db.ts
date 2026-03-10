@@ -6,7 +6,7 @@
 import { Cliente, Lancamento, ConfiguracaoApp, Usuario } from '@/types';
 
 const DB_NAME = 'CaderninhoDigital';
-const DB_VERSION = 2; // Incrementado para forçar recriação do banco
+const DB_VERSION = 3; // Incrementado para forçar recriação com normalização de dados
 
 interface DBStores {
   clientes: Cliente;
@@ -237,7 +237,12 @@ export async function importarDados(jsonString: string): Promise<void> {
     // Importar novos dados
     if (dados.clientes && Array.isArray(dados.clientes)) {
       for (const cliente of dados.clientes) {
-        await adicionarCliente(cliente);
+        const clienteNormalizado = {
+          ...cliente,
+          ativo: cliente.ativo ?? true, // Garantir que ativo seja true
+          dataCriacao: cliente.dataCriacao ?? Date.now(),
+        };
+        await adicionarCliente(clienteNormalizado);
       }
     }
 
@@ -341,9 +346,14 @@ export async function recuperarDadosAntigos(): Promise<void> {
         if (clientesAntigos.length > 0 || lancamentosAntigos.length > 0) {
           const newDb = await initDB();
           
-          // Adicionar clientes antigos
+          // Adicionar clientes antigos com normalização
           for (const cliente of clientesAntigos) {
-            await adicionarCliente(cliente);
+            const clienteNormalizado = {
+              ...cliente,
+              ativo: cliente.ativo ?? true, // Garantir que ativo seja true
+              dataCriacao: cliente.dataCriacao ?? Date.now(),
+            };
+            await adicionarCliente(clienteNormalizado);
           }
 
           // Adicionar lançamentos antigos

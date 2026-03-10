@@ -16,10 +16,11 @@ export function useClientes() {
   const carregar = useCallback(async () => {
     try {
       setCarregando(true);
-      const dados = await db.obterClienteAtivo();
-      // Ordenar por nome
-      dados.sort((a, b) => a.nome.localeCompare(b.nome));
-      setClientes(dados);
+      const dados = await db.obterClientes();
+      // Filtrar apenas clientes ativos e ordenar por nome
+      const clientesAtivos = dados.filter((c) => c.ativo !== false);
+      clientesAtivos.sort((a, b) => a.nome.localeCompare(b.nome));
+      setClientes(clientesAtivos);
       setErro(null);
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao carregar clientes');
@@ -40,11 +41,11 @@ export function useClientes() {
         telefone,
         email,
         dataCriacao: Date.now(),
-        ativo: true,
+        ativo: true, // Sempre garantir que ativo seja true
       };
-      await db.adicionarCliente(novoCliente);
-      setClientes((prev) => [...prev, novoCliente].sort((a, b) => a.nome.localeCompare(b.nome)));
-      return novoCliente;
+      const clienteSalvo = await db.adicionarCliente(novoCliente);
+      setClientes((prev) => [...prev, clienteSalvo].sort((a, b) => a.nome.localeCompare(b.nome)));
+      return clienteSalvo;
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao adicionar cliente');
       throw e;
@@ -53,10 +54,11 @@ export function useClientes() {
 
   const atualizarCliente = useCallback(async (cliente: Cliente) => {
     try {
-      await db.atualizarCliente(cliente);
+      const clienteAtualizado = { ...cliente, ativo: cliente.ativo ?? true };
+      await db.atualizarCliente(clienteAtualizado);
       setClientes((prev) =>
         prev
-          .map((c) => (c.id === cliente.id ? cliente : c))
+          .map((c) => (c.id === cliente.id ? clienteAtualizado : c))
           .sort((a, b) => a.nome.localeCompare(b.nome))
       );
     } catch (e) {
