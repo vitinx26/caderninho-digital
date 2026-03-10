@@ -6,7 +6,7 @@
 import { Cliente, Lancamento, ConfiguracaoApp, Usuario } from '@/types';
 
 const DB_NAME = 'CaderninhoDigital';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incrementado para forçar recriação do banco
 
 interface DBStores {
   clientes: Cliente;
