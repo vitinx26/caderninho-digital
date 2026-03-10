@@ -11,7 +11,7 @@ interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
   carregando: boolean;
   fazer_login: (email: string, senha: string) => Promise<void>;
-  fazer_registro: (email: string, senha: string, nome: string, tipo: TipoUsuario) => Promise<void>;
+  fazer_registro: (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string) => Promise<void>;
   fazer_logout: () => void;
   usuarioGeral: boolean; // True se está usando a conta geral
   entrarComContaGeral: () => void;
@@ -97,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: novoUsuario.email,
         nome: novoUsuario.nome,
         tipo: novoUsuario.tipo,
+        telefone: novoUsuario.telefone,
       };
 
       setUsuarioLogado(usuarioLogado);

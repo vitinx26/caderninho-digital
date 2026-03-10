@@ -25,6 +25,7 @@ export default function Login() {
   const [emailRegistro, setEmailRegistro] = useState('');
   const [senhaRegistro, setSenhaRegistro] = useState('');
   const [nomeRegistro, setNomeRegistro] = useState('');
+  const [telefoneRegistro, setTelefoneRegistro] = useState('');
   const [tipoUsuario, setTipoUsuario] = useState<'admin' | 'cliente'>('cliente');
   const [carregandoRegistro, setCarregandoRegistro] = useState(false);
 
@@ -55,7 +56,7 @@ export default function Login() {
 
     try {
       setCarregandoRegistro(true);
-      await fazer_registro(emailRegistro, senhaRegistro, nomeRegistro, tipoUsuario);
+      await fazer_registro(emailRegistro, senhaRegistro, nomeRegistro, tipoUsuario, telefoneRegistro || undefined);
       toast.success('Cadastro realizado com sucesso!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao fazer registro');
@@ -214,6 +215,17 @@ export default function Login() {
                 value={senhaRegistro}
                 onChange={(e) => setSenhaRegistro(e.target.value)}
                 placeholder="••••••••"
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Telefone (opcional)</label>
+              <Input
+                type="tel"
+                value={telefoneRegistro}
+                onChange={(e) => setTelefoneRegistro(e.target.value)}
+                placeholder="(11) 99999-9999"
                 className="w-full"
               />
             </div>

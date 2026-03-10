@@ -11,6 +11,7 @@ export interface Usuario {
   senha: string; // Hash em produção
   nome: string;
   tipo: TipoUsuario;
+  telefone?: string;
   dataCriacao: number;
 }
 
@@ -19,6 +20,7 @@ export interface UsuarioLogado {
   email: string;
   nome: string;
   tipo: TipoUsuario;
+  telefone?: string;
 }
 
 export interface Cliente {

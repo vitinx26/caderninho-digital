@@ -175,6 +175,37 @@ export default function Relatorios() {
         <p className="text-3xl font-bold text-foreground mt-2">{resumo.clientesAtivos}</p>
       </div>
 
+      {/* Lista de Clientes com Detalhes */}
+      <div className="card-minimal p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Detalhamento por Cliente</h2>
+        <div className="space-y-2">
+          {Array.from(saldos.values()).map((saldo) => {
+            const cliente = clientes.find((c) => c.id === saldo.clienteId);
+            const lancamentosCliente = lancamentos.filter((l) => l.clienteId === saldo.clienteId);
+            return (
+              <div key={saldo.clienteId} className="p-4 border border-border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="font-semibold text-foreground">{saldo.nomeCliente}</p>
+                    {cliente?.telefone && <p className="text-sm text-muted-foreground">{cliente.telefone}</p>}
+                  </div>
+                  <p className="font-bold text-lg currency">R$ {saldo.saldoTotal.toFixed(2).replace('.', ',')}</p>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>Compras: {lancamentosCliente.filter((l) => l.tipo === 'debito').length}</p>
+                  <p>Pagamentos: {lancamentosCliente.filter((l) => l.tipo === 'pagamento').length}</p>
+                  <p>Status: <span className={`inline-block px-2 py-1 rounded ${
+                    saldo.status === 'pago' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' :
+                    saldo.status === 'pendente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' :
+                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                  }`}>{saldo.status === 'pago' ? 'Pago' : saldo.status === 'pendente' ? 'Pendente' : 'Vencido'}</span></p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Exportar/Importar */}
       <div className="card-minimal p-6">
         <h2 className="text-xl font-semibold text-foreground mb-4">Backup e Dados</h2>

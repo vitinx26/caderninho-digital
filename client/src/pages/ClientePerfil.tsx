@@ -31,9 +31,19 @@ export default function ClientePerfil() {
   const lancamentosCliente = lancamentos.filter((l) => l.clienteId === cliente.id);
 
   const handleWhatsApp = () => {
-    const mensagem = `Olá, ${cliente.nome}, passando para lembrar do seu saldo de R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')} no meu caderno...`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+    if (!cliente.telefone) {
+      toast.error('Cliente sem telefone cadastrado');
+      return;
+    }
+    const mensagem = `Olá, ${cliente.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')} no meu caderno.`;
+    const telefone = cliente.telefone.replace(/\D/g, '');
+    const whatsappUrl = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleRegistrarPagamento = () => {
+    irPara('novo-lancamento');
+    toast.info('Selecione "Pagamento" para registrar o recebimento');
   };
 
   const handleDeletarLancamento = async (id: string) => {
@@ -106,7 +116,7 @@ export default function ClientePerfil() {
           Adicionar Débito
         </Button>
         <Button
-          onClick={() => irPara('novo-lancamento')}
+          onClick={handleRegistrarPagamento}
           variant="outline"
           className="flex items-center gap-2"
         >

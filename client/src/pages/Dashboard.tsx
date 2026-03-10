@@ -5,12 +5,13 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, TrendingUp, AlertCircle } from 'lucide-react';
+import { Plus, TrendingUp, AlertCircle, MessageCircle } from 'lucide-react';
 import { useClientes } from '@/hooks/useDB';
 import { useLancamentos } from '@/hooks/useDB';
 import { useSaldos } from '@/hooks/useDB';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 type FiltroType = 'todos' | 'vencidos' | 'pagos' | 'alfabetico';
 
@@ -143,10 +144,28 @@ export default function Dashboard() {
                     {saldo.saldoTotal > 0 ? `Deve R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')}` : 'Sem débitos'}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <span className={`badge-status ${statusBadgeClass(saldo.status)}`}>
                     {statusLabel(saldo.status)}
                   </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const cliente = clientes.find((c) => c.id === saldo.clienteId);
+                      if (cliente?.telefone) {
+                        const mensagem = `Olá, ${cliente.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')} no meu caderno.`;
+                        const telefone = cliente.telefone.replace(/\D/g, '');
+                        const url = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
+                        window.open(url, '_blank');
+                      } else {
+                        toast.error('Cliente sem telefone cadastrado');
+                      }
+                    }}
+                    className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors"
+                    title="Enviar mensagem WhatsApp"
+                  >
+                    <MessageCircle size={18} className="text-green-600 dark:text-green-400" />
+                  </button>
                 </div>
               </button>
             ))}
