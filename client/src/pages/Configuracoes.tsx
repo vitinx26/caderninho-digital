@@ -17,6 +17,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function Configuracoes() {
   const [diasParaVencer, setDiasParaVencer] = useState(30);
+  const [numeroWhatsApp, setNumeroWhatsApp] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [pwaInstalavel, setPwaInstalavel] = useState(false);
@@ -27,6 +28,7 @@ export default function Configuracoes() {
         const config = await db.obterConfiguracao();
         if (config) {
           setDiasParaVencer(config.diasParaVencer);
+          setNumeroWhatsApp(config.numeroWhatsAppAdmin || '');
         }
       } finally {
         setCarregando(false);
@@ -61,6 +63,7 @@ export default function Configuracoes() {
         diasParaVencer,
         ultimoBackup: Date.now(),
         versao: '1.0.0',
+        numeroWhatsAppAdmin: numeroWhatsApp || undefined,
       });
       toast.success('Configurações salvas!');
     } catch (error) {
@@ -119,6 +122,21 @@ export default function Configuracoes() {
               Débitos sem pagamento há mais de {diasParaVencer} dias serão marcados como vencidos.
             </p>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Número do WhatsApp para cobranças
+            </label>
+            <Input
+              type="tel"
+              placeholder="11986975039"
+              value={numeroWhatsApp}
+              onChange={(e) => setNumeroWhatsApp(e.target.value)}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Digite seu número do WhatsApp com código de país (ex: 55 para Brasil)
+            </p>
+          </div>
           <Button
             onClick={handleSalvarConfig}
             disabled={carregando}
@@ -148,8 +166,20 @@ export default function Configuracoes() {
         <p className="text-xs text-muted-foreground mt-2">
           {pwaInstalavel
             ? 'Clique no botão acima para instalar o app no seu dispositivo'
-            : 'Se o botão não funcionar, use o menu do navegador (⋮) e selecione "Instalar app" ou "Adicionar à tela inicial".'}
+            : 'Se o botão não funcionar, siga as instruções abaixo:'}
         </p>
+        {!pwaInstalavel && (
+          <div className="mt-4 space-y-3 text-xs">
+            <div>
+              <p className="font-semibold text-foreground mb-1">📱 Android (Chrome):</p>
+              <p className="text-muted-foreground">Toque o menu (⋮) → "Instalar app" ou "Adicionar à tela inicial"</p>
+            </div>
+            <div>
+              <p className="font-semibold text-foreground mb-1">🍎 iOS (Safari):</p>
+              <p className="text-muted-foreground">Toque o botão Compartilhar (↗️) → "Adicionar à Tela Inicial"</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Seção de Informações */}

@@ -12,6 +12,7 @@ import { useSaldos } from '@/hooks/useDB';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import * as db from '@/lib/db';
 
 type FiltroType = 'todos' | 'vencidos' | 'pagos' | 'alfabetico';
 
@@ -21,6 +22,22 @@ export default function Dashboard() {
   const saldos = useSaldos(clientes, lancamentos);
   const { irPara } = useNavigation();
   const [filtro, setFiltro] = useState<FiltroType>('todos');
+  const [numeroWhatsAppAdmin, setNumeroWhatsAppAdmin] = useState('');
+
+  // Carregar número WhatsApp do admin
+  useEffect(() => {
+    const carregarConfig = async () => {
+      try {
+        const config = await db.obterConfiguracao();
+        if (config?.numeroWhatsAppAdmin) {
+          setNumeroWhatsAppAdmin(config.numeroWhatsAppAdmin);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configuração:', error);
+      }
+    };
+    carregarConfig();
+  }, []);
 
   // Recarregar dados a cada 5 segundos para sincronizar com Conta Geral
   useEffect(() => {
@@ -167,13 +184,12 @@ export default function Dashboard() {
                     onClick={(e) => {
                       e.stopPropagation();
                       const cliente = clientes.find((c) => c.id === saldo.clienteId);
-                      if (cliente?.telefone) {
-                        const mensagem = `Olá, ${cliente.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')} no meu caderno.`;
-                        const telefone = cliente.telefone.replace(/\D/g, '');
-                        const url = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
+                      if (numeroWhatsAppAdmin) {
+                        const mensagem = `Olá, ${cliente?.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')} no meu caderno.`;
+                        const url = `https://wa.me/${numeroWhatsAppAdmin}?text=${encodeURIComponent(mensagem)}`;
                         window.open(url, '_blank');
                       } else {
-                        toast.error('Cliente sem telefone cadastrado');
+                        toast.error('Configure seu número de WhatsApp nas Configurações');
                       }
                     }}
                     className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors"

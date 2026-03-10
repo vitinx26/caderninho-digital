@@ -56,6 +56,7 @@ export interface ConfiguracaoApp {
   diasParaVencer: number; // Quantos dias até marcar como vencido
   ultimoBackup: number; // timestamp do último backup
   versao: string;
+  numeroWhatsAppAdmin?: string; // Número do WhatsApp do admin para cobranças
 }
 
 export interface RelatorioMensal {

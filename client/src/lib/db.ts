@@ -67,15 +67,15 @@ export async function initDB(): Promise<IDBDatabase> {
 
 // ============ CLIENTES ============
 
-export async function adicionarCliente(cliente: Cliente): Promise<string> {
+export async function adicionarCliente(cliente: Cliente): Promise<Cliente> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(['clientes'], 'readwrite');
     const store = transaction.objectStore('clientes');
-    const request = store.add(cliente);
+    const request = store.put(cliente);
 
     request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result as string);
+    request.onsuccess = () => resolve(cliente);
   });
 }
 
