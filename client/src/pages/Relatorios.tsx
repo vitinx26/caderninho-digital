@@ -200,6 +200,27 @@ export default function Relatorios() {
                     'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
                   }`}>{saldo.status === 'pago' ? 'Pago' : saldo.status === 'pendente' ? 'Pendente' : 'Vencido'}</span></p>
                 </div>
+                {/* Detalhes de compras */}
+                {lancamentosCliente.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="font-medium text-foreground mb-2 text-sm">Itens:</p>
+                    <div className="space-y-1">
+                      {lancamentosCliente.map((l) => (
+                        <div key={l.id} className="flex justify-between text-xs">
+                          <div className="flex-1">
+                            <p className="text-foreground">{l.descricao || 'Sem descrição'}</p>
+                            <p className="text-muted-foreground">{new Date(l.data).toLocaleDateString('pt-BR')}</p>
+                          </div>
+                          <p className={`font-semibold ${
+                            l.tipo === 'debito' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                          }`}>
+                            {l.tipo === 'debito' ? '-' : '+'} R$ {l.valor.toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

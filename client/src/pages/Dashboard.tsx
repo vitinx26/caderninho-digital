@@ -175,6 +175,12 @@ export default function Dashboard() {
                   <p className="text-sm text-muted-foreground">
                     {saldo.saldoTotal > 0 ? `Deve R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')}` : 'Sem débitos'}
                   </p>
+                  {/* Últimas compras */}
+                  {lancamentos.filter((l) => l.clienteId === saldo.clienteId && l.tipo === 'debito').slice(-2).map((l) => (
+                    <p key={l.id} className="text-xs text-muted-foreground mt-1">
+                      • {l.descricao || 'Sem descrição'} - R$ {l.valor.toFixed(2).replace('.', ',')}
+                    </p>
+                  ))}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`badge-status ${statusBadgeClass(saldo.status)}`}>
