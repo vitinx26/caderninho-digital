@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Smartphone, Info, Download } from 'lucide-react';
+import { Settings, Smartphone, Info, Download, Cloud, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import * as db from '@/lib/db';
+import * as backup from '@/lib/backup';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -24,6 +25,9 @@ export default function Configuracoes() {
   const [carregando, setCarregando] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [pwaInstalavel, setPwaInstalavel] = useState(false);
+  const [ultimoBackup, setUltimoBackup] = useState<number | null>(null);
+  const [carregandoBackup, setCarregandoBackup] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const carregarConfig = async () => {
@@ -36,6 +40,8 @@ export default function Configuracoes() {
         if (usuarioLogado?.nomeEstabelecimento) {
           setNomeEstabelecimento(usuarioLogado.nomeEstabelecimento);
         }
+        const ultimoBackupTime = backup.obterTimestampUltimoBackup();
+        setUltimoBackup(ultimoBackupTime);
       } finally {
         setCarregando(false);
       }
@@ -183,6 +189,79 @@ export default function Configuracoes() {
             Salvar Configurações
           </Button>
         </div>
+      </div>
+
+      {/* Seção de Backup */}
+      <div className="card-minimal p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Cloud size={24} className="text-primary" />
+          <h2 className="text-xl font-semibold text-foreground">Backup e Sincronização</h2>
+        </div>
+        <p className="text-muted-foreground mb-4">
+          Faça backup de seus dados e sincronize entre dispositivos.
+        </p>
+        <div className="space-y-3">
+          <Button
+            onClick={async () => {
+              try {
+                setCarregandoBackup(true);
+                await backup.baixarBackupJSON();
+                toast.success('Backup baixado com sucesso!');
+              } catch (error) {
+                toast.error('Erro ao baixar backup');
+              } finally {
+                setCarregandoBackup(false);
+              }
+            }}
+            disabled={carregandoBackup}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2"
+          >
+            <Download size={20} />
+            Baixar Backup
+          </Button>
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <RotateCcw size={20} />
+            Restaurar Backup
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                try {
+                  setCarregandoBackup(true);
+                  const backupData = await backup.carregarBackupJSON(file);
+                  await backup.importarBackup(backupData);
+                  toast.success('Backup restaurado com sucesso!');
+                  window.location.reload();
+                } catch (error) {
+                  toast.error('Erro ao restaurar backup');
+                } finally {
+                  setCarregandoBackup(false);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+              }
+            }}
+          />
+        </div>
+        {ultimoBackup && (
+          <p className="text-xs text-muted-foreground mt-4">
+            Último backup: {new Date(ultimoBackup).toLocaleDateString('pt-BR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </p>
+        )}
       </div>
 
       {/* Seção PWA */}

@@ -20,6 +20,7 @@ import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import ErrorBoundary from "./components/ErrorBoundary";
 import * as db from "./lib/db";
+import * as backup from "./lib/backup";
 
 function RouterContent() {
   const { usuarioLogado, carregando, usuarioGeral } = useAuth();
@@ -28,6 +29,21 @@ function RouterContent() {
   // Recuperar dados antigos na primeira carga
   useEffect(() => {
     db.recuperarDadosAntigos().catch(console.error);
+  }, []);
+
+  // Agendar backup automático a cada 60 minutos
+  useEffect(() => {
+    const cancelarBackup = backup.agendarBackupAutomatico(60);
+    return () => cancelarBackup();
+  }, []);
+
+  // Sincronizar entre abas do navegador
+  useEffect(() => {
+    const cancelarSincronizacao = backup.sincronizarEntreAbas(() => {
+      // Recarregar dados quando outra aba faz backup
+      window.location.reload();
+    });
+    return () => cancelarSincronizacao();
   }, []);
 
   if (carregando) {
@@ -45,6 +61,11 @@ function RouterContent() {
 
   // Se está usando conta geral, mostrar interface de conta geral
   if (usuarioGeral) {
+    // Agendar backup automático para conta geral também
+    useEffect(() => {
+      const cancelarBackup = backup.agendarBackupAutomatico(30);
+      return () => cancelarBackup();
+    }, []);
     return <ContaGeral />;
   }
 
