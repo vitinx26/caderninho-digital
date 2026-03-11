@@ -14,11 +14,12 @@ import { toast } from 'sonner';
 type AbaType = 'novo-cliente' | 'nova-compra' | 'historico';
 
 export default function ContaGeral() {
-  const { fazer_logout } = useAuth();
+  const { fazer_logout, usuarioLogado } = useAuth();
   const { clientes, adicionarCliente } = useClientes();
   const { lancamentos, adicionarLancamento } = useLancamentos();
 
   const [aba, setAba] = useState<AbaType>('nova-compra');
+  const [estabelecimentoSelecionado, setEstabelecimentoSelecionado] = useState<string>('');
 
   // Novo Cliente
   const [novoClienteNome, setNovoClienteNome] = useState('');
@@ -133,8 +134,13 @@ export default function ContaGeral() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Conta Geral</h1>
-            <p className="text-muted-foreground mt-1">Registre compras rapidamente</p>
+            <h1 className="text-3xl font-bold text-foreground">Conta Geral - Compras Rápidas</h1>
+            <p className="text-muted-foreground mt-1">Selecione o estabelecimento e registre compras</p>
+            {usuarioLogado?.nomeEstabelecimento && (
+              <p className="text-sm font-semibold text-primary mt-2">
+                Estabelecimento: {usuarioLogado.nomeEstabelecimento}
+              </p>
+            )}
           </div>
           <Button
             onClick={fazer_logout}

@@ -95,15 +95,6 @@ export default function Login() {
             </Button>
 
             <Button
-              onClick={() => setAba('registro')}
-              variant="outline"
-              className="w-full py-3 border-2 border-primary text-primary hover:bg-primary/10 font-semibold flex items-center justify-center gap-2"
-            >
-              <UserPlus size={20} />
-              Criar Conta
-            </Button>
-
-            <Button
               onClick={handleContaGeral}
               variant="outline"
               className="w-full py-3 border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 font-semibold flex items-center justify-center gap-2"
@@ -116,10 +107,7 @@ export default function Login() {
           {/* Informações */}
           <div className="card-minimal p-4 space-y-2 text-sm text-muted-foreground">
             <p>
-              <strong>Admin:</strong> Visualiza todos os devedores e gera relatórios
-            </p>
-            <p>
-              <strong>Cliente:</strong> Vê apenas seus gastos pessoais
+              <strong>Login:</strong> Para admins e clientes cadastrados
             </p>
             <p>
               <strong>Conta Geral:</strong> Registra compras rápidas sem login
@@ -239,7 +227,7 @@ export default function Login() {
                 className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="cliente">Cliente</option>
-                <option value="admin">Admin</option>
+                <option value="admin">Administrador</option>
               </select>
             </div>
 
@@ -253,6 +241,9 @@ export default function Login() {
                   placeholder="Ex: Padaria do João"
                   className="w-full"
                 />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Este nome será exibido no Dashboard e identificará seu estabelecimento
+                </p>
               </div>
             )}
 
