@@ -318,6 +318,21 @@ export async function obterTodosUsuarios(): Promise<Usuario[]> {
 
 export async function recuperarDadosAntigos(): Promise<void> {
   try {
+    // Primeiro, tentar recuperar dados do localStorage (usuários)
+    const usuariosLocalStorage = localStorage.getItem('caderninho_usuarios');
+    if (usuariosLocalStorage) {
+      try {
+        const usuarios = JSON.parse(usuariosLocalStorage) as Usuario[];
+        const newDb = await initDB();
+        for (const usuario of usuarios) {
+          await adicionarUsuario(usuario);
+        }
+        console.log('Usuários recuperados do localStorage');
+      } catch (error) {
+        console.error('Erro ao recuperar usuários do localStorage:', error);
+      }
+    }
+
     // Tentar abrir banco antigo com versão 1
     const request = indexedDB.open(DB_NAME, 1);
     
@@ -342,9 +357,27 @@ export async function recuperarDadosAntigos(): Promise<void> {
           req.onerror = () => resolve([]);
         });
 
+        // Também tentar recuperar usuários do banco antigo
+        const usuariosAntigos = await new Promise<any[]>((resolve) => {
+          if (oldDb.objectStoreNames.contains('usuarios')) {
+            const tx = oldDb.transaction(['usuarios'], 'readonly');
+            const store = tx.objectStore('usuarios');
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve([]);
+          } else {
+            resolve([]);
+          }
+        });
+
         // Migrar dados para o novo banco
-        if (clientesAntigos.length > 0 || lancamentosAntigos.length > 0) {
+        if (clientesAntigos.length > 0 || lancamentosAntigos.length > 0 || usuariosAntigos.length > 0) {
           const newDb = await initDB();
+          
+          // Adicionar usuários antigos
+          for (const usuario of usuariosAntigos) {
+            await adicionarUsuario(usuario);
+          }
           
           // Adicionar clientes antigos com normalização
           for (const cliente of clientesAntigos) {
@@ -361,7 +394,11 @@ export async function recuperarDadosAntigos(): Promise<void> {
             await adicionarLancamento(lancamento);
           }
 
-          console.log('Dados antigos migrados com sucesso');
+          console.log('Dados antigos migrados com sucesso', {
+            usuarios: usuariosAntigos.length,
+            clientes: clientesAntigos.length,
+            lancamentos: lancamentosAntigos.length,
+          });
         }
       }
       
