@@ -3,22 +3,34 @@
  * Design: Minimalismo Funcional com Tipografia Forte
  */
 
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { useAuth } from "./_core/hooks/useAuth";
-import { Route, Switch } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { NavigationProvider, useNavigation } from "./contexts/NavigationContext";
+import { Layout } from "./components/Layout";
 import Login from "./pages/Login";
-import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import AdminPerfil from "./pages/AdminPerfil";
+import ClientePerfil from "./pages/ClientePerfil";
+import NovoLancamento from "./pages/NovoLancamento";
+import Relatorios from "./pages/Relatorios";
+import Configuracoes from "./pages/Configuracoes";
+import ClienteView from "./pages/ClienteView";
+import ContaGeral from "./pages/ContaGeral";
+import ErrorBoundary from "./components/ErrorBoundary";
+import * as db from "./lib/db";
 
-function Router() {
-  const { user, loading } = useAuth();
+function RouterContent() {
+  const { usuarioLogado, carregando, usuarioGeral } = useAuth();
+  const { paginaAtual } = useNavigation();
 
-  if (loading) {
+  // Recuperar dados antigos na primeira carga
+  useEffect(() => {
+    db.recuperarDadosAntigos().catch(console.error);
+  }, []);
+
+  if (carregando) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Carregando...</p>
@@ -26,35 +38,53 @@ function Router() {
     );
   }
 
-  // Se não está logado, mostrar login
-  if (!user) {
+  // Se não está logado e não está usando conta geral, mostrar login
+  if (!usuarioLogado && !usuarioGeral) {
+    return <Login />;
+  }
+
+  // Se está usando conta geral, mostrar interface de conta geral
+  if (usuarioGeral) {
+    return <ContaGeral />;
+  }
+
+  // Se é admin, mostrar Dashboard e outras páginas
+  if (usuarioLogado?.tipo === 'admin') {
     return (
-      <Switch>
-        <Route path="/login" component={Login} />
-        <Route path="/" component={Home} />
-        <Route component={NotFound} />
-      </Switch>
+      <Layout>
+        {paginaAtual === 'dashboard' && <Dashboard />}
+        {paginaAtual === 'cliente' && <ClientePerfil />}
+        {paginaAtual === 'novo-lancamento' && <NovoLancamento />}
+        {paginaAtual === 'relatorios' && <Relatorios />}
+        {paginaAtual === 'configuracoes' && <Configuracoes />}
+      </Layout>
     );
   }
 
-  // Se está logado, mostrar aplicativo
-  return (
-    <Switch>
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/admin/perfil" component={AdminPerfil} />
-      <Route path="/" component={Home} />
-      <Route component={NotFound} />
-    </Switch>
-  );
+  // Se é cliente, mostrar apenas sua visualização
+  if (usuarioLogado?.tipo === 'cliente') {
+    return <ClienteView />;
+  }
+
+  return <Login />;
 }
 
 function App() {
+  // Recuperar dados antigos na primeira carga do app
+  useEffect(() => {
+    db.recuperarDadosAntigos().catch(console.error);
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <AuthProvider>
+            <NavigationProvider>
+              <RouterContent />
+            </NavigationProvider>
+          </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

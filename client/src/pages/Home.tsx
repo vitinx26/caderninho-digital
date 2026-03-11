@@ -1,27 +1,16 @@
 /**
- * Home - Página inicial do Caderninho Digital
- * Redireciona para Dashboard se logado, ou para Login se não
+ * Home - Página inicial (redirecionada para Dashboard)
  */
 
 import { useEffect } from 'react';
-import { useAuth } from '@/_core/hooks/useAuth';
-import { useLocation } from 'wouter';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const [, setLocation] = useLocation();
+  const { irPara } = useNavigation();
 
   useEffect(() => {
-    if (loading) return;
-
-    // Se está logado, ir para o dashboard
-    if (user) {
-      setLocation('/dashboard');
-    } else {
-      // Se não está logado, ir para a página de login
-      setLocation('/login');
-    }
-  }, [user, loading, setLocation]);
+    irPara('dashboard');
+  }, [irPara]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
