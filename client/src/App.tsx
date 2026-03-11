@@ -11,6 +11,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import AdminPerfil from "./pages/AdminPerfil";
 
@@ -39,6 +40,7 @@ function Router() {
   // Se está logado, mostrar aplicativo
   return (
     <Switch>
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin/perfil" component={AdminPerfil} />
       <Route path="/" component={Home} />
       <Route component={NotFound} />
