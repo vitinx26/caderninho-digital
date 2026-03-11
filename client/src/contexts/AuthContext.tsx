@@ -11,9 +11,9 @@ interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
   carregando: boolean;
   fazer_login: (email: string, senha: string) => Promise<void>;
-  fazer_registro: (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string) => Promise<void>;
+  fazer_registro: (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string, nomeEstabelecimento?: string) => Promise<void>;
   fazer_logout: () => void;
-  usuarioGeral: boolean; // True se está usando a conta geral
+  usuarioGeral: boolean;
   entrarComContaGeral: () => void;
 }
 
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fazer_registro = async (email: string, senha: string, nome: string, tipo: TipoUsuario) => {
+  const fazer_registro = async (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string, nomeEstabelecimento?: string) => {
     try {
       const usuarioExistente = await db.obterUsuarioPorEmail(email);
       if (usuarioExistente) {
@@ -90,6 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         senha, // Em produção, fazer hash
         nome,
         tipo,
+        telefone,
+        nomeEstabelecimento: tipo === 'admin' ? nomeEstabelecimento : undefined,
         dataCriacao: Date.now(),
       });
 
@@ -99,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         nome: novoUsuario.nome,
         tipo: novoUsuario.tipo,
         telefone: novoUsuario.telefone,
+        nomeEstabelecimento: novoUsuario.nomeEstabelecimento,
       };
 
       setUsuarioLogado(usuarioLogado);

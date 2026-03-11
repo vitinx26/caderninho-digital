@@ -8,6 +8,7 @@ import { Settings, Smartphone, Info, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import * as db from '@/lib/db';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -16,8 +17,10 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function Configuracoes() {
+  const { usuarioLogado } = useAuth();
   const [diasParaVencer, setDiasParaVencer] = useState(30);
   const [numeroWhatsApp, setNumeroWhatsApp] = useState('');
+  const [nomeEstabelecimento, setNomeEstabelecimento] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [pwaInstalavel, setPwaInstalavel] = useState(false);
@@ -29,6 +32,9 @@ export default function Configuracoes() {
         if (config) {
           setDiasParaVencer(config.diasParaVencer);
           setNumeroWhatsApp(config.numeroWhatsAppAdmin || '');
+        }
+        if (usuarioLogado?.nomeEstabelecimento) {
+          setNomeEstabelecimento(usuarioLogado.nomeEstabelecimento);
         }
       } finally {
         setCarregando(false);
@@ -65,6 +71,16 @@ export default function Configuracoes() {
         versao: '1.0.0',
         numeroWhatsAppAdmin: numeroWhatsApp || undefined,
       });
+      
+      // Atualizar nome do estabelecimento no localStorage
+      if (usuarioLogado && nomeEstabelecimento) {
+        const usuarioAtualizado = {
+          ...usuarioLogado,
+          nomeEstabelecimento,
+        };
+        localStorage.setItem('caderninho_session', JSON.stringify(usuarioAtualizado));
+      }
+      
       toast.success('Configurações salvas!');
     } catch (error) {
       toast.error('Erro ao salvar configurações');
@@ -97,6 +113,28 @@ export default function Configuracoes() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Configurações</h1>
         <p className="text-muted-foreground mt-1">Personalize o seu Caderninho</p>
+      </div>
+
+      {/* Seção de Estabelecimento */}
+      <div className="card-minimal p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Estabelecimento</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Nome do Estabelecimento
+            </label>
+            <Input
+              type="text"
+              placeholder="Ex: Padaria do João"
+              value={nomeEstabelecimento}
+              onChange={(e) => setNomeEstabelecimento(e.target.value)}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Este nome será exibido no topo do Dashboard
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Seção de Dias para Vencer */}

@@ -26,6 +26,7 @@ export default function Login() {
   const [senhaRegistro, setSenhaRegistro] = useState('');
   const [nomeRegistro, setNomeRegistro] = useState('');
   const [telefoneRegistro, setTelefoneRegistro] = useState('');
+  const [nomeEstabelecimento, setNomeEstabelecimento] = useState('');
   const [tipoUsuario, setTipoUsuario] = useState<'admin' | 'cliente'>('cliente');
   const [carregandoRegistro, setCarregandoRegistro] = useState(false);
 
@@ -56,7 +57,7 @@ export default function Login() {
 
     try {
       setCarregandoRegistro(true);
-      await fazer_registro(emailRegistro, senhaRegistro, nomeRegistro, tipoUsuario, telefoneRegistro || undefined);
+      await fazer_registro(emailRegistro, senhaRegistro, nomeRegistro, tipoUsuario, telefoneRegistro || undefined, tipoUsuario === 'admin' ? nomeEstabelecimento : undefined);
       toast.success('Cadastro realizado com sucesso!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao fazer registro');
@@ -241,6 +242,19 @@ export default function Login() {
                 <option value="admin">Admin</option>
               </select>
             </div>
+
+            {tipoUsuario === 'admin' && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Nome do Estabelecimento *</label>
+                <Input
+                  type="text"
+                  value={nomeEstabelecimento}
+                  onChange={(e) => setNomeEstabelecimento(e.target.value)}
+                  placeholder="Ex: Padaria do João"
+                  className="w-full"
+                />
+              </div>
+            )}
 
             <Button
               type="submit"

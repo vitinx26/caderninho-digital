@@ -12,6 +12,7 @@ export interface Usuario {
   nome: string;
   tipo: TipoUsuario;
   telefone?: string;
+  nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
   dataCriacao: number;
 }
 
@@ -21,6 +22,7 @@ export interface UsuarioLogado {
   nome: string;
   tipo: TipoUsuario;
   telefone?: string;
+  nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
 }
 
 export interface Cliente {

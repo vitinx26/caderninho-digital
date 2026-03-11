@@ -10,6 +10,7 @@ import { useClientes } from '@/hooks/useDB';
 import { useLancamentos } from '@/hooks/useDB';
 import { useSaldos } from '@/hooks/useDB';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import * as db from '@/lib/db';
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const { lancamentos, recarregar: recarregarLancamentos } = useLancamentos();
   const saldos = useSaldos(clientes, lancamentos);
   const { irPara } = useNavigation();
+  const { usuarioLogado } = useAuth();
   const [filtro, setFiltro] = useState<FiltroType>('todos');
   const [numeroWhatsAppAdmin, setNumeroWhatsAppAdmin] = useState('');
 
@@ -102,7 +104,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">{usuarioLogado?.nomeEstabelecimento || 'Caderninho Digital'}</h1>
           <p className="text-muted-foreground mt-1">Resumo do seu caderninho</p>
         </div>
         <Button
