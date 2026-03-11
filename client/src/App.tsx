@@ -61,11 +61,6 @@ function RouterContent() {
 
   // Se está usando conta geral, mostrar interface de conta geral
   if (usuarioGeral) {
-    // Agendar backup automático para conta geral também
-    useEffect(() => {
-      const cancelarBackup = backup.agendarBackupAutomatico(30);
-      return () => cancelarBackup();
-    }, []);
     return <ContaGeral />;
   }
 
