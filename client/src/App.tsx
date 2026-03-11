@@ -21,7 +21,6 @@ import ContaGeral from "./pages/ContaGeral";
 import ErrorBoundary from "./components/ErrorBoundary";
 import * as db from "./lib/db";
 import * as backup from "./lib/backup";
-import { migrateAllOldData } from "./lib/migrate";
 
 function RouterContent() {
   const { usuarioLogado, carregando, usuarioGeral } = useAuth();
@@ -29,7 +28,7 @@ function RouterContent() {
 
   // Recuperar dados antigos na primeira carga
   useEffect(() => {
-    migrateAllOldData().catch(console.error);
+    db.recuperarDadosAntigos().catch(console.error);
   }, []);
 
   // Agendar backup automático a cada 60 minutos
@@ -89,7 +88,7 @@ function RouterContent() {
 function App() {
   // Recuperar dados antigos na primeira carga do app
   useEffect(() => {
-    migrateAllOldData().catch(console.error);
+    db.recuperarDadosAntigos().catch(console.error);
   }, []);
 
   return (

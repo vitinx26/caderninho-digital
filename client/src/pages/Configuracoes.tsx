@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import * as db from '@/lib/db';
 import * as backup from '@/lib/backup';
-import { migrateAllOldData } from '@/lib/migrate';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -298,37 +297,6 @@ export default function Configuracoes() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Seção de Migração de Dados */}
-      <div className="card-minimal p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <RotateCcw size={24} className="text-primary" />
-          <h2 className="text-xl font-semibold text-foreground">Recuperar Dados Antigos</h2>
-        </div>
-        <p className="text-muted-foreground mb-4">
-          Se você tinha dados salvos em uma versão anterior do Caderninho Digital, clique no botão abaixo para recuperá-los.
-        </p>
-        <Button
-          onClick={async () => {
-            try {
-              setCarregandoBackup(true);
-              const resultado = await migrateAllOldData();
-              toast.success(`Migração concluída! Recuperados: ${resultado.usuarios} usuários, ${resultado.clientes} clientes, ${resultado.lancamentos} lançamentos`);
-              setTimeout(() => window.location.reload(), 1500);
-            } catch (error) {
-              toast.error('Erro ao recuperar dados antigos');
-              console.error(error);
-            } finally {
-              setCarregandoBackup(false);
-            }
-          }}
-          disabled={carregandoBackup}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2"
-        >
-          <RotateCcw size={20} />
-          Recuperar Dados Antigos
-        </Button>
       </div>
 
       {/* Seção de Informações */}
