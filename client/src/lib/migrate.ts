@@ -5,6 +5,7 @@
 
 import { Cliente, Lancamento, Usuario } from '@/types';
 import * as db from './db';
+import { syncAllDataWithBackend, syncWithRetry } from './syncWithBackend';
 
 export async function migrateAllOldData(): Promise<{
   usuarios: number;
@@ -294,5 +295,49 @@ export async function migrateAllOldData(): Promise<{
       clientes: clientesRecuperados,
       lancamentos: lancamentosRecuperados,
     };
+  }
+}
+
+/**
+ * Sincronizar dados migrados com o backend
+ */
+export async function syncMigratedDataWithBackend(): Promise<boolean> {
+  try {
+    console.log('Iniciando sincronização com backend...');
+    
+    // Recuperar dados do localStorage
+    const usuariosLocal = await db.obterTodosUsuarios();
+    const clientesLocal = await db.obterClientes();
+    const lancamentosLocal = await db.obterTodosLancamentos();
+
+    if (usuariosLocal.length === 0) {
+      console.log('Nenhum dado para sincronizar');
+      return false;
+    }
+
+    // Encontrar o usuário admin para sincronizar
+    const adminUser = usuariosLocal.find((u: Usuario) => u.tipo === 'admin');
+    if (!adminUser) {
+      console.warn('Nenhum usuário admin encontrado para sincronização');
+      return false;
+    }
+
+    // Sincronizar com retry automático
+    const syncResult = await syncWithRetry(
+      () => syncAllDataWithBackend(adminUser, clientesLocal, lancamentosLocal),
+      3,
+      1000
+    );
+
+    if (syncResult.success) {
+      console.log('Sincronização com backend concluída com sucesso');
+      return true;
+    } else {
+      console.error('Erro ao sincronizar com backend:', syncResult.message);
+      return false;
+    }
+  } catch (error) {
+    console.error('Erro durante sincronização com backend:', error);
+    return false;
   }
 }
