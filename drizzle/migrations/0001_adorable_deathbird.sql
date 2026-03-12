@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `template_whatsapp` text;

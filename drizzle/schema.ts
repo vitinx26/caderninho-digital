@@ -13,6 +13,7 @@ export const users = mysqlTable(
     tipo: varchar('tipo', { length: 20 }).notNull(), // 'admin' ou 'cliente'
     telefone: varchar('telefone', { length: 20 }),
     nomeEstabelecimento: varchar('nome_estabelecimento', { length: 255 }), // Para admins
+    templateWhatsapp: text('template_whatsapp'), // Template de mensagem para cobrança via WhatsApp
     senha: text('senha').notNull(), // Hash da senha
     dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
     dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(),

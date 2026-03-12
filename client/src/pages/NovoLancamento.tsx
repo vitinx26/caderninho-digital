@@ -5,15 +5,18 @@
  */
 
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, MessageCircle } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useClientes, useLancamentos } from '@/hooks/useDB';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { gerarMensagemWhatsApp, gerarUrlWhatsApp } from '@/lib/whatsappTemplate';
 
 export default function NovoLancamento() {
   const { voltar, clienteSelecionado } = useNavigation();
+  const { usuarioLogado } = useAuth();
   const { clientes, adicionarCliente } = useClientes();
   const { adicionarLancamento } = useLancamentos();
 
@@ -98,6 +101,45 @@ export default function NovoLancamento() {
     }
   };
 
+  const handleEnviarWhatsApp = async () => {
+    try {
+      const cliente = clientes.find(c => c.id === clienteId);
+      if (!cliente) {
+        toast.error('Cliente não encontrado');
+        return;
+      }
+      if (!cliente.telefone) {
+        toast.error('Cliente sem telefone registrado');
+        return;
+      }
+
+      const mensagem = gerarMensagemWhatsApp(
+        usuarioLogado?.templateWhatsapp,
+        cliente,
+        {
+          id: '',
+          clienteId,
+          tipo: 'debito',
+          valor: Math.round(parseFloat(valor) * 100),
+          descricao: descricao.trim(),
+          data: new Date(data).getTime(),
+          dataCriacao: Date.now(),
+        }
+      );
+
+      const urlWhatsApp = gerarUrlWhatsApp(
+        cliente.telefone,
+        mensagem
+      );
+
+      window.open(urlWhatsApp, '_blank');
+      toast.success('Abrindo WhatsApp...');
+    } catch (error) {
+      toast.error('Erro ao gerar mensagem');
+      console.error(error);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -118,30 +160,28 @@ export default function NovoLancamento() {
       <div className="flex gap-3">
         <button
           onClick={() => setTipo('debito')}
-          className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
             tipo === 'debito'
               ? 'bg-red-600 text-white'
-              : 'bg-secondary text-secondary-foreground hover:bg-muted'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
           }`}
         >
-          <Plus size={20} />
           Débito
         </button>
         <button
           onClick={() => setTipo('pagamento')}
-          className={`flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
             tipo === 'pagamento'
               ? 'bg-green-600 text-white'
-              : 'bg-secondary text-secondary-foreground hover:bg-muted'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
           }`}
         >
-          <Minus size={20} />
           Pagamento
         </button>
       </div>
 
       {/* Seleção de Cliente */}
-      <div className="card-minimal p-4">
+      <div>
         <label className="block text-sm font-medium text-foreground mb-2">
           Cliente
         </label>
@@ -150,92 +190,94 @@ export default function NovoLancamento() {
             <select
               value={clienteId}
               onChange={(e) => setClienteId(e.target.value)}
-              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">Selecione um cliente...</option>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome}
+              {clientes.map((cliente) => (
+                <option key={cliente.id} value={cliente.id}>
+                  {cliente.nome}
                 </option>
               ))}
             </select>
             <button
               onClick={() => setMostrarNovoCliente(true)}
-              className="text-sm text-primary hover:underline"
+              className="w-full py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2"
             >
-              + Criar novo cliente
+              <Plus size={18} />
+              Novo Cliente
             </button>
           </div>
         ) : (
           <div className="space-y-2">
             <Input
               type="text"
-              placeholder="Nome do cliente"
+              placeholder="Nome do novo cliente"
               value={novoClienteNome}
               onChange={(e) => setNovoClienteNome(e.target.value)}
               className="w-full"
             />
             <button
               onClick={() => setMostrarNovoCliente(false)}
-              className="text-sm text-primary hover:underline"
+              className="w-full py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors"
             >
-              ← Selecionar cliente existente
+              Cancelar
             </button>
           </div>
         )}
       </div>
 
-      {/* Valor com Teclado Numérico */}
-      <div className="card-minimal p-4">
+      {/* Valor */}
+      <div>
         <label className="block text-sm font-medium text-foreground mb-2">
-          Valor
+          Valor (R$)
         </label>
-        <div className="text-4xl font-bold text-foreground mb-4 currency text-right">
-          R$ {valor || '0'}
+        <div className="text-4xl font-bold text-primary mb-4">
+          {valor || '0.00'}
         </div>
 
         {/* Teclado Numérico */}
-        <div className="grid grid-cols-3 gap-2">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
             <button
               key={num}
-              onClick={() => handleAdicionarNumero(num)}
-              className="py-3 bg-secondary hover:bg-muted rounded-lg font-semibold text-foreground transition-colors"
+              onClick={() => handleAdicionarNumero(num.toString())}
+              className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
             >
               {num}
             </button>
           ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => handleAdicionarNumero('0')}
-            className="col-span-2 py-3 bg-secondary hover:bg-muted rounded-lg font-semibold text-foreground transition-colors"
+            className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
           >
             0
           </button>
           <button
             onClick={handleDecimal}
-            className="py-3 bg-secondary hover:bg-muted rounded-lg font-semibold text-foreground transition-colors"
+            className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
           >
-            .
+            ,
+          </button>
+          <button
+            onClick={handleBackspace}
+            className="py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-white transition-colors"
+          >
+            <Minus size={20} className="mx-auto" />
           </button>
         </div>
-
-        {/* Botão Backspace */}
-        <button
-          onClick={handleBackspace}
-          className="w-full mt-2 py-3 bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 rounded-lg font-semibold text-red-700 dark:text-red-300 transition-colors"
-        >
-          Apagar
-        </button>
       </div>
 
       {/* Descrição */}
-      <div className="card-minimal p-4">
+      <div>
         <label className="block text-sm font-medium text-foreground mb-2">
           Descrição
         </label>
         <Input
           type="text"
-          placeholder="Ex: 2 pães e 1 leite"
+          placeholder="Ex: Venda de produtos"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           className="w-full"
@@ -243,7 +285,7 @@ export default function NovoLancamento() {
       </div>
 
       {/* Data */}
-      <div className="card-minimal p-4">
+      <div>
         <label className="block text-sm font-medium text-foreground mb-2">
           Data
         </label>
@@ -255,14 +297,26 @@ export default function NovoLancamento() {
         />
       </div>
 
-      {/* Botão Salvar */}
-      <Button
-        onClick={handleSubmit}
-        disabled={carregando}
-        className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-      >
-        {carregando ? 'Salvando...' : 'Registrar Lançamento'}
-      </Button>
+      {/* Botões Salvar e WhatsApp */}
+      <div className="flex gap-3">
+        <Button
+          onClick={handleSubmit}
+          disabled={carregando}
+          className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+        >
+          {carregando ? 'Salvando...' : 'Registrar Lançamento'}
+        </Button>
+        {tipo === 'debito' && clienteId && valor && descricao && (
+          <Button
+            onClick={handleEnviarWhatsApp}
+            disabled={carregando}
+            className="py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center gap-2"
+            title="Enviar cobrança via WhatsApp"
+          >
+            <MessageCircle size={20} />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

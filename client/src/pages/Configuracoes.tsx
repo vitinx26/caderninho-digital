@@ -23,6 +23,7 @@ export default function Configuracoes() {
   const [diasParaVencer, setDiasParaVencer] = useState(30);
   const [numeroWhatsApp, setNumeroWhatsApp] = useState('');
   const [nomeEstabelecimento, setNomeEstabelecimento] = useState('');
+  const [templateWhatsApp, setTemplateWhatsApp] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [pwaInstalavel, setPwaInstalavel] = useState(false);
@@ -40,6 +41,9 @@ export default function Configuracoes() {
         }
         if (usuarioLogado?.nomeEstabelecimento) {
           setNomeEstabelecimento(usuarioLogado.nomeEstabelecimento);
+        }
+        if (usuarioLogado?.templateWhatsapp) {
+          setTemplateWhatsApp(usuarioLogado.templateWhatsapp);
         }
         const ultimoBackupTime = backup.obterTimestampUltimoBackup();
         setUltimoBackup(ultimoBackupTime);
@@ -188,6 +192,57 @@ export default function Configuracoes() {
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             Salvar Configurações
+          </Button>
+        </div>
+      </div>
+
+      {/* Seção de Template WhatsApp */}
+      <div className="card-minimal p-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Mensagem de Cobrança WhatsApp</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Personalize o texto enviado para cobrar seus clientes
+            </label>
+            <textarea
+              placeholder="Ex: Olá {cliente}, você tem um débito de R$ {valor} vencido em {data}. Por favor, efetue o pagamento."
+              value={templateWhatsApp}
+              onChange={(e) => setTemplateWhatsApp(e.target.value)}
+              className="w-full h-32 p-3 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Você pode usar as seguintes variáveis:
+            </p>
+            <ul className="text-xs text-muted-foreground mt-1 space-y-1 ml-4">
+              <li>• <code className="bg-muted px-1 rounded">{'{'} cliente {'}'}</code> - Nome do cliente</li>
+              <li>• <code className="bg-muted px-1 rounded">{'{'} valor {'}'}</code> - Valor do débito</li>
+              <li>• <code className="bg-muted px-1 rounded">{'{'} data {'}'}</code> - Data do vencimento</li>
+              <li>• <code className="bg-muted px-1 rounded">{'{'} descricao {'}'}</code> - Descrição do débito</li>
+            </ul>
+          </div>
+          <Button
+            onClick={async () => {
+              try {
+                setCarregando(true);
+                if (usuarioLogado) {
+                  const usuarioAtualizado = {
+                    ...usuarioLogado,
+                    templateWhatsapp: templateWhatsApp,
+                  };
+                  await db.atualizarUsuario(usuarioAtualizado);
+                  toast.success('Template de mensagem salvo com sucesso!');
+                }
+              } catch (error) {
+                toast.error('Erro ao salvar template de mensagem');
+                console.error(error);
+              } finally {
+                setCarregando(false);
+              }
+            }}
+            disabled={carregando}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            Salvar Template
           </Button>
         </div>
       </div>

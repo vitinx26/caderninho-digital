@@ -412,3 +412,18 @@ export async function recuperarDadosAntigos(): Promise<void> {
     console.error('Erro ao recuperar dados antigos:', error);
   }
 }
+
+
+// ============ USUÁRIOS ============
+
+export async function atualizarUsuario(usuario: Partial<Usuario> & { id: string }): Promise<void> {
+  // Atualizar usuário no localStorage
+  const usuariosLocal = await obterTodosUsuarios();
+  const usuariosAtualizados = usuariosLocal.map(u => {
+    if (u.id === usuario.id) {
+      return { ...u, ...usuario };
+    }
+    return u;
+  });
+  localStorage.setItem('caderninho_usuarios', JSON.stringify(usuariosAtualizados));
+}
