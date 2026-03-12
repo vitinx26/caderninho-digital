@@ -24,3 +24,12 @@
 - [x] Melhorar sincronização com backend para persistência
 - [x] Validar que usuário admin é encontrado no login
 - [x] Testar fluxo completo de login e migração
+
+
+## Novas Funcionalidades de Autenticação e Gerenciamento
+
+- [x] Implementar sistema de recuperação de senha
+- [x] Integrar login com Google OAuth
+- [x] Criar interface de gerenciamento de admins nas configurações
+- [x] Adicionar validação e segurança
+- [x] Testar todas as funcionalidades

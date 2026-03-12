@@ -9,12 +9,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import RecuperacaoSenha from './RecuperacaoSenha';
 
-type AbaType = 'login' | 'registro' | 'inicio';
+type AbaType = 'login' | 'registro' | 'inicio' | 'recuperacao';
 
 export default function Login() {
   const { fazer_login, fazer_registro, entrarComContaGeral } = useAuth();
   const [aba, setAba] = useState<AbaType>('inicio');
+
+  // Se estiver na tela de recuperação, renderizar componente específico
+  if (aba === 'recuperacao') {
+    return <RecuperacaoSenha onVoltar={() => setAba('login')} />;
+  }
 
   // Login
   const [emailLogin, setEmailLogin] = useState('');
@@ -78,13 +84,13 @@ export default function Login() {
           {/* Logo */}
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground mb-4">
-              <span className="text-3xl font-bold">C</span>
+              <span className="text-2xl font-bold">📔</span>
             </div>
             <h1 className="text-3xl font-bold text-foreground">Caderninho Digital</h1>
-            <p className="text-muted-foreground mt-2">Controle de dívidas com agilidade</p>
+            <p className="text-muted-foreground mt-2">Gestão simples de débitos</p>
           </div>
 
-          {/* Botões de Ação */}
+          {/* Botões */}
           <div className="space-y-3">
             <Button
               onClick={() => setAba('login')}
@@ -95,9 +101,18 @@ export default function Login() {
             </Button>
 
             <Button
-              onClick={handleContaGeral}
+              onClick={() => setAba('registro')}
               variant="outline"
-              className="w-full py-3 border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 font-semibold flex items-center justify-center gap-2"
+              className="w-full py-3 font-semibold flex items-center justify-center gap-2"
+            >
+              <UserPlus size={20} />
+              Criar Conta
+            </Button>
+
+            <Button
+              onClick={handleContaGeral}
+              variant="ghost"
+              className="w-full py-3 font-semibold flex items-center justify-center gap-2"
             >
               <Zap size={20} />
               Conta Geral (Compras Rápidas)
@@ -157,6 +172,14 @@ export default function Login() {
 
             <button
               type="button"
+              onClick={() => setAba('recuperacao')}
+              className="w-full text-sm text-blue-600 hover:underline"
+            >
+              Esqueceu a senha?
+            </button>
+
+            <button
+              type="button"
               onClick={() => setAba('inicio')}
               className="w-full text-sm text-primary hover:underline"
             >
@@ -203,18 +226,7 @@ export default function Login() {
                 type="password"
                 value={senhaRegistro}
                 onChange={(e) => setSenhaRegistro(e.target.value)}
-                placeholder="••••••••"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Telefone (opcional)</label>
-              <Input
-                type="tel"
-                value={telefoneRegistro}
-                onChange={(e) => setTelefoneRegistro(e.target.value)}
-                placeholder="(11) 99999-9999"
+                placeholder="Mínimo 6 caracteres"
                 className="w-full"
               />
             </div>
@@ -224,7 +236,7 @@ export default function Login() {
               <select
                 value={tipoUsuario}
                 onChange={(e) => setTipoUsuario(e.target.value as 'admin' | 'cliente')}
-                className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
               >
                 <option value="cliente">Cliente</option>
                 <option value="admin">Administrador</option>
@@ -233,19 +245,27 @@ export default function Login() {
 
             {tipoUsuario === 'admin' && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Nome do Estabelecimento *</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Nome do Estabelecimento</label>
                 <Input
                   type="text"
                   value={nomeEstabelecimento}
                   onChange={(e) => setNomeEstabelecimento(e.target.value)}
-                  placeholder="Ex: Padaria do João"
+                  placeholder="Ex: Loja ABC"
                   className="w-full"
                 />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Este nome será exibido no Dashboard e identificará seu estabelecimento
-                </p>
               </div>
             )}
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Telefone (Opcional)</label>
+              <Input
+                type="tel"
+                value={telefoneRegistro}
+                onChange={(e) => setTelefoneRegistro(e.target.value)}
+                placeholder="(11) 99999-9999"
+                className="w-full"
+              />
+            </div>
 
             <Button
               type="submit"

@@ -424,6 +424,51 @@ export default function Configuracoes() {
           dados e pode exportá-los ou deletá-los a qualquer momento.
         </p>
       </div>
+
+      {/* Seção de Gerenciamento de Admins */}
+      {usuarioLogado?.tipo === 'admin' && (
+        <div className="card-minimal p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Gerenciamento de Administradores</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Crie novos usuários administradores para gerenciar o estabelecimento
+          </p>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Email do novo administrador
+              </label>
+              <Input
+                type="email"
+                placeholder="novo.admin@email.com"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Senha temporária
+              </label>
+              <Input
+                type="password"
+                placeholder="Gerar senha aleatória"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Nome completo
+              </label>
+              <Input
+                type="text"
+                placeholder="Nome do novo admin"
+                className="w-full"
+              />
+            </div>
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              Criar novo administrador
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
