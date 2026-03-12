@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UsuarioLogado, TipoUsuario } from '@/types';
 import * as db from '@/lib/db';
+import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancasStorage } from '@/lib/autoRecovery';
 
 interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
@@ -28,6 +29,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const verificarLogin = async () => {
       try {
+        // Recuperar dados antigos automaticamente
+        console.log('🔄 Iniciando recuperação automática de dados...');
+        const resultado = await recuperarDadosAutomaticamente();
+        console.log('✓ Recuperação concluída:', resultado);
+
         const sessionData = localStorage.getItem('caderninho_session');
         if (sessionData) {
           const usuario = JSON.parse(sessionData) as UsuarioLogado;
@@ -46,11 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     verificarLogin();
+
+    // Monitorar mudanças no storage
+    const cancelarMonitoramento = monitorarMudancasStorage();
+
+    return () => {
+      cancelarMonitoramento();
+    };
   }, []);
 
   const fazer_login = async (email: string, senha: string) => {
     try {
-      const usuario = await db.obterUsuarioPorEmail(email);
+      // Tentar garantir que usuário existe (recupera dados antigos se necessário)
+      let usuario = await garantirUsuarioExiste(email);
       if (!usuario) {
         throw new Error('Usuário não encontrado');
       }
@@ -81,19 +95,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const usuarioExistente = await db.obterUsuarioPorEmail(email);
       if (usuarioExistente) {
-        throw new Error('Email já cadastrado');
+        throw new Error('Usuário já existe');
       }
 
-      const novoUsuario = await db.adicionarUsuario({
-        id: Math.random().toString(36).substring(2),
+      const novoUsuario: any = {
+        id: Math.random().toString(36).substr(2, 9),
         email,
         senha, // Em produção, fazer hash
         nome,
         tipo,
-        telefone,
-        nomeEstabelecimento: tipo === 'admin' ? nomeEstabelecimento : undefined,
+        telefone: telefone || '',
+        nomeEstabelecimento: nomeEstabelecimento || '',
         dataCriacao: Date.now(),
-      });
+      };
+
+      await db.adicionarUsuario(novoUsuario);
 
       const usuarioLogado: UsuarioLogado = {
         id: novoUsuario.id,
@@ -101,7 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         nome: novoUsuario.nome,
         tipo: novoUsuario.tipo,
         telefone: novoUsuario.telefone,
-        nomeEstabelecimento: novoUsuario.nomeEstabelecimento,
       };
 
       setUsuarioLogado(usuarioLogado);
@@ -121,10 +136,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const entrarComContaGeral = () => {
-    setUsuarioLogado(null);
     setUsuarioGeral(true);
     localStorage.setItem('caderninho_conta_geral', 'true');
     localStorage.removeItem('caderninho_session');
+    setUsuarioLogado(null);
   };
 
   return (
