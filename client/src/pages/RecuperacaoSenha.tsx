@@ -1,148 +1,140 @@
-/**
- * RecuperacaoSenha - Tela de recuperação de senha
- * Permite usuários resetarem senha via email ou pergunta de segurança
- */
-// @ts-nocheck
-
 import React, { useState } from 'react';
-import { ArrowLeft, Mail, HelpCircle, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 
 type EtapaRecuperacao = 'inicio' | 'email' | 'pergunta' | 'novaSenha' | 'sucesso';
 
 export default function RecuperacaoSenha({ onVoltar }: { onVoltar: () => void }) {
   const [etapa, setEtapa] = useState<EtapaRecuperacao>('inicio');
   const [email, setEmail] = useState('');
-  const [token, setToken] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [respostaSeguranca, setRespostaSeguranca] = useState('');
-  const [carregando, setCarregando] = useState(false);
 
-  const handleSolicitarPorEmail = async (e: React.FormEvent) => {
+  const handleSolicitarPorEmail = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Digite seu email');
+      alert('Digite seu email');
       return;
     }
-
-    try {
-      setCarregando(true);
-      
-      // Simular solicitação de recuperação
-      const tokenGerado = Math.random().toString(36).substr(2) + Date.now().toString(36);
-      
-      toast.success('Verifique seu email para o link de recuperação');
-      toast.info(`Token: ${tokenGerado}`);
-      
-      setToken(tokenGerado);
-      setEtapa('novaSenha');
-    } catch (error) {
-      console.error('Erro ao solicitar recuperação:', error);
-      toast.error('Erro ao solicitar recuperação de senha');
-    } finally {
-      setCarregando(false);
-    }
+    alert('Link de recuperação enviado para ' + email);
+    setEtapa('novaSenha');
   };
 
-  const handleRecuperarPorPergunta = async (e: React.FormEvent) => {
+  const handleRecuperarPorPergunta = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !respostaSeguranca) {
-      toast.error('Preencha todos os campos');
+      alert('Preencha todos os campos');
       return;
     }
-
-    try {
-      setCarregando(true);
-      
-      // Simular verificação de pergunta de segurança
-      const tokenGerado = Math.random().toString(36).substr(2) + Date.now().toString(36);
-      
-      toast.success('Identidade verificada');
-      setToken(tokenGerado);
-      setEtapa('novaSenha');
-    } catch (error) {
-      console.error('Erro ao verificar identidade:', error);
-      toast.error('Erro ao verificar identidade');
-    } finally {
-      setCarregando(false);
-    }
+    alert('Identidade verificada');
+    setEtapa('novaSenha');
   };
 
-  const handleResetarSenha = async (e: React.FormEvent) => {
+  const handleResetarSenha = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!novaSenha || !confirmarSenha) {
-      toast.error('Preencha todos os campos');
+      alert('Preencha todos os campos');
       return;
     }
-
     if (novaSenha !== confirmarSenha) {
-      toast.error('Senhas não conferem');
+      alert('Senhas não conferem');
       return;
     }
-
     if (novaSenha.length < 6) {
-      toast.error('Senha deve ter no mínimo 6 caracteres');
+      alert('Senha deve ter no mínimo 6 caracteres');
       return;
     }
-
-    try {
-      setCarregando(true);
-      
-      // Simular reset de senha
-      toast.success('Senha alterada com sucesso!');
-      setEtapa('sucesso');
-    } catch (error) {
-      console.error('Erro ao alterar senha:', error);
-      toast.error('Erro ao alterar senha');
-    } finally {
-      setCarregando(false);
-    }
+    alert('Senha alterada com sucesso!');
+    setEtapa('sucesso');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom right, #3b82f6, #818cf8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem'
+    }}>
+      <div style={{ width: '100%', maxWidth: '28rem' }}>
         {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
+        <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
             onClick={onVoltar}
-            className="p-2 hover:bg-white/50 dark:hover:bg-slate-700 rounded-lg transition"
+            style={{
+              padding: '0.5rem',
+              background: 'rgba(255,255,255,0.3)',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '1.5rem'
+            }}
           >
-            <ArrowLeft className="w-5 h-5" />
+            ←
           </button>
-          <h1 className="text-2xl font-bold">Recuperar Senha</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>Recuperar Senha</h1>
         </div>
 
         {/* Etapa: Início */}
         {etapa === 'inicio' && (
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 space-y-4">
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <div style={{
+            background: 'white',
+            borderRadius: '0.5rem',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            padding: '1.5rem',
+            marginBottom: '1rem'
+          }}>
+            <p style={{ color: '#666', marginBottom: '1.5rem' }}>
               Escolha como deseja recuperar sua senha:
             </p>
 
             <button
               onClick={() => setEtapa('email')}
-              className="w-full flex items-center gap-3 p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '1rem',
+                border: '1px solid #ddd',
+                borderRadius: '0.5rem',
+                background: 'white',
+                cursor: 'pointer',
+                marginBottom: '1rem',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f9ff')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'white')}
             >
-              <Mail className="w-5 h-5 text-blue-600" />
-              <div className="text-left">
-                <p className="font-medium">Recuperar por Email</p>
-                <p className="text-sm text-gray-500">Receba um link no seu email</p>
+              <span style={{ fontSize: '1.5rem' }}>📧</span>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontWeight: '500' }}>Recuperar por Email</p>
+                <p style={{ fontSize: '0.875rem', color: '#999' }}>Receba um link no seu email</p>
               </div>
             </button>
 
             <button
               onClick={() => setEtapa('pergunta')}
-              className="w-full flex items-center gap-3 p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '1rem',
+                border: '1px solid #ddd',
+                borderRadius: '0.5rem',
+                background: 'white',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f9ff')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'white')}
             >
-              <HelpCircle className="w-5 h-5 text-green-600" />
-              <div className="text-left">
-                <p className="font-medium">Responder Pergunta de Segurança</p>
-                <p className="text-sm text-gray-500">Responda uma pergunta sobre você</p>
+              <span style={{ fontSize: '1.5rem' }}>❓</span>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontWeight: '500' }}>Pergunta de Segurança</p>
+                <p style={{ fontSize: '0.875rem', color: '#999' }}>Responda uma pergunta sobre você</p>
               </div>
             </button>
           </div>
@@ -150,26 +142,61 @@ export default function RecuperacaoSenha({ onVoltar }: { onVoltar: () => void })
 
         {/* Etapa: Email */}
         {etapa === 'email' && (
-          <form onSubmit={handleSolicitarPorEmail} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <Input
+          <form onSubmit={handleSolicitarPorEmail} style={{
+            background: 'white',
+            borderRadius: '0.5rem',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            padding: '1.5rem'
+          }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                Email
+              </label>
+              <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                disabled={carregando}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.375rem',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={carregando}>
-              {carregando ? 'Enviando...' : 'Enviar Link de Recuperação'}
-            </Button>
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+                marginBottom: '0.5rem',
+                fontWeight: '500'
+              }}
+            >
+              Enviar Link de Recuperação
+            </button>
 
             <button
               type="button"
               onClick={() => setEtapa('inicio')}
-              className="w-full text-sm text-blue-600 hover:underline"
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: 'white',
+                color: '#3b82f6',
+                border: '1px solid #3b82f6',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
             >
               Voltar
             </button>
@@ -178,38 +205,83 @@ export default function RecuperacaoSenha({ onVoltar }: { onVoltar: () => void })
 
         {/* Etapa: Pergunta de Segurança */}
         {etapa === 'pergunta' && (
-          <form onSubmit={handleRecuperarPorPergunta} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <Input
+          <form onSubmit={handleRecuperarPorPergunta} style={{
+            background: 'white',
+            borderRadius: '0.5rem',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            padding: '1.5rem'
+          }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                Email
+              </label>
+              <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                disabled={carregando}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.375rem',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Qual é o seu nome?</label>
-              <Input
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                Qual é o seu nome?
+              </label>
+              <input
                 type="text"
                 value={respostaSeguranca}
                 onChange={(e) => setRespostaSeguranca(e.target.value)}
                 placeholder="Seu nome completo"
-                disabled={carregando}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.375rem',
+                  boxSizing: 'border-box'
+                }}
               />
-              <p className="text-xs text-gray-500 mt-1">Digite exatamente como está cadastrado</p>
+              <p style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>
+                Digite exatamente como está cadastrado
+              </p>
             </div>
 
-            <Button type="submit" className="w-full" disabled={carregando}>
-              {carregando ? 'Verificando...' : 'Verificar Identidade'}
-            </Button>
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+                marginBottom: '0.5rem',
+                fontWeight: '500'
+              }}
+            >
+              Verificar Identidade
+            </button>
 
             <button
               type="button"
               onClick={() => setEtapa('inicio')}
-              className="w-full text-sm text-blue-600 hover:underline"
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: 'white',
+                color: '#3b82f6',
+                border: '1px solid #3b82f6',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
             >
               Voltar
             </button>
@@ -218,56 +290,125 @@ export default function RecuperacaoSenha({ onVoltar }: { onVoltar: () => void })
 
         {/* Etapa: Nova Senha */}
         {etapa === 'novaSenha' && (
-          <form onSubmit={handleResetarSenha} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 space-y-4">
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-              <p className="text-sm text-green-800 dark:text-green-200">
+          <form onSubmit={handleResetarSenha} style={{
+            background: 'white',
+            borderRadius: '0.5rem',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            padding: '1.5rem'
+          }}>
+            <div style={{
+              background: '#dcfce7',
+              border: '1px solid #86efac',
+              borderRadius: '0.5rem',
+              padding: '0.75rem',
+              marginBottom: '1rem'
+            }}>
+              <p style={{ fontSize: '0.875rem', color: '#166534' }}>
                 ✓ Identidade verificada. Defina uma nova senha.
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Nova Senha</label>
-              <Input
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                Nova Senha
+              </label>
+              <input
                 type="password"
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                disabled={carregando}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.375rem',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Confirmar Senha</label>
-              <Input
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>
+                Confirmar Senha
+              </label>
+              <input
                 type="password"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
                 placeholder="Confirme sua senha"
-                disabled={carregando}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.375rem',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={carregando}>
-              {carregando ? 'Alterando...' : 'Alterar Senha'}
-            </Button>
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Alterar Senha
+            </button>
           </form>
         )}
 
         {/* Etapa: Sucesso */}
         {etapa === 'sucesso' && (
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
-              <Lock className="w-6 h-6 text-green-600" />
+          <div style={{
+            background: 'white',
+            borderRadius: '0.5rem',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            padding: '1.5rem',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '3rem',
+              height: '3rem',
+              borderRadius: '50%',
+              background: '#dcfce7',
+              marginBottom: '1rem',
+              fontSize: '1.5rem'
+            }}>
+              🔒
             </div>
 
-            <h2 className="text-xl font-bold">Senha Alterada com Sucesso!</h2>
-            <p className="text-gray-600 dark:text-gray-400">
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              Senha Alterada com Sucesso!
+            </h2>
+            <p style={{ color: '#666', marginBottom: '1.5rem' }}>
               Você pode fazer login com sua nova senha agora.
             </p>
 
-            <Button onClick={onVoltar} className="w-full">
+            <button
+              onClick={onVoltar}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
               Voltar ao Login
-            </Button>
+            </button>
           </div>
         )}
       </div>
