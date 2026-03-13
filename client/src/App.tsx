@@ -20,6 +20,7 @@ import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
+import { ClienteLayout } from "./components/ClienteLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import UpdateNotification from "./components/UpdateNotification";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
@@ -78,9 +79,9 @@ function RouterContent() {
     );
   }
 
-  // Se é cliente, mostrar apenas sua visualização
+  // Se é cliente, mostrar layout com navegação
   if (usuarioLogado?.tipo === 'cliente') {
-    return <ClienteView />;
+    return <ClienteLayout />;
   }
 
   return <Login />;

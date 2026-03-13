@@ -14,7 +14,11 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { gerarMensagemWhatsApp, gerarUrlWhatsApp } from '@/lib/whatsappTemplate';
 
-export default function NovoLancamento() {
+interface NovoLancamentoProps {
+  onVoltar?: () => void;
+}
+
+export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancamentoProps) {
   const { voltar, clienteSelecionado } = useNavigation();
   const { usuarioLogado } = useAuth();
   const { clientes, adicionarCliente } = useClientes();
@@ -23,6 +27,14 @@ export default function NovoLancamento() {
   // Se for cliente logado, usar seu próprio ID
   const isClienteLogado = usuarioLogado?.tipo === 'cliente';
   const clienteIdFixo = isClienteLogado ? usuarioLogado?.id : undefined;
+
+  const handleVoltar = () => {
+    if (onVoltarProp) {
+      onVoltarProp();
+    } else {
+      voltar();
+    }
+  };
 
   const [tipo, setTipo] = useState<'debito' | 'pagamento'>('debito');
   const [clienteId, setClienteId] = useState(clienteIdFixo || clienteSelecionado || '');
@@ -149,7 +161,7 @@ export default function NovoLancamento() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={voltar}
+          onClick={handleVoltar}
           className="p-2 hover:bg-muted rounded-lg transition-colors"
         >
           <ArrowLeft size={24} className="text-foreground" />

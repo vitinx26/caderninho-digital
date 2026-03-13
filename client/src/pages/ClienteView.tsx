@@ -11,10 +11,22 @@ import { useNavigation } from '@/contexts/NavigationContext';
 import { useLancamentos } from '@/hooks/useDB';
 import { Button } from '@/components/ui/button';
 
-export default function ClienteView() {
+interface ClienteViewProps {
+  onNovoLancamento?: () => void;
+}
+
+export default function ClienteView({ onNovoLancamento }: ClienteViewProps) {
   const { usuarioLogado, fazer_logout } = useAuth();
   const { irPara } = useNavigation();
   const { lancamentos } = useLancamentos();
+
+  const handleNovoLancamento = () => {
+    if (onNovoLancamento) {
+      onNovoLancamento();
+    } else {
+      irPara('novo-lancamento');
+    }
+  };
 
   // Filtrar lançamentos do cliente logado
   const lancamentosCliente = lancamentos.filter((l) => l.clienteId === usuarioLogado?.id);
@@ -44,7 +56,7 @@ export default function ClienteView() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => irPara('novo-lancamento')}
+              onClick={handleNovoLancamento}
               className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Plus size={20} />

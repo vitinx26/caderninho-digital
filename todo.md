@@ -86,3 +86,10 @@
 - [x] Remover opções de edição de lançamentos para clientes
 - [x] Garantir que apenas admin possa editar/deletar lançamentos
 - [x] Testar restrições de acesso por tipo de usuário
+
+
+## Bug: Botão "Novo Lançamento" não funciona para usuários logados
+
+- [x] Investigar por que botão Novo Lançamento não funciona em ClienteView
+- [x] Corrigir navegação ou lógica do botão
+- [x] Testar em mobile e desktop
