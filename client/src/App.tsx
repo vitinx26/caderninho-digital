@@ -19,6 +19,7 @@ import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
+import GerenciarUsuarios from "./pages/GerenciarUsuarios";
 import ErrorBoundary from "./components/ErrorBoundary";
 import UpdateNotification from "./components/UpdateNotification";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
@@ -72,6 +73,7 @@ function RouterContent() {
         {paginaAtual === 'novo-lancamento' && <NovoLancamento />}
         {paginaAtual === 'relatorios' && <Relatorios />}
         {paginaAtual === 'configuracoes' && <Configuracoes />}
+        {paginaAtual === 'gerenciar-usuarios' && <GerenciarUsuarios />}
       </Layout>
     );
   }

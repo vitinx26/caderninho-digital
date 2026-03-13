@@ -5,13 +5,15 @@
  */
 
 import React from 'react';
-import { LogOut, TrendingDown } from 'lucide-react';
+import { LogOut, TrendingDown, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { useLancamentos } from '@/hooks/useDB';
 import { Button } from '@/components/ui/button';
 
 export default function ClienteView() {
   const { usuarioLogado, fazer_logout } = useAuth();
+  const { irPara } = useNavigation();
   const { lancamentos } = useLancamentos();
 
   // Filtrar lançamentos do cliente logado
@@ -40,14 +42,23 @@ export default function ClienteView() {
             <h1 className="text-3xl font-bold text-foreground">Meus Gastos</h1>
             <p className="text-muted-foreground mt-1">Olá, {usuarioLogado?.nome}</p>
           </div>
-          <Button
-            onClick={fazer_logout}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <LogOut size={20} />
-            Sair
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => irPara('novo-lancamento')}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              <Plus size={20} />
+              Novo Lançamento
+            </Button>
+            <Button
+              onClick={fazer_logout}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <LogOut size={20} />
+              Sair
+            </Button>
+          </div>
         </div>
 
         {/* Saldo */}

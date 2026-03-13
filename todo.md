@@ -77,3 +77,12 @@
 - [x] Liberar botão "Novo Lançamento" para clientes (não apenas admin)
 - [x] Garantir que cliente veja apenas suas próprias despesas
 - [x] Testar fluxo completo: cadastro → login → adicionar despesa
+
+
+## Gerenciamento de Usuários e Restrições de Acesso (Sprint Crítica)
+
+- [x] Criar página de gerenciamento de usuários para admin (editar/deletar)
+- [x] Adicionar botão "Novo Lançamento" visível na tela inicial do cliente
+- [x] Remover opções de edição de lançamentos para clientes
+- [x] Garantir que apenas admin possa editar/deletar lançamentos
+- [x] Testar restrições de acesso por tipo de usuário

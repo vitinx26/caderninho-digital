@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Menu, X, Home, FileText, Settings, LogOut } from 'lucide-react';
+import { Menu, X, Home, FileText, Settings, LogOut, Users } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { FAB } from './FAB';
@@ -35,6 +35,7 @@ export function Layout({ children }: LayoutProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'relatorios', label: 'Relatórios', icon: FileText },
+    { id: 'gerenciar-usuarios', label: 'Usuários', icon: Users },
     { id: 'configuracoes', label: 'Configurações', icon: Settings },
   ];
 
