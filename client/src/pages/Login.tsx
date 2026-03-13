@@ -243,7 +243,6 @@ export default function Login() {
                 className="w-full"
                 required
               />
-              <p className="text-xs text-muted-foreground mt-1">Necessário para receber cobranças via WhatsApp</p>
             </div>
 
             <Button

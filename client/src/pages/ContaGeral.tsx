@@ -46,12 +46,12 @@ export default function ContaGeral() {
   const [clientesSalvos, setClientesSalvos] = useState<Array<{ id: string; nome: string; telefone?: string }>>([]);
 
   useEffect(() => {
-    // Carregar clientes de multiplas fontes
+    // Carregar clientes de múltiplas fontes (localStorage + IndexedDB)
     const carregarClientes = () => {
       try {
         const clientesMap = new Map<string, any>();
         
-        // Carregar clientes salvos
+        // Carregar clientes salvos do localStorage
         const salvos = localStorage.getItem('caderninho_clientes_salvos');
         if (salvos) {
           JSON.parse(salvos).forEach((c: any) => {
@@ -59,10 +59,23 @@ export default function ContaGeral() {
           });
         }
 
-        // Carregar clientes principais
+        // Carregar clientes principais do localStorage
         const principais = localStorage.getItem('caderninho_clientes');
         if (principais) {
           JSON.parse(principais).forEach((c: any) => {
+            if (!clientesMap.has(c.id)) {
+              clientesMap.set(c.id, {
+                id: c.id,
+                nome: c.nome,
+                telefone: c.telefone
+              });
+            }
+          });
+        }
+
+        // Carregar clientes do IndexedDB (dados migrados)
+        if (clientes && Array.isArray(clientes)) {
+          clientes.forEach((c: any) => {
             if (!clientesMap.has(c.id)) {
               clientesMap.set(c.id, {
                 id: c.id,
@@ -79,7 +92,7 @@ export default function ContaGeral() {
         );
         
         setClientesSalvos(clientesOrdenados);
-        console.log('Clientes carregados:', clientesOrdenados);
+        console.log('Clientes carregados (localStorage + IndexedDB):', clientesOrdenados);
       } catch (error) {
         console.error('Erro ao carregar clientes:', error);
       }
@@ -97,7 +110,6 @@ export default function ContaGeral() {
 
   const handleNovoCliente = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!novoClienteNome.trim()) {
       toast.error('Digite o nome do cliente');
       return;
@@ -250,31 +262,24 @@ export default function ContaGeral() {
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={() => setAba('novo-cliente')}
-                className="text-sm text-primary hover:underline mt-2"
-              >
-                + Adicionar novo cliente
-              </button>
+              {clientesSalvos.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Nenhum cliente registrado. Crie um novo cliente na aba "Novo Cliente".
+                </p>
+              )}
             </div>
 
-            {/* Valor com Teclado Numérico */}
+            {/* Valor */}
             <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Valor
-              </label>
-              <div className="text-4xl font-bold text-foreground mb-4 currency text-right">
-                R$ {valor || '0'}
-              </div>
-
+              <label className="block text-sm font-medium text-foreground mb-2">Valor (R$)</label>
+              <div className="text-3xl font-bold text-primary mb-4">{valor || '0,00'}</div>
               <div className="grid grid-cols-3 gap-2">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
                   <button
                     key={num}
                     type="button"
                     onClick={() => handleAdicionarNumero(num)}
-                    className="py-3 bg-secondary hover:bg-muted rounded-lg font-semibold text-foreground transition-colors"
+                    className="py-3 bg-secondary hover:bg-muted text-foreground font-semibold rounded-lg transition-colors"
                   >
                     {num}
                   </button>
@@ -282,47 +287,42 @@ export default function ContaGeral() {
                 <button
                   type="button"
                   onClick={() => handleAdicionarNumero('0')}
-                  className="col-span-2 py-3 bg-secondary hover:bg-muted rounded-lg font-semibold text-foreground transition-colors"
+                  className="py-3 bg-secondary hover:bg-muted text-foreground font-semibold rounded-lg transition-colors"
                 >
                   0
                 </button>
                 <button
                   type="button"
                   onClick={handleDecimal}
-                  className="py-3 bg-secondary hover:bg-muted rounded-lg font-semibold text-foreground transition-colors"
+                  className="py-3 bg-secondary hover:bg-muted text-foreground font-semibold rounded-lg transition-colors"
                 >
                   .
                 </button>
+                <button
+                  type="button"
+                  onClick={handleBackspace}
+                  className="py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  ← DEL
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handleBackspace}
-                className="w-full mt-2 py-3 bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 rounded-lg font-semibold text-red-700 dark:text-red-300 transition-colors"
-              >
-                Apagar
-              </button>
             </div>
 
             {/* Descrição */}
             <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Descrição
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-2">Descrição</label>
               <Input
                 type="text"
-                placeholder="Ex: 2 pães e 1 leite"
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Ex: Bebidas, Alimentos, etc"
                 className="w-full"
               />
             </div>
 
             {/* Data */}
             <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Data
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-2">Data</label>
               <Input
                 type="date"
                 value={data}
@@ -331,12 +331,13 @@ export default function ContaGeral() {
               />
             </div>
 
+            {/* Botão Salvar */}
             <Button
               type="submit"
               disabled={carregandoCompra}
               className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2"
             >
-              <Plus size={20} />
+              <Save size={20} />
               {carregandoCompra ? 'Salvando...' : 'Registrar Compra'}
             </Button>
           </form>
@@ -344,29 +345,27 @@ export default function ContaGeral() {
 
         {/* Novo Cliente */}
         {aba === 'novo-cliente' && (
-          <form onSubmit={handleNovoCliente} className="space-y-4">
-            <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Nome do Cliente
-              </label>
+          <form onSubmit={handleNovoCliente} className="card-minimal p-6 space-y-4">
+            <h2 className="text-xl font-bold text-foreground">Adicionar Novo Cliente</h2>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Nome</label>
               <Input
                 type="text"
-                placeholder="Digite o nome"
                 value={novoClienteNome}
                 onChange={(e) => setNovoClienteNome(e.target.value)}
+                placeholder="Nome do cliente"
                 className="w-full"
               />
             </div>
 
-            <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Telefone (opcional)
-              </label>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Telefone (Opcional)</label>
               <Input
                 type="tel"
-                placeholder="(11) 99999-9999"
                 value={novoClienteTelefone}
                 onChange={(e) => setNovoClienteTelefone(e.target.value)}
+                placeholder="(11) 99999-9999"
                 className="w-full"
               />
             </div>
@@ -376,39 +375,33 @@ export default function ContaGeral() {
               disabled={carregandoNovoCliente}
               className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2"
             >
-              <Save size={20} />
-              {carregandoNovoCliente ? 'Salvando...' : 'Salvar Cliente'}
+              <Plus size={20} />
+              {carregandoNovoCliente ? 'Adicionando...' : 'Adicionar Cliente'}
             </Button>
           </form>
         )}
 
         {/* Histórico */}
         {aba === 'historico' && (
-          <div className="space-y-3">
-            {lancamentos.length === 0 ? (
-              <div className="card-minimal p-8 text-center">
-                <p className="text-muted-foreground">Nenhuma compra registrada</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
+          <div className="card-minimal p-6">
+            <h2 className="text-xl font-bold text-foreground mb-4">Histórico de Compras</h2>
+            {lancamentos && lancamentos.length > 0 ? (
+              <div className="space-y-3">
                 {lancamentos.map((lancamento) => {
-                  const cliente = clientes.find((c) => c.id === lancamento.clienteId);
+                  const cliente = clientesSalvos.find((c) => c.id === lancamento.clienteId);
                   return (
-                    <div
-                      key={lancamento.id}
-                      className="card-minimal p-4 flex items-center justify-between"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{cliente?.nome}</p>
+                    <div key={lancamento.id} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                      <div>
+                        <p className="font-medium text-foreground">{cliente?.nome || 'Cliente desconhecido'}</p>
                         <p className="text-sm text-muted-foreground">{lancamento.descricao}</p>
                       </div>
-                      <p className="font-semibold currency text-red-600 dark:text-red-400">
-                        R$ {lancamento.valor.toFixed(2).replace('.', ',')}
-                      </p>
+                      <p className="font-bold text-primary">R$ {lancamento.valor.toFixed(2)}</p>
                     </div>
                   );
                 })}
               </div>
+            ) : (
+              <p className="text-muted-foreground">Nenhuma compra registrada</p>
             )}
           </div>
         )}

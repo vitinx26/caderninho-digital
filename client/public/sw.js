@@ -1,6 +1,7 @@
 /**
  * Service Worker para Caderninho Digital
  * Suporta funcionamento offline com cache de assets
+ * Implementa atualização automática do PWA
  */
 
 const CACHE_NAME = 'caderninho-v1';
@@ -9,6 +10,9 @@ const URLS_TO_CACHE = [
   '/index.html',
   '/manifest.json',
 ];
+
+// Versão do app (deve ser atualizada a cada release)
+const APP_VERSION = '1.0.0';
 
 // Instalar o Service Worker
 self.addEventListener('install', (event) => {

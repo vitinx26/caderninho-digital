@@ -40,3 +40,11 @@
 - [x] Corrigir erro na página de recuperação de senha
 - [x] Remover opção de cadastro de admin no registro público
 - [x] Testar correções
+
+
+## Correções Solicitadas (Sprint Atual)
+
+- [x] Remover texto "Necessário para receber cobranças via WhatsApp" do campo de telefone
+- [x] Corrigir carregamento do cliente Vitinho em Conta Geral
+- [x] Implementar sistema de atualização automática do PWA com botão de refresh
+- [x] Testar todas as correções em iOS e Android

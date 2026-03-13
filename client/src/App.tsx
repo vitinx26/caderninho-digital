@@ -20,6 +20,8 @@ import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import ErrorBoundary from "./components/ErrorBoundary";
+import UpdateNotification from "./components/UpdateNotification";
+import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import * as backup from "./lib/backup";
 
 function RouterContent() {
@@ -82,6 +84,17 @@ function RouterContent() {
   return <Login />;
 }
 
+function AppContent() {
+  const { updateAvailable, refreshApp } = useUpdateCheck();
+
+  return (
+    <>
+      <RouterContent />
+      <UpdateNotification updateAvailable={updateAvailable} onRefresh={refreshApp} />
+    </>
+  );
+}
+
 function App() {
   // Nota: Migração é feita automaticamente no AuthProvider
 
@@ -92,7 +105,7 @@ function App() {
           <Toaster />
           <AuthProvider>
             <NavigationProvider>
-              <RouterContent />
+              <AppContent />
             </NavigationProvider>
           </AuthProvider>
         </TooltipProvider>
