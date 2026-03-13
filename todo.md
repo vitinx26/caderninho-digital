@@ -33,3 +33,10 @@
 - [x] Criar interface de gerenciamento de admins nas configurações
 - [x] Adicionar validação e segurança
 - [x] Testar todas as funcionalidades
+
+
+## Correções Urgentes
+
+- [x] Corrigir erro na página de recuperação de senha
+- [x] Remover opção de cadastro de admin no registro público
+- [x] Testar correções

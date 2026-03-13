@@ -231,30 +231,9 @@ export default function Login() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Tipo de Usuário</label>
-              <select
-                value={tipoUsuario}
-                onChange={(e) => setTipoUsuario(e.target.value as 'admin' | 'cliente')}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-              >
-                <option value="cliente">Cliente</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </div>
-
-            {tipoUsuario === 'admin' && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Nome do Estabelecimento</label>
-                <Input
-                  type="text"
-                  value={nomeEstabelecimento}
-                  onChange={(e) => setNomeEstabelecimento(e.target.value)}
-                  placeholder="Ex: Loja ABC"
-                  className="w-full"
-                />
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+              ℹ️ Contas de administrador são criadas apenas por administradores existentes nas Configurações.
+            </p>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Telefone (Opcional)</label>
