@@ -9,18 +9,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import RecuperacaoSenha from './RecuperacaoSenha';
-
-type AbaType = 'login' | 'registro' | 'inicio' | 'recuperacao';
+type AbaType = 'login' | 'registro' | 'inicio';
 
 export default function Login() {
   const { fazer_login, fazer_registro, entrarComContaGeral } = useAuth();
   const [aba, setAba] = useState<AbaType>('inicio');
-
-  // Se estiver na tela de recuperação, renderizar componente específico
-  if (aba === 'recuperacao') {
-    return <RecuperacaoSenha onVoltar={() => setAba('login')} />;
-  }
 
   // Login
   const [emailLogin, setEmailLogin] = useState('');
@@ -56,8 +49,8 @@ export default function Login() {
 
   const handleRegistro = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailRegistro || !senhaRegistro || !nomeRegistro) {
-      toast.error('Preencha todos os campos');
+    if (!emailRegistro || !senhaRegistro || !nomeRegistro || !telefoneRegistro) {
+      toast.error('Preencha todos os campos obrigatórios (telefone é necessário para cobranças)');
       return;
     }
 
@@ -172,14 +165,6 @@ export default function Login() {
 
             <button
               type="button"
-              onClick={() => setAba('recuperacao')}
-              className="w-full text-sm text-blue-600 hover:underline"
-            >
-              Esqueceu a senha?
-            </button>
-
-            <button
-              type="button"
               onClick={() => setAba('inicio')}
               className="w-full text-sm text-primary hover:underline"
             >
@@ -236,14 +221,16 @@ export default function Login() {
             </p>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Telefone (Opcional)</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Telefone <span className="text-red-500">*</span></label>
               <Input
                 type="tel"
                 value={telefoneRegistro}
                 onChange={(e) => setTelefoneRegistro(e.target.value)}
                 placeholder="(11) 99999-9999"
                 className="w-full"
+                required
               />
+              <p className="text-xs text-muted-foreground mt-1">Necessário para receber cobranças via WhatsApp</p>
             </div>
 
             <Button

@@ -20,6 +20,15 @@ export default function ContaGeral() {
 
   const [aba, setAba] = useState<AbaType>('nova-compra');
   const [estabelecimentoSelecionado, setEstabelecimentoSelecionado] = useState<string>('');
+  const [nomeEstabelecimento, setNomeEstabelecimento] = useState<string>('');
+
+  // Carregar nome do estabelecimento ao montar
+  useEffect(() => {
+    const estabelecimento = localStorage.getItem('caderninho_estabelecimento');
+    if (estabelecimento) {
+      setNomeEstabelecimento(estabelecimento);
+    }
+  }, []);
 
   // Novo Cliente
   const [novoClienteNome, setNovoClienteNome] = useState('');
@@ -136,9 +145,9 @@ export default function ContaGeral() {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Conta Geral - Compras Rápidas</h1>
             <p className="text-muted-foreground mt-1">Selecione o estabelecimento e registre compras</p>
-            {usuarioLogado?.nomeEstabelecimento && (
+            {(nomeEstabelecimento || usuarioLogado?.nomeEstabelecimento) && (
               <p className="text-sm font-semibold text-primary mt-2">
-                Estabelecimento: {usuarioLogado.nomeEstabelecimento}
+                📍 Estabelecimento: {nomeEstabelecimento || usuarioLogado?.nomeEstabelecimento}
               </p>
             )}
           </div>
