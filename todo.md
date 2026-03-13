@@ -60,3 +60,11 @@
 - [x] Corrigir acesso de novos usuários para cadastrar despesas
 - [x] Sincronizar novos usuários na lista de seleção da Conta Geral
 - [x] Remover telefone da exibição na Conta Geral e vincular usuários
+
+
+## Problema Crítico: Senha Perdida nas Atualizações
+
+- [x] Investigar por que senha é perdida nas atualizações
+- [x] Corrigir migração de dados do IndexedDB para localStorage
+- [x] Garantir que senha seja sempre preservada em todas atualizações
+- [x] Testar login após atualização do app

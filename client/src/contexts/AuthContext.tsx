@@ -1,12 +1,14 @@
 /**
  * Contexto de autenticação para o Caderninho Digital
  * Gerencia login, logout e estado do usuário logado
+ * Implementa persistência garantida de senha
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UsuarioLogado, TipoUsuario } from '@/types';
 import * as db from '@/lib/db';
 import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancasStorage } from '@/lib/autoRecovery';
+import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
 
 interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
@@ -33,6 +35,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🔄 Iniciando recuperação automática de dados...');
         const resultado = await recuperarDadosAutomaticamente();
         console.log('✓ Recuperação concluída:', resultado);
+
+        // Sincronizar senhas após recuperação de dados
+        console.log('🔄 Sincronizando senhas...');
+        await sincronizarSenhaComIndexedDB();
+        
+        // Validar integridade de senhas
+        const validacao = await validarIntegridadeSenhas();
+        console.log('✓ Validação de senhas:', validacao);
 
         const sessionData = localStorage.getItem('caderninho_session');
         if (sessionData) {
@@ -74,6 +84,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Senha incorreta');
       }
 
+      // Salvar senha com segurança para recuperação após atualização
+      console.log('💾 Salvando senha com segurança...');
+      await salvarSenhaSegura(email, senha);
+
       const usuarioLogado: UsuarioLogado = {
         id: usuario.id,
         email: usuario.email,
@@ -110,6 +124,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       await db.adicionarUsuario(novoUsuario);
+
+      // Salvar senha com segurança imediatamente após registro
+      console.log('💾 Salvando senha do novo usuário com segurança...');
+      await salvarSenhaSegura(email, senha);
 
       // Criar cliente automaticamente para o novo usuário
       // Isso permite que o usuário apareça na Conta Geral e em listas de seleção

@@ -53,6 +53,12 @@ export async function migrateAllOldData(): Promise<{
 
           for (const usuario of usuarios) {
             try {
+              // Validar que a senha existe e não está vazia
+              if (!usuario.senha || usuario.senha.trim() === '') {
+                console.warn(`⚠️ Usuário ${usuario.email} sem senha válida, pulando...`);
+                continue;
+              }
+
               const usuarioNormalizado: Usuario = {
                 id: usuario.id || Math.random().toString(36).substring(2),
                 email: usuario.email,
@@ -60,7 +66,7 @@ export async function migrateAllOldData(): Promise<{
                 tipo: usuario.tipo || 'cliente',
                 telefone: usuario.telefone,
                 nomeEstabelecimento: usuario.nomeEstabelecimento,
-                senha: usuario.senha || 'temp123',
+                senha: usuario.senha, // Preservar senha original SEMPRE
                 dataCriacao: usuario.dataCriacao || Date.now(),
               };
               await db.adicionarUsuario(usuarioNormalizado);
@@ -331,13 +337,18 @@ export async function syncMigratedDataWithBackend(): Promise<boolean> {
       return false;
     }
 
-    // Encontrar o usuário admin para sincronizar
+    // Encontrar o usuário admin para    // Encontrar usuário admin
     const adminUser = usuariosLocal.find((u: Usuario) => u.tipo === 'admin');
     if (!adminUser) {
-      console.warn('Nenhum usuário admin encontrado para sincronização');
+      console.log('⚠️ Nenhum usuário admin encontrado');
       return false;
     }
 
+    // Validar que todos os usuários têm senha
+    const usuariosSemSenha = usuariosLocal.filter((u: Usuario) => !u.senha || u.senha.trim() === '');
+    if (usuariosSemSenha.length > 0) {
+      console.warn(`⚠️ ${usuariosSemSenha.length} usuários sem senha válida:`, usuariosSemSenha.map(u => u.email));
+    }
     // Sincronizar com retry automático
     const syncResult = await syncWithRetry(
       () => syncAllDataWithBackend(adminUser, clientesLocal, lancamentosLocal),
