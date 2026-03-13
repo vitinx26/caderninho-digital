@@ -10,6 +10,8 @@ import { useClientes, useLancamentos } from '@/hooks/useDB';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import * as db from '@/lib/db';
+import { salvarSenhaSegura } from '@/lib/passwordPersistence';
 
 type AbaType = 'novo-cliente' | 'nova-compra';
 
@@ -33,6 +35,8 @@ export default function ContaGeral() {
   // Novo Cliente
   const [novoClienteNome, setNovoClienteNome] = useState('');
   const [novoClienteTelefone, setNovoClienteTelefone] = useState('');
+  const [novoClienteEmail, setNovoClienteEmail] = useState('');
+  const [novoClienteSenha, setNovoClienteSenha] = useState('');
   const [carregandoNovoCliente, setCarregandoNovoCliente] = useState(false);
 
   // Nova Compra
@@ -115,13 +119,62 @@ export default function ContaGeral() {
       return;
     }
 
+    // Validar email e senha se fornecidos
+    if (novoClienteEmail.trim() && !novoClienteSenha.trim()) {
+      toast.error('Se informar email, também deve informar senha');
+      return;
+    }
+
+    if (!novoClienteEmail.trim() && novoClienteSenha.trim()) {
+      toast.error('Se informar senha, também deve informar email');
+      return;
+    }
+
+    // Validar formato de email
+    if (novoClienteEmail.trim() && !novoClienteEmail.includes('@')) {
+      toast.error('Email inválido');
+      return;
+    }
+
+    // Validar comprimento de senha
+    if (novoClienteSenha.trim() && novoClienteSenha.length < 6) {
+      toast.error('Senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+
     try {
       setCarregandoNovoCliente(true);
       const novoCliente = await adicionarCliente(novoClienteNome.trim(), novoClienteTelefone || undefined);
       salvarClienteRapido(novoCliente.id, novoCliente.nome, novoCliente.telefone);
-      toast.success('Cliente adicionado com sucesso!');
+
+      // Se forneceu email e senha, criar usuário automaticamente
+      if (novoClienteEmail.trim() && novoClienteSenha.trim()) {
+        try {
+          const novoUsuario = {
+            id: novoCliente.id,
+            email: novoClienteEmail.trim(),
+            senha: novoClienteSenha,
+            nome: novoClienteNome.trim(),
+            tipo: 'cliente' as const,
+            telefone: novoClienteTelefone || '',
+            dataCriacao: Date.now(),
+          };
+          await db.adicionarUsuario(novoUsuario);
+          // Salvar senha com segurança
+          await salvarSenhaSegura(novoClienteEmail.trim(), novoClienteSenha);
+          toast.success('✅ Cliente e usuário criados! Ele pode fazer login agora.');
+        } catch (e) {
+          console.warn('Erro ao criar usuário para cliente:', e);
+          toast.success('Cliente adicionado, mas não foi possível criar login. Tente novamente.');
+        }
+      } else {
+        toast.success('Cliente adicionado com sucesso!');
+      }
+
       setNovoClienteNome('');
       setNovoClienteTelefone('');
+      setNovoClienteEmail('');
+      setNovoClienteSenha('');
       setAba('nova-compra');
     } catch (error) {
       toast.error('Erro ao adicionar cliente');
@@ -254,65 +307,30 @@ export default function ContaGeral() {
               </select>
               {clientesSalvos.length === 0 && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Nenhum cliente registrado. Crie um novo cliente na aba "Novo Cliente".
+                  Nenhum cliente cadastrado. Crie um novo cliente primeiro.
                 </p>
               )}
             </div>
 
-            {/* Valor */}
-            <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">Valor (R$)</label>
-              <div className="text-3xl font-bold text-primary mb-4">{valor || '0,00'}</div>
-              <div className="grid grid-cols-3 gap-2">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => handleAdicionarNumero(num)}
-                    className="py-3 bg-secondary hover:bg-muted text-foreground font-semibold rounded-lg transition-colors"
-                  >
-                    {num}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => handleAdicionarNumero('0')}
-                  className="py-3 bg-secondary hover:bg-muted text-foreground font-semibold rounded-lg transition-colors"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDecimal}
-                  className="py-3 bg-secondary hover:bg-muted text-foreground font-semibold rounded-lg transition-colors"
-                >
-                  .
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBackspace}
-                  className="py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
-                >
-                  ← DEL
-                </button>
-              </div>
-            </div>
-
             {/* Descrição */}
             <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">Descrição</label>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Descrição
+              </label>
               <Input
                 type="text"
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
-                placeholder="Ex: Bebidas, Alimentos, etc"
+                placeholder="Ex: Compra de bebidas"
                 className="w-full"
               />
             </div>
 
             {/* Data */}
             <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">Data</label>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Data
+              </label>
               <Input
                 type="date"
                 value={data}
@@ -321,7 +339,54 @@ export default function ContaGeral() {
               />
             </div>
 
-            {/* Botão Salvar */}
+            {/* Valor */}
+            <div className="card-minimal p-4">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Valor (R$)
+              </label>
+              <div className="text-4xl font-bold text-primary mb-4">
+                {valor || '0.00'}
+              </div>
+
+              {/* Teclado Numérico */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => handleAdicionarNumero(num.toString())}
+                    className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAdicionarNumero('0')}
+                  className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDecimal}
+                  className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
+                >
+                  .
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBackspace}
+                  className="p-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                >
+                  ← Apagar
+                </button>
+              </div>
+            </div>
+
             <Button
               type="submit"
               disabled={carregandoCompra}
@@ -339,7 +404,7 @@ export default function ContaGeral() {
             <h2 className="text-xl font-bold text-foreground">Adicionar Novo Cliente</h2>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Nome</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Nome *</label>
               <Input
                 type="text"
                 value={novoClienteNome}
@@ -358,6 +423,36 @@ export default function ContaGeral() {
                 placeholder="(11) 99999-9999"
                 className="w-full"
               />
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                💡 Para permitir que o cliente faça login e acompanhe seus gastos pelo app, preencha email e senha:
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Email (Opcional)</label>
+              <Input
+                type="email"
+                value={novoClienteEmail}
+                onChange={(e) => setNovoClienteEmail(e.target.value)}
+                placeholder="cliente@email.com"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Necessário para criar login</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Senha (Opcional)</label>
+              <Input
+                type="password"
+                value={novoClienteSenha}
+                onChange={(e) => setNovoClienteSenha(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Necessária para criar login</p>
             </div>
 
             <Button

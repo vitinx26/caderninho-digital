@@ -68,3 +68,12 @@
 - [x] Corrigir migração de dados do IndexedDB para localStorage
 - [x] Garantir que senha seja sempre preservada em todas atualizações
 - [x] Testar login após atualização do app
+
+
+## Acesso de Clientes ao App (Sprint Crítica)
+
+- [x] Adicionar campos email e senha ao cadastro de cliente na Conta Geral
+- [x] Criar usuário automaticamente ao cadastrar cliente com credenciais
+- [x] Liberar botão "Novo Lançamento" para clientes (não apenas admin)
+- [x] Garantir que cliente veja apenas suas próprias despesas
+- [x] Testar fluxo completo: cadastro → login → adicionar despesa

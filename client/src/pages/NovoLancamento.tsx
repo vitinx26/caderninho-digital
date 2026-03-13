@@ -20,8 +20,12 @@ export default function NovoLancamento() {
   const { clientes, adicionarCliente } = useClientes();
   const { adicionarLancamento } = useLancamentos();
 
+  // Se for cliente logado, usar seu próprio ID
+  const isClienteLogado = usuarioLogado?.tipo === 'cliente';
+  const clienteIdFixo = isClienteLogado ? usuarioLogado?.id : undefined;
+
   const [tipo, setTipo] = useState<'debito' | 'pagamento'>('debito');
-  const [clienteId, setClienteId] = useState(clienteSelecionado || '');
+  const [clienteId, setClienteId] = useState(clienteIdFixo || clienteSelecionado || '');
   const [novoClienteNome, setNovoClienteNome] = useState('');
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -181,50 +185,64 @@ export default function NovoLancamento() {
       </div>
 
       {/* Seleção de Cliente */}
-      <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Cliente
-        </label>
-        {!mostrarNovoCliente ? (
-          <div className="space-y-2">
-            <select
-              value={clienteId}
-              onChange={(e) => setClienteId(e.target.value)}
-              className="w-full p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Selecione um cliente...</option>
-              {clientes.map((cliente) => (
-                <option key={cliente.id} value={cliente.id}>
-                  {cliente.nome}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => setMostrarNovoCliente(true)}
-              className="w-full py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus size={18} />
-              Novo Cliente
-            </button>
+      {isClienteLogado ? (
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Seus Gastos
+          </label>
+          <div className="card-minimal p-4 bg-muted">
+            <p className="font-medium text-foreground">{usuarioLogado?.nome}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Você está adicionando despesas à sua conta
+            </p>
           </div>
-        ) : (
-          <div className="space-y-2">
-            <Input
-              type="text"
-              placeholder="Nome do novo cliente"
-              value={novoClienteNome}
-              onChange={(e) => setNovoClienteNome(e.target.value)}
-              className="w-full"
-            />
-            <button
-              onClick={() => setMostrarNovoCliente(false)}
-              className="w-full py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Cliente
+          </label>
+          {!mostrarNovoCliente ? (
+            <div className="space-y-2">
+              <select
+                value={clienteId}
+                onChange={(e) => setClienteId(e.target.value)}
+                className="w-full p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Selecione um cliente...</option>
+                {clientes.map((cliente) => (
+                  <option key={cliente.id} value={cliente.id}>
+                    {cliente.nome}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setMostrarNovoCliente(true)}
+                className="w-full py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={18} />
+                Novo Cliente
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Input
+                type="text"
+                placeholder="Nome do novo cliente"
+                value={novoClienteNome}
+                onChange={(e) => setNovoClienteNome(e.target.value)}
+                className="w-full"
+              />
+              <button
+                onClick={() => setMostrarNovoCliente(false)}
+                className="w-full py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Valor */}
       <div>
