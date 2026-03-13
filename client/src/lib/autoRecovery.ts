@@ -39,7 +39,17 @@ export async function recuperarDadosAutomaticamente(): Promise<{
     console.log('🔄 Iniciando recuperação automática de dados...');
 
     // 1. Recuperar dados antigos do localStorage e IndexedDB
-    const resultado = await migrateAllOldData();
+    let resultado;
+    try {
+      resultado = await migrateAllOldData();
+    } catch (migrateError) {
+      console.error('❌ Erro durante migração:', migrateError);
+      resultado = {
+        usuarios: 0,
+        clientes: 0,
+        lancamentos: 0,
+      };
+    }
 
     console.log('✓ Dados recuperados:', resultado);
 

@@ -19,21 +19,13 @@ import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import ErrorBoundary from "./components/ErrorBoundary";
-import * as db from "./lib/db";
 import * as backup from "./lib/backup";
-import { migrateAllOldData, syncMigratedDataWithBackend } from "./lib/migrate";
 
 function RouterContent() {
   const { usuarioLogado, carregando, usuarioGeral } = useAuth();
   const { paginaAtual } = useNavigation();
 
-  // Recuperar dados antigos na primeira carga
-  useEffect(() => {
-    migrateAllOldData().then(() => {
-      // Após migração, sincronizar com backend
-      syncMigratedDataWithBackend().catch(console.error);
-    }).catch(console.error);
-  }, []);
+  // Nota: Migração já é feita no AuthProvider, não duplicar aqui
 
   // Agendar backup automático a cada 60 minutos
   useEffect(() => {
@@ -90,13 +82,7 @@ function RouterContent() {
 }
 
 function App() {
-  // Recuperar dados antigos na primeira carga do app
-  useEffect(() => {
-    migrateAllOldData().then(() => {
-      // Após migração, sincronizar com backend
-      syncMigratedDataWithBackend().catch(console.error);
-    }).catch(console.error);
-  }, []);
+  // Nota: Migração é feita automaticamente no AuthProvider
 
   return (
     <ErrorBoundary>

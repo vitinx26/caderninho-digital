@@ -170,16 +170,31 @@ export async function migrateAllOldData(): Promise<{
     // ============ RECUPERAR DO INDEXEDDB ANTIGO ============
     console.log('Procurando dados no IndexedDB antigo...');
     
-    // Tentar abrir banco antigo com versão 1 e 2
-    for (const version of [1, 2]) {
-      try {
-        const oldDb = await new Promise<IDBDatabase | null>((resolve) => {
-          const request = indexedDB.open('CaderninhoDigital', version);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => resolve(null);
-        });
+    // Verificar se IndexedDB está disponível
+    if (typeof indexedDB === 'undefined') {
+      console.warn('⚠️ IndexedDB não disponível');
+    } else {
+      // Tentar abrir banco antigo com versão 1 e 2
+      for (const version of [1, 2]) {
+        try {
+          const oldDb = await new Promise<IDBDatabase | null>((resolve) => {
+            try {
+              const request = indexedDB.open('CaderninhoDigital', version);
+              request.onsuccess = () => resolve(request.result);
+              request.onerror = () => {
+                console.warn(`Erro ao abrir IndexedDB v${version}`);
+                resolve(null);
+              };
+            } catch (e) {
+              console.warn(`Exceção ao abrir IndexedDB v${version}`);
+              resolve(null);
+            }
+          });
 
-        if (!oldDb) continue;
+        if (!oldDb) {
+          console.log(`IndexedDB v${version} não encontrado`);
+          continue;
+        }
 
         // Recuperar usuários do banco antigo
         if (oldDb.objectStoreNames.contains('usuarios')) {
@@ -273,7 +288,8 @@ export async function migrateAllOldData(): Promise<{
 
         oldDb.close();
       } catch (error) {
-        console.warn(`Erro ao acessar IndexedDB versão ${version}:`, error);
+        console.warn(`Erro ao recuperar dados do IndexedDB v${version}:`, error);
+      }
       }
     }
 
