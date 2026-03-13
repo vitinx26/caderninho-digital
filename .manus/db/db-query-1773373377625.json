@@ -1,0 +1,22 @@
+{
+  "query": "SELECT * FROM users LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute SELECT * FROM users LIMIT 1;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "2SKhtJHLiAG3WucXgpmHdP",
+      "name": "Victor Hugo Gonçalves",
+      "email": "victorhgs26@gmail.com",
+      "loginMethod": "google",
+      "role": "admin",
+      "createdAt": "2026-03-11 21:27:21",
+      "updatedAt": "2026-03-11 21:34:52",
+      "lastSignedIn": "2026-03-11 21:34:53",
+      "template_whatsapp": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\ttemplate_whatsapp\n1\t2SKhtJHLiAG3WucXgpmHdP\tVictor Hugo Gonçalves\tvictorhgs26@gmail.com\tgoogle\tadmin\t2026-03-11 21:27:21\t2026-03-11 21:34:52\t2026-03-11 21:34:53\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

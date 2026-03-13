@@ -46,12 +46,47 @@ export default function ContaGeral() {
   const [clientesSalvos, setClientesSalvos] = useState<Array<{ id: string; nome: string; telefone?: string }>>([]);
 
   useEffect(() => {
-    // Carregar clientes salvos do localStorage
-    const salvos = localStorage.getItem('caderninho_clientes_salvos');
-    if (salvos) {
-      setClientesSalvos(JSON.parse(salvos));
-    }
-  }, []);
+    // Carregar clientes de multiplas fontes
+    const carregarClientes = () => {
+      try {
+        const clientesMap = new Map<string, any>();
+        
+        // Carregar clientes salvos
+        const salvos = localStorage.getItem('caderninho_clientes_salvos');
+        if (salvos) {
+          JSON.parse(salvos).forEach((c: any) => {
+            clientesMap.set(c.id, c);
+          });
+        }
+
+        // Carregar clientes principais
+        const principais = localStorage.getItem('caderninho_clientes');
+        if (principais) {
+          JSON.parse(principais).forEach((c: any) => {
+            if (!clientesMap.has(c.id)) {
+              clientesMap.set(c.id, {
+                id: c.id,
+                nome: c.nome,
+                telefone: c.telefone
+              });
+            }
+          });
+        }
+
+        // Converter para array e ordenar
+        const clientesOrdenados = Array.from(clientesMap.values()).sort((a, b) => 
+          a.nome.localeCompare(b.nome)
+        );
+        
+        setClientesSalvos(clientesOrdenados);
+        console.log('Clientes carregados:', clientesOrdenados);
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+      }
+    };
+
+    carregarClientes();
+  }, [clientes]);
 
   const salvarClienteRapido = (id: string, nome: string, telefone?: string) => {
     const novosSalvos = clientesSalvos.filter((c) => c.id !== id);
