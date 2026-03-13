@@ -111,6 +111,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await db.adicionarUsuario(novoUsuario);
 
+      // Criar cliente automaticamente para o novo usuário
+      // Isso permite que o usuário apareça na Conta Geral e em listas de seleção
+      try {
+        const novoCliente = {
+          id: novoUsuario.id, // Usar mesmo ID do usuário para vinculação
+          nome: novoUsuario.nome,
+          telefone: novoUsuario.telefone,
+          email: novoUsuario.email,
+          dataCriacao: Date.now(),
+          ativo: true,
+          adminId: tipo === 'admin' ? novoUsuario.id : undefined, // Se é admin, é seu próprio admin
+        };
+        await db.adicionarCliente(novoCliente);
+        console.log('✓ Cliente criado automaticamente para novo usuário:', novoUsuario.email);
+      } catch (e) {
+        console.warn('Erro ao criar cliente para novo usuário:', e);
+        // Não falhar o registro se cliente não for criado
+      }
+
       const usuarioLogado: UsuarioLogado = {
         id: novoUsuario.id,
         email: novoUsuario.email,

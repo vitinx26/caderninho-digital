@@ -248,7 +248,7 @@ export default function ContaGeral() {
                 <option value="">Selecione um cliente...</option>
                 {clientesSalvos.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.nome} {c.telefone ? `(${c.telefone})` : ''}
+                    {c.nome}
                   </option>
                 ))}
               </select>

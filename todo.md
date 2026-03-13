@@ -53,3 +53,10 @@
 ## Correções de Segurança e LGPD
 
 - [x] Remover opção "Histórico" da Conta Geral para proteger privacidade dos usuários
+
+
+## Problemas com Novos Usuários (Sprint Atual)
+
+- [x] Corrigir acesso de novos usuários para cadastrar despesas
+- [x] Sincronizar novos usuários na lista de seleção da Conta Geral
+- [x] Remover telefone da exibição na Conta Geral e vincular usuários
