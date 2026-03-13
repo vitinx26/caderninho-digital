@@ -9,7 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-type AbaType = 'login' | 'registro' | 'inicio';
+import ResetarSenha from './ResetarSenha';
+type AbaType = 'login' | 'registro' | 'inicio' | 'resetar';
 
 export default function Login() {
   const { fazer_login, fazer_registro, entrarComContaGeral } = useAuth();
@@ -165,6 +166,14 @@ export default function Login() {
 
             <button
               type="button"
+              onClick={() => setAba('resetar')}
+              className="w-full text-sm text-primary hover:underline mb-2"
+            >
+              Esqueceu a senha?
+            </button>
+
+            <button
+              type="button"
               onClick={() => setAba('inicio')}
               className="w-full text-sm text-primary hover:underline"
             >
@@ -174,6 +183,10 @@ export default function Login() {
         </div>
       </div>
     );
+  }
+
+  if (aba === 'resetar') {
+    return <ResetarSenha onVoltar={() => setAba('login')} />;
   }
 
   if (aba === 'registro') {
