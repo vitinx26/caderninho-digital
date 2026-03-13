@@ -48,3 +48,8 @@
 - [x] Corrigir carregamento do cliente Vitinho em Conta Geral
 - [x] Implementar sistema de atualização automática do PWA com botão de refresh
 - [x] Testar todas as correções em iOS e Android
+
+
+## Correções de Segurança e LGPD
+
+- [x] Remover opção "Histórico" da Conta Geral para proteger privacidade dos usuários

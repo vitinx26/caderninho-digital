@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
-type AbaType = 'novo-cliente' | 'nova-compra' | 'historico';
+type AbaType = 'novo-cliente' | 'nova-compra';
 
 export default function ContaGeral() {
   const { fazer_logout, usuarioLogado } = useAuth();
@@ -230,16 +230,6 @@ export default function ContaGeral() {
           >
             Novo Cliente
           </button>
-          <button
-            onClick={() => setAba('historico')}
-            className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-              aba === 'historico'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-muted'
-            }`}
-          >
-            Histórico
-          </button>
         </div>
 
         {/* Nova Compra */}
@@ -381,30 +371,7 @@ export default function ContaGeral() {
           </form>
         )}
 
-        {/* Histórico */}
-        {aba === 'historico' && (
-          <div className="card-minimal p-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">Histórico de Compras</h2>
-            {lancamentos && lancamentos.length > 0 ? (
-              <div className="space-y-3">
-                {lancamentos.map((lancamento) => {
-                  const cliente = clientesSalvos.find((c) => c.id === lancamento.clienteId);
-                  return (
-                    <div key={lancamento.id} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                      <div>
-                        <p className="font-medium text-foreground">{cliente?.nome || 'Cliente desconhecido'}</p>
-                        <p className="text-sm text-muted-foreground">{lancamento.descricao}</p>
-                      </div>
-                      <p className="font-bold text-primary">R$ {lancamento.valor.toFixed(2)}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">Nenhuma compra registrada</p>
-            )}
-          </div>
-        )}
+
       </div>
     </div>
   );
