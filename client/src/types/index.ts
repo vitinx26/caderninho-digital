@@ -61,6 +61,8 @@ export interface ConfiguracaoApp {
   ultimoBackup: number; // timestamp do último backup
   versao: string;
   numeroWhatsAppAdmin?: string; // Número do WhatsApp do admin para cobranças
+  nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
+  templateWhatsapp?: string; // Template de mensagem para cobrança via WhatsApp
 }
 
 export interface RelatorioMensal {

@@ -374,18 +374,9 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         />
       </div>
 
-      {/* Data - Fixa em Brasília */}
-      <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Data de Registro
-        </label>
-        <div className="p-3 bg-muted rounded-lg text-foreground font-medium">
-          {formatarDataBrasilia(new Date())}
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Data/hora de Brasília (não editável)
-        </p>
-      </div>
+      {/* Data - Oculta mas gravada automaticamente com fuso Brasília */}
+      {/* A data é gravada automaticamente ao registrar o lançamento */}
+      {/* Não é exibida para não poluir o visual do formulário */}
 
       {/* Botões Salvar e WhatsApp */}
       <div className="flex gap-3">

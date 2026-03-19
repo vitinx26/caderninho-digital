@@ -388,18 +388,9 @@ export default function ContaGeral() {
             </div>
 
             {/* Data Fixa */}
-            <div className="card-minimal p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
-              <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                <Calendar size={16} />
-                Data de Registro (Brasília)
-              </label>
-              <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                {dataBrasilia}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Data e hora fixas - não editável
-              </p>
-            </div>
+            {/* Data de Registro - Ocultada mas gravada automaticamente com fuso Brasília */}
+            {/* A data é gravada automaticamente ao registrar a compra */}
+            {/* Não é exibida para não poluir o visual do formulário */}
 
             {/* Valor */}
             <div className="card-minimal p-4">

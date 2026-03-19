@@ -76,25 +76,30 @@ export default function Configuracoes() {
 
   const handleSalvarConfig = async () => {
     try {
+      // Salvar TODAS as configuracoes no IndexedDB (banco persistente)
       await db.salvarConfiguracao({
         diasParaVencer,
         ultimoBackup: Date.now(),
         versao: '1.0.0',
         numeroWhatsAppAdmin: numeroWhatsApp || undefined,
+        nomeEstabelecimento: nomeEstabelecimento || undefined,
+        templateWhatsapp: templateWhatsApp || undefined,
       });
       
-      // Atualizar nome do estabelecimento no localStorage
-      if (usuarioLogado && nomeEstabelecimento) {
+      // Tambem atualizar no localStorage para sincronizacao
+      if (usuarioLogado) {
         const usuarioAtualizado = {
           ...usuarioLogado,
           nomeEstabelecimento,
+          templateWhatsapp: templateWhatsApp,
         };
         localStorage.setItem('caderninho_session', JSON.stringify(usuarioAtualizado));
       }
       
-      toast.success('Configurações salvas!');
+      toast.success('Configuracoes salvas com sucesso!');
     } catch (error) {
-      toast.error('Erro ao salvar configurações');
+      console.error('Erro ao salvar configuracoes:', error);
+      toast.error('Erro ao salvar configuracoes');
     }
   };
 

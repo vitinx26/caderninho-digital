@@ -145,3 +145,9 @@
 - [x] Email não está sendo enviado - Adicionados logs detalhados para debug
 - [x] Pop-up deve mostrar "Enviado" após registrar - Redesenhado com novo layout
 - [x] Notificação deve ir para TODOS os admins - Implementado com logs de confirmação
+
+
+## Bugs Críticos - Salvamento de Dados (Sprint Atual)
+
+- [x] Configurações de admins não estão sendo salvas - Implementado salvamento persistente em IndexedDB
+- [x] Data/hora visível está poluindo o visual - Ocultada mas gravada automaticamente com fuso Brasília
