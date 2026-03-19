@@ -51,6 +51,12 @@ export default function ContaGeral() {
   // Clientes salvos (para seleção rápida)
   const [clientesSalvos, setClientesSalvos] = useState<Array<{ id: string; nome: string; telefone?: string }>>([]);
   const [sincronizando, setSincronizando] = useState(false);
+  const [buscaCliente, setBuscaCliente] = useState('');
+  
+  // Filtrar clientes por busca
+  const clientesFiltrados = clientesSalvos.filter(c => 
+    c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
+  );
 
   // Sincronizar dados ao abrir Conta Geral
   useEffect(() => {
@@ -219,6 +225,12 @@ export default function ContaGeral() {
       setNovoClienteTelefone('');
       setNovoClienteEmail('');
       setNovoClienteSenha('');
+      
+      // Recarregar lista de clientes para mostrar novo cliente
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
       setAba('nova-compra');
     } catch (error) {
       toast.error('Erro ao adicionar cliente');
@@ -355,18 +367,28 @@ export default function ContaGeral() {
                   <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">Clique em "Sincronizar" para carregar clientes salvos</p>
                 </div>
               ) : (
-                <select
-                  value={clienteSelecionado}
-                  onChange={(e) => setClienteSelecionado(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Selecione um cliente...</option>
-                  {clientesSalvos.map((cliente) => (
-                    <option key={cliente.id} value={cliente.id}>
-                      {cliente.nome}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <Input
+                    type="text"
+                    placeholder="Buscar cliente..."
+                    value={buscaCliente}
+                    onChange={(e) => setBuscaCliente(e.target.value)}
+                    className="w-full mb-2"
+                  />
+                  
+                  <select
+                    value={clienteSelecionado}
+                    onChange={(e) => setClienteSelecionado(e.target.value)}
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Selecione um cliente...</option>
+                    {clientesFiltrados.map((cliente) => (
+                      <option key={cliente.id} value={cliente.id}>
+                        {cliente.nome}
+                      </option>
+                    ))}
+                  </select>
+                </>
               )}
             </div>
 

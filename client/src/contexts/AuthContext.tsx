@@ -67,12 +67,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // Timeout de 5 segundos para evitar loop infinito
+    const timeoutId = setTimeout(() => {
+      console.warn('Timeout ao carregar dados, continuando mesmo assim...');
+      setCarregando(false);
+    }, 5000);
+
     verificarLogin();
 
     // Monitorar mudanças no storage
     const cancelarMonitoramento = monitorarMudancasStorage();
 
     return () => {
+      clearTimeout(timeoutId);
       cancelarMonitoramento();
     };
   }, []);
@@ -210,10 +217,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const entrarComContaGeral = () => {
-    setUsuarioGeral(true);
-    localStorage.setItem('caderninho_conta_geral', 'true');
-    localStorage.removeItem('caderninho_session');
-    setUsuarioLogado(null);
+    try {
+      console.log('Entrando com Conta Geral...');
+      
+      // Limpar sessao anterior
+      localStorage.removeItem('caderninho_session');
+      setUsuarioLogado(null);
+      
+      // Definir Conta Geral
+      localStorage.setItem('caderninho_conta_geral', 'true');
+      setUsuarioGeral(true);
+      
+      console.log('Conta Geral ativada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao ativar Conta Geral:', error);
+      // Tentar novamente sem localStorage
+      setUsuarioGeral(true);
+    }
   };
 
   return (

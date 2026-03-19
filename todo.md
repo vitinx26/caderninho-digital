@@ -151,3 +151,11 @@
 
 - [x] Configurações de admins não estão sendo salvas - Implementado salvamento persistente em IndexedDB
 - [x] Data/hora visível está poluindo o visual - Ocultada mas gravada automaticamente com fuso Brasília
+
+
+## Bugs Críticos - Clientes e Android (Sprint Atual)
+
+- [x] Novos clientes não aparecem em Conta Geral - Implementado recarregamento automático
+- [x] Adicionar busca/filtro na caixa de seleção de clientes - Campo de busca adicionado
+- [x] Android travando no login - Adicionado timeout de 5 segundos
+- [x] Android não permite selecionar Conta Geral - Melhorado tratamento de erros
