@@ -11,6 +11,7 @@ import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancas
 import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
 import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
 import { garantirAdminsPresentes } from '@/lib/debugAdmins';
+import { sincronizarBidirecional, iniciarSincronizacaoPeriodica, monitorarConexao } from '@/lib/serverSync';
 
 interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
@@ -104,10 +105,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('💾 Salvando senha com segurança...');
       await salvarSenhaSegura(email, senha);
 
-      // Se é admin, sincronizar dados compartilhados
+      // Se é admin, sincronizar dados com servidor
       if (usuario.tipo === 'admin') {
-        console.log('🔄 Sincronizando dados compartilhados entre admins...');
-        await sincronizarDadosDoLocalStorage();
+        console.log('🔄 Sincronizando dados com servidor...');
+        try {
+          const usuarioComDados: UsuarioLogado = {
+            id: usuario.id,
+            email: usuario.email,
+            nome: usuario.nome,
+            tipo: usuario.tipo,
+            telefone: usuario.telefone,
+            nomeEstabelecimento: usuario.nomeEstabelecimento,
+          };
+          
+          // Sincronizar bidirecional com servidor
+          await sincronizarBidirecional(usuarioComDados);
+          
+          // Iniciar sincronização periódica
+          const cancelarSync = iniciarSincronizacaoPeriodica(usuarioComDados, 30000);
+          
+          // Monitorar reconexão
+          const cancelarMonitor = monitorarConexao(usuarioComDados);
+          
+          // Armazenar funções de cancelamento
+          (window as any).cancelarSyncPeriodica = cancelarSync;
+          (window as any).cancelarMonitorConexao = cancelarMonitor;
+          
+          console.log('✅ Sincronização com servidor iniciada');
+        } catch (error) {
+          console.error('⚠️ Erro ao sincronizar com servidor:', error);
+        }
       }
 
       const usuarioLogado: UsuarioLogado = {

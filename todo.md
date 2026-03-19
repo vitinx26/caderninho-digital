@@ -159,3 +159,14 @@
 - [x] Adicionar busca/filtro na caixa de seleção de clientes - Campo de busca adicionado
 - [x] Android travando no login - Adicionado timeout de 5 segundos
 - [x] Android não permite selecionar Conta Geral - Melhorado tratamento de erros
+
+
+## Bugs Críticos - Sincronização Centralizada (Sprint Crítica)
+
+- [x] Banco centralizado já existe no servidor - Tabelas users, clients, transactions
+- [x] Sistema de sincronização criado - serverSync.ts com 5 funções principais
+- [x] Integração no login de admins - Sincronização automática ao fazer login
+- [ ] Criar endpoints REST no servidor - GET/POST para sincronizar dados
+- [ ] Migrar dados de localStorage para servidor - Mover dados existentes
+- [ ] Implementar sincronização em tempo real - WebSocket ou polling
+- [ ] Testar em múltiplas plataformas - Desktop, mobile, Android
