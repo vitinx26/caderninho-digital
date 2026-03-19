@@ -35,27 +35,23 @@ router.post('/novo-lancamento', async (req: Request, res: Response) => {
       });
     }
 
-    // Buscar emails dos administradores com emailNotificacao configurado
-    console.log('\ud83d\udd0d Buscando administradores com email de notifica\u00e7\u00e3o...');
+    // Buscar emails dos administradores
+    console.log('\ud83d\udd0d Buscando administradores...');
     const admins = await dbHelpers.getAllAdmins();
     console.log(`   Total de admins encontrados: ${admins.length}`);
     
-    // Priorizar emailNotificacao, se n\u00e3o tiver, usar email principal
     const emailsAdmins = admins
-      .filter((admin: any) => {
-        const emailParaNotificar = admin.emailNotificacao || admin.email;
-        return emailParaNotificar && emailParaNotificar.trim() !== '';
-      })
-      .map((admin: any) => admin.emailNotificacao || admin.email);
+      .filter((admin: any) => admin.email && admin.email.trim() !== '')
+      .map((admin: any) => admin.email);
 
-    console.log(`   Admins com email de notifica\u00e7\u00e3o: ${emailsAdmins.length}`);
+    console.log(`   Admins com email: ${emailsAdmins.length}`);
     console.log(`   Emails: ${emailsAdmins.join(', ')}`);
 
     if (emailsAdmins.length === 0) {
-      console.warn('\u26a0\ufe0f Nenhum administrador com email de notifica\u00e7\u00e3o configurado');
+      console.warn('\u26a0\ufe0f Nenhum administrador com email configurado');
       return res.status(400).json({
         success: false,
-        message: 'Nenhum administrador com email de notifica\u00e7\u00e3o configurado',
+        message: 'Nenhum administrador com email configurado',
       });
     }
 

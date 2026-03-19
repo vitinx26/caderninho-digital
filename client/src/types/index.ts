@@ -13,7 +13,6 @@ export interface Usuario {
   tipo: TipoUsuario;
   telefone?: string;
   nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
-  emailNotificacao?: string; // Email para receber notificações (para admins)
   templateWhatsapp?: string; // Template de mensagem para cobrança via WhatsApp
   dataCriacao: number;
 }
@@ -25,7 +24,6 @@ export interface UsuarioLogado {
   tipo: TipoUsuario;
   telefone?: string;
   nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
-  emailNotificacao?: string; // Email para receber notificações (para admins)
   templateWhatsapp?: string; // Template de mensagem para cobrança via WhatsApp
 }
 
