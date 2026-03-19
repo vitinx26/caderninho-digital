@@ -3,6 +3,7 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import notificationRouter from "./notificationRouter";
+import syncRouter from "./syncRouter";
 import { initializeEmailService } from "./emailService";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +22,9 @@ async function startServer() {
 
   // Rotas de notificação
   app.use('/api/notificacoes', notificationRouter);
+  
+  // Rotas de sincronização
+  app.use('/api', syncRouter);
 
   // Serve static files from dist/public in production
   const staticPath =
