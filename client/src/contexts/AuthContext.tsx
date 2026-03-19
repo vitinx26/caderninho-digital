@@ -9,6 +9,7 @@ import { UsuarioLogado, TipoUsuario } from '@/types';
 import * as db from '@/lib/db';
 import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancasStorage } from '@/lib/autoRecovery';
 import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
+import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
 
 interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
@@ -88,6 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('💾 Salvando senha com segurança...');
       await salvarSenhaSegura(email, senha);
 
+      // Se é admin, sincronizar dados compartilhados
+      if (usuario.tipo === 'admin') {
+        console.log('🔄 Sincronizando dados compartilhados entre admins...');
+        await sincronizarDadosDoLocalStorage();
+      }
+
       const usuarioLogado: UsuarioLogado = {
         id: usuario.id,
         email: usuario.email,
@@ -160,12 +167,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('caderninho_session', JSON.stringify(usuarioLogado));
       localStorage.removeItem('caderninho_conta_geral');
       setUsuarioGeral(false);
+
+      // Se é novo admin, salvar dados para sincronização
+      if (tipo === 'admin') {
+        console.log('💾 Salvando dados do novo admin para sincronização...');
+        const clientes = await db.obterClientes();
+        const lancamentos = await db.obterTodosLancamentos();
+        salvarDadosSync(clientes, lancamentos);
+      }
     } catch (error) {
       throw error;
     }
   };
 
   const fazer_logout = () => {
+    // Se era admin, salvar dados para sincronização com outros admins
+    if (usuarioLogado?.tipo === 'admin') {
+      console.log('💾 Salvando dados para sincronização entre admins...');
+      (async () => {
+        try {
+          const clientes = await db.obterClientes();
+          const lancamentos = await db.obterTodosLancamentos();
+          salvarDadosSync(clientes, lancamentos);
+        } catch (e) {
+          console.error('Erro ao salvar dados para sincronização:', e);
+        }
+      })();
+    }
+
     setUsuarioLogado(null);
     setUsuarioGeral(false);
     localStorage.removeItem('caderninho_session');

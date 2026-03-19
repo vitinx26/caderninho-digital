@@ -93,3 +93,11 @@
 - [x] Investigar por que botão Novo Lançamento não funciona em ClienteView
 - [x] Corrigir navegação ou lógica do botão
 - [x] Testar em mobile e desktop
+
+
+## Problema Crítico: Admin trc290382@gmail.com não vê dados
+
+- [x] Investigar por que admin não está vendo usuários e valores anteriores
+- [x] Garantir que todos os admins tenham acesso aos mesmos dados
+- [x] Sincronizar dados entre diferentes admins
+- [x] Testar acesso de todos os admins
