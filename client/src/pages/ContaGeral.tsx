@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, LogOut, Save } from 'lucide-react';
+import { Plus, LogOut, Save, Calendar, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientes, useLancamentos } from '@/hooks/useDB';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import * as db from '@/lib/db';
 import { salvarSenhaSegura } from '@/lib/passwordPersistence';
+import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
+import { recuperarDadosAutomaticamente } from '@/lib/autoRecovery';
 
 type AbaType = 'novo-cliente' | 'nova-compra';
 
@@ -43,11 +45,27 @@ export default function ContaGeral() {
   const [clienteSelecionado, setClienteSelecionado] = useState('');
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [data, setData] = useState(new Date().toISOString().split('T')[0]);
   const [carregandoCompra, setCarregandoCompra] = useState(false);
+  const [dataBrasilia] = useState(() => formatarDataBrasilia(new Date()));
 
   // Clientes salvos (para seleção rápida)
   const [clientesSalvos, setClientesSalvos] = useState<Array<{ id: string; nome: string; telefone?: string }>>([]);
+  const [sincronizando, setSincronizando] = useState(false);
+
+  // Sincronizar dados ao abrir Conta Geral
+  useEffect(() => {
+    const sincronizarDados = async () => {
+      try {
+        console.log('🔄 Sincronizando dados em Conta Geral...');
+        const resultado = await recuperarDadosAutomaticamente();
+        console.log('✓ Sincronização concluída:', resultado);
+      } catch (error) {
+        console.error('Erro ao sincronizar:', error);
+      }
+    };
+
+    sincronizarDados();
+  }, []);
 
   useEffect(() => {
     // Carregar clientes de múltiplas fontes (localStorage + IndexedDB)
@@ -97,6 +115,14 @@ export default function ContaGeral() {
         
         setClientesSalvos(clientesOrdenados);
         console.log('Clientes carregados (localStorage + IndexedDB):', clientesOrdenados);
+        
+        // Se não houver clientes, tentar sincronizar novamente
+        if (clientesOrdenados.length === 0) {
+          console.warn('⚠️ Nenhum cliente encontrado, tentando sincronizar...');
+          recuperarDadosAutomaticamente().then(() => {
+            carregarClientes();
+          });
+        }
       } catch (error) {
         console.error('Erro ao carregar clientes:', error);
       }
@@ -104,6 +130,24 @@ export default function ContaGeral() {
 
     carregarClientes();
   }, [clientes]);
+
+  // Função para sincronizar manualmente
+  const handleSincronizar = async () => {
+    try {
+      setSincronizando(true);
+      console.log('🔄 Sincronizando dados manualmente...');
+      const resultado = await recuperarDadosAutomaticamente();
+      console.log('✓ Sincronização concluída:', resultado);
+      toast.success(`✓ Dados sincronizados! ${resultado.clientes} clientes encontrados.`);
+      // Recarregar clientes
+      window.location.reload();
+    } catch (error) {
+      console.error('Erro ao sincronizar:', error);
+      toast.error('Erro ao sincronizar dados');
+    } finally {
+      setSincronizando(false);
+    }
+  };
 
   const salvarClienteRapido = (id: string, nome: string, telefone?: string) => {
     const novosSalvos = clientesSalvos.filter((c) => c.id !== id);
@@ -203,12 +247,11 @@ export default function ContaGeral() {
 
     try {
       setCarregandoCompra(true);
-      const timestamp = new Date(data).getTime();
+      const timestamp = obterTimestampBrasilia();
       await adicionarLancamento(clienteSelecionado, 'debito', parseFloat(valor), descricao.trim(), timestamp);
       toast.success('Compra registrada com sucesso!');
       setValor('');
       setDescricao('');
-      setData(new Date().toISOString().split('T')[0]);
     } catch (error) {
       toast.error('Erro ao registrar compra');
     } finally {
@@ -250,15 +293,29 @@ export default function ContaGeral() {
                 📍 Estabelecimento: {nomeEstabelecimento || usuarioLogado?.nomeEstabelecimento}
               </p>
             )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {clientesSalvos.length} cliente(s) disponível(is)
+            </p>
           </div>
-          <Button
-            onClick={fazer_logout}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <LogOut size={20} />
-            Sair
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSincronizar}
+              disabled={sincronizando}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw size={20} className={sincronizando ? 'animate-spin' : ''} />
+              {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
+            </Button>
+            <Button
+              onClick={fazer_logout}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <LogOut size={20} />
+              Sair
+            </Button>
+          </div>
         </div>
 
         {/* Abas */}
@@ -287,33 +344,34 @@ export default function ContaGeral() {
 
         {/* Nova Compra */}
         {aba === 'nova-compra' && (
-          <form onSubmit={handleNovaCompra} className="space-y-4">
-            {/* Seleção de Cliente */}
-            <div className="card-minimal p-4">
+          <form onSubmit={handleNovaCompra} className="space-y-4">            {/* Seleção de Cliente */}
+            <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Cliente
+                Cliente ({clientesSalvos.length})
               </label>
-              <select
-                value={clienteSelecionado}
-                onChange={(e) => setClienteSelecionado(e.target.value)}
-                className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Selecione um cliente...</option>
-                {clientesSalvos.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-              {clientesSalvos.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Nenhum cliente cadastrado. Crie um novo cliente primeiro.
-                </p>
+              {clientesSalvos.length === 0 ? (
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300 font-medium">⚠️ Nenhum cliente encontrado</p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">Clique em "Sincronizar" para carregar clientes salvos</p>
+                </div>
+              ) : (
+                <select
+                  value={clienteSelecionado}
+                  onChange={(e) => setClienteSelecionado(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecione um cliente...</option>
+                  {clientesSalvos.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nome}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
             {/* Descrição */}
-            <div className="card-minimal p-4">
+            <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Descrição
               </label>
@@ -324,19 +382,23 @@ export default function ContaGeral() {
                 placeholder="Ex: Compra de bebidas"
                 className="w-full"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Total de clientes: {clientesSalvos.length}
+              </p>
             </div>
 
-            {/* Data */}
-            <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Data
+            {/* Data Fixa */}
+            <div className="card-minimal p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
+              <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                <Calendar size={16} />
+                Data de Registro (Brasília)
               </label>
-              <Input
-                type="date"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-                className="w-full"
-              />
+              <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                {dataBrasilia}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Data e hora fixas - não editável
+              </p>
             </div>
 
             {/* Valor */}

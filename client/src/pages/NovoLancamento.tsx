@@ -104,15 +104,49 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       // Calcular consumo total e percentual de aumento
       const cliente = clientes.find((c: any) => c.id === id);
       if (cliente) {
-        // Simular consumo total (em um app real, isso viria do servidor)
+    // Enviar notificação por email para admins
+        if (usuarioLogado?.tipo === 'admin') {
+          try {
+            if (cliente) {
+              console.log('📧 Enviando notificação para admins...');
+              const response = await fetch('/api/notificacoes/novo-lancamento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  clienteId: id,
+                  adminId: usuarioLogado.id,
+                  tipo,
+                  valor: Math.round(parseFloat(valor) * 100),
+                  descricao: descricao.trim(),
+                }),
+              });
+              
+              const resultado = await response.json();
+              if (resultado.success) {
+                console.log('✓ Notificação enviada com sucesso');
+                toast.success('📧 Notificação enviada para admins');
+              } else {
+                console.warn('⚠️ Erro ao enviar notificação:', resultado.message);
+                toast.warning('⚠️ Notificação não pude ser enviada: ' + resultado.message);
+              }
+            }
+          } catch (error) {
+            console.error('❌ Erro ao enviar notificação:', error);
+            toast.error('Erro ao enviar notificação');
+          }
+        }
+      }
+
+      // Mostrar pop-up de consumo
+      const clientePopup = clientes.find((c: any) => c.id === id);
+      if (clientePopup) {
         const valorCentavos = Math.round(parseFloat(valor) * 100);
         const consumoAdicional = tipo === 'debito' ? valorCentavos : -valorCentavos;
         const totalNovo = Math.max(0, consumoAdicional);
-        const percentualAumento = 0; // Simplificado para esta versao
+        const percentualAumento = 0;
 
-        // Mostrar pop-up de consumo
         consumptionPopup.showPopup({
-          clienteName: cliente.nome,
+          clienteName: clientePopup.nome,
           description: descricao.trim(),
           value: valorCentavos,
           totalConsumption: totalNovo,
@@ -120,38 +154,14 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         });
       }
 
-      // Enviar notificação por email para admins
-      if (usuarioLogado?.tipo === 'admin') {
-        try {
-          if (cliente) {
-            await fetch('/api/notificacoes/novo-lancamento', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                clienteId: id,
-                adminId: usuarioLogado.id,
-                tipo,
-                valor: Math.round(parseFloat(valor) * 100),
-                descricao: descricao.trim(),
-              }),
-            });
-          }
-        } catch (error) {
-          console.error('Erro ao enviar notificação:', error);
-        }
-      }
-
-      toast.success(
-        `${tipo === 'debito' ? 'Débito' : 'Pagamento'} registrado com sucesso!`
-      );
-
-      // Limpar formulário
+      setCarregando(false);
+      setClienteId('');
       setValor('');
       setDescricao('');
-      setNovoClienteNome('');
       setMostrarNovoCliente(false);
-      setClienteId('');
+      setNovoClienteNome('');
     } catch (error) {
+      console.error('Erro ao registrar lançamento:', error);
       toast.error('Erro ao registrar lançamento');
     } finally {
       setCarregando(false);
