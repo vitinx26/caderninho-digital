@@ -101,3 +101,12 @@
 - [x] Garantir que todos os admins tenham acesso aos mesmos dados
 - [x] Sincronizar dados entre diferentes admins
 - [x] Testar acesso de todos os admins
+
+
+## Sistema de Backup na Nuvem (Nova Sprint)
+
+- [x] Criar API de backup na nuvem
+- [x] Implementar sincronização automática de backups
+- [x] Criar sistema de restauração de backups
+- [x] Adicionar interface de gerenciamento de backups
+- [x] Testar sistema de backup completo
