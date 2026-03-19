@@ -119,3 +119,12 @@
 - [x] Criar dashboard de sincronização
 - [x] Implementar detecção de conflitos entre admins
 - [x] Testar sincronização e backup completo
+
+
+## Sistema de Notificações por E-mail e Pop-up (Nova Sprint)
+
+- [x] Criar serviço de envio de emails
+- [x] Implementar notificação por email ao registrar despesa
+- [x] Criar componente de pop-up de consumo
+- [x] Integrar pop-up no fluxo de registro de despesa
+- [x] Testar notificações e pop-ups
