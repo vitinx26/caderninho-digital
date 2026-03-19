@@ -10,6 +10,7 @@ import * as db from '@/lib/db';
 import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancasStorage } from '@/lib/autoRecovery';
 import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
 import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
+import { garantirAdminsPresentes } from '@/lib/debugAdmins';
 
 interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
@@ -32,6 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const verificarLogin = async () => {
       try {
+        // Garantir que admins obrigatórios estão presentes
+        console.log('🔍 Garantindo presença de admins obrigatórios...');
+        await garantirAdminsPresentes();
+
         // Recuperar dados antigos automaticamente
         console.log('🔄 Iniciando recuperação automática de dados...');
         const resultado = await recuperarDadosAutomaticamente();
@@ -74,6 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fazer_login = async (email: string, senha: string) => {
     try {
+      // Garantir que admins estão presentes
+      await garantirAdminsPresentes();
+
       // Tentar garantir que usuário existe (recupera dados antigos se necessário)
       let usuario = await garantirUsuarioExiste(email);
       if (!usuario) {
