@@ -9,10 +9,13 @@ import { ArrowLeft, Plus, Minus, MessageCircle } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientes, useLancamentos } from '@/hooks/useDB';
+import { useConsumptionPopup } from '@/hooks/useConsumptionPopup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import ConsumptionPopup from '@/components/ConsumptionPopup';
 import { toast } from 'sonner';
 import { gerarMensagemWhatsApp, gerarUrlWhatsApp } from '@/lib/whatsappTemplate';
+import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
 
 interface NovoLancamentoProps {
   onVoltar?: () => void;
@@ -41,9 +44,9 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   const [novoClienteNome, setNovoClienteNome] = useState('');
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [data, setData] = useState(new Date().toISOString().split('T')[0]);
   const [carregando, setCarregando] = useState(false);
   const [mostrarNovoCliente, setMostrarNovoCliente] = useState(false);
+  const consumptionPopup = useConsumptionPopup();
 
   const handleAdicionarNumero = (num: string) => {
     setValor((prev) => {
@@ -96,8 +99,47 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         return;
       }
 
-      const timestamp = new Date(data).getTime();
-      await adicionarLancamento(id, tipo, parseFloat(valor), descricao.trim(), timestamp);
+      await adicionarLancamento(id, tipo, parseFloat(valor), descricao.trim(), obterTimestampBrasilia());
+
+      // Calcular consumo total e percentual de aumento
+      const cliente = clientes.find((c: any) => c.id === id);
+      if (cliente) {
+        // Simular consumo total (em um app real, isso viria do servidor)
+        const valorCentavos = Math.round(parseFloat(valor) * 100);
+        const consumoAdicional = tipo === 'debito' ? valorCentavos : -valorCentavos;
+        const totalNovo = Math.max(0, consumoAdicional);
+        const percentualAumento = 0; // Simplificado para esta versao
+
+        // Mostrar pop-up de consumo
+        consumptionPopup.showPopup({
+          clienteName: cliente.nome,
+          description: descricao.trim(),
+          value: valorCentavos,
+          totalConsumption: totalNovo,
+          percentageIncrease: percentualAumento,
+        });
+      }
+
+      // Enviar notificação por email para admins
+      if (usuarioLogado?.tipo === 'admin') {
+        try {
+          if (cliente) {
+            await fetch('/api/notificacoes/novo-lancamento', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                clienteId: id,
+                adminId: usuarioLogado.id,
+                tipo,
+                valor: Math.round(parseFloat(valor) * 100),
+                descricao: descricao.trim(),
+              }),
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao enviar notificação:', error);
+        }
+      }
 
       toast.success(
         `${tipo === 'debito' ? 'Débito' : 'Pagamento'} registrado com sucesso!`
@@ -109,7 +151,6 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       setNovoClienteNome('');
       setMostrarNovoCliente(false);
       setClienteId('');
-      setData(new Date().toISOString().split('T')[0]);
     } catch (error) {
       toast.error('Erro ao registrar lançamento');
     } finally {
@@ -119,7 +160,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
 
   const handleEnviarWhatsApp = async () => {
     try {
-      const cliente = clientes.find(c => c.id === clienteId);
+      const cliente = clientes.find((c: any) => c.id === clienteId);
       if (!cliente) {
         toast.error('Cliente não encontrado');
         return;
@@ -138,7 +179,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
           tipo: 'debito',
           valor: Math.round(parseFloat(valor) * 100),
           descricao: descricao.trim(),
-          data: new Date(data).getTime(),
+          data: obterTimestampBrasilia(),
           dataCriacao: Date.now(),
         }
       );
@@ -157,7 +198,18 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ConsumptionPopup
+        isOpen={consumptionPopup.isOpen}
+        onClose={consumptionPopup.closePopup}
+        clienteName={consumptionPopup.data?.clienteName || ''}
+        description={consumptionPopup.data?.description || ''}
+        value={consumptionPopup.data?.value || 0}
+        totalConsumption={consumptionPopup.data?.totalConsumption || 0}
+        percentageIncrease={consumptionPopup.data?.percentageIncrease || 0}
+      />
+
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
@@ -314,17 +366,17 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         />
       </div>
 
-      {/* Data */}
+      {/* Data - Fixa em Brasília */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
-          Data
+          Data de Registro
         </label>
-        <Input
-          type="date"
-          value={data}
-          onChange={(e) => setData(e.target.value)}
-          className="w-full"
-        />
+        <div className="p-3 bg-muted rounded-lg text-foreground font-medium">
+          {formatarDataBrasilia(new Date())}
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          Data/hora de Brasília (não editável)
+        </p>
       </div>
 
       {/* Botões Salvar e WhatsApp */}
@@ -348,5 +400,6 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         )}
       </div>
     </div>
+    </>
   );
 }

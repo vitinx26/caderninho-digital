@@ -125,3 +125,12 @@ export async function updateTransaction(id: string, data: Partial<typeof transac
     dataAtualizacao: Date.now(),
   }).where(eq(transactions.id, id));
 }
+
+/**
+ * Obter todos os administradores
+ */
+export async function getAllAdmins() {
+  return db.query.users.findMany({
+    where: eq(users.tipo, 'admin'),
+  });
+}

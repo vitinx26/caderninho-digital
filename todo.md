@@ -129,3 +129,12 @@
 - [x] Garantir que senhas originais são preservadas
 - [x] Criar mecanismo de persistência garantida de dados
 - [x] Testar login de ambos os admins com sucesso (testes passando)
+
+
+## Data Fixa e Notificações Múltiplas (Sprint Atual)
+
+- [x] Remover seletor de data e usar data/hora de Brasília automaticamente
+- [x] Implementar notificação no app para admins (pop-up de consumo)
+- [x] Implementar notificação por email para admins
+- [ ] Implementar notificação por WhatsApp para admins
+- [x] Testar todas as notificações (testes de QA criados)
