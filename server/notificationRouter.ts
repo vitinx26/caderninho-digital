@@ -10,25 +10,40 @@ const router = Router();
 
 /**
  * POST /api/notificacoes/novo-lancamento
- * Envia notificação de novo lançamento
+ * Envia notificação de novo lançamento apenas para administradores
  */
 router.post('/novo-lancamento', async (req: Request, res: Response) => {
   try {
-    const { emailUsuario, nomeUsuario, descricao, valor, data } = req.body;
+    const { emailUsuario, nomeUsuario, descricao, valor, data, usuarioTipo, emailsAdmins } = req.body;
 
     if (!emailUsuario || !nomeUsuario || !descricao || !valor) {
       return res.status(400).json({ error: 'Dados obrigatórios faltando' });
     }
 
-    const sucesso = await emailService.notificarNovoLancamento(
-      emailUsuario,
-      nomeUsuario,
-      descricao,
-      valor,
-      data || new Date().toLocaleDateString('pt-BR')
-    );
+    // Apenas enviar notificação se o usuário é admin ou se há emails de admins
+    if (usuarioTipo !== 'admin' && (!emailsAdmins || emailsAdmins.length === 0)) {
+      return res.json({ sucesso: false, mensagem: 'Nenhum administrador para notificar' });
+    }
 
-    res.json({ sucesso, mensagem: 'Notificação enviada' });
+    // Se for admin, notificar a si mesmo; senão, notificar todos os admins
+    const emailsParaNotificar = usuarioTipo === 'admin' ? [emailUsuario] : emailsAdmins;
+
+    let sucessoCount = 0;
+    for (const email of emailsParaNotificar) {
+      const sucesso = await emailService.notificarNovoLancamento(
+        email,
+        nomeUsuario,
+        descricao,
+        valor,
+        data || new Date().toLocaleDateString('pt-BR')
+      );
+      if (sucesso) sucessoCount++;
+    }
+
+    res.json({
+      sucesso: sucessoCount > 0,
+      mensagem: `Notificação enviada para ${sucessoCount} administrador(es)`,
+    });
   } catch (error) {
     console.error('Erro ao enviar notificação:', error);
     res.status(500).json({
@@ -40,25 +55,37 @@ router.post('/novo-lancamento', async (req: Request, res: Response) => {
 
 /**
  * POST /api/notificacoes/cobranca
- * Envia notificação de cobrança
+ * Envia notificação de cobrança apenas para administradores
  */
 router.post('/cobranca', async (req: Request, res: Response) => {
   try {
-    const { emailCliente, nomeCliente, valor, dataVencimento, descricao } = req.body;
+    const { emailCliente, nomeCliente, valor, dataVencimento, descricao, emailsAdmins } = req.body;
 
     if (!emailCliente || !nomeCliente || !valor || !dataVencimento) {
       return res.status(400).json({ error: 'Dados obrigatórios faltando' });
     }
 
-    const sucesso = await emailService.notificarCobranca(
-      emailCliente,
-      nomeCliente,
-      valor,
-      dataVencimento,
-      descricao
-    );
+    // Apenas enviar notificação se há emails de admins
+    if (!emailsAdmins || emailsAdmins.length === 0) {
+      return res.json({ sucesso: false, mensagem: 'Nenhum administrador para notificar' });
+    }
 
-    res.json({ sucesso, mensagem: 'Notificação de cobrança enviada' });
+    let sucessoCount = 0;
+    for (const emailAdmin of emailsAdmins) {
+      const sucesso = await emailService.notificarCobranca(
+        emailAdmin,
+        nomeCliente,
+        valor,
+        dataVencimento,
+        descricao
+      );
+      if (sucesso) sucessoCount++;
+    }
+
+    res.json({
+      sucesso: sucessoCount > 0,
+      mensagem: `Notificação enviada para ${sucessoCount} administrador(es)`,
+    });
   } catch (error) {
     console.error('Erro ao enviar notificação:', error);
     res.status(500).json({

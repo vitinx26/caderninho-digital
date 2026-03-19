@@ -128,3 +128,11 @@
 - [x] Criar componente de pop-up de consumo
 - [x] Integrar pop-up no fluxo de registro de despesa
 - [x] Testar notificações e pop-ups
+
+
+## Restringir Notificações apenas para Administradores
+
+- [x] Modificar serviço de email para filtrar apenas admins
+- [x] Atualizar rotas de API para verificar permissões
+- [x] Modificar fluxo de notificação no NovoLancamento
+- [x] Testar restrição de notificações

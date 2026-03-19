@@ -224,6 +224,15 @@ export async function notificarNovoUsuario(
 }
 
 /**
+ * Obtém emails de todos os administradores
+ */
+export function obterEmailsAdministradores(usuarios: any[]): string[] {
+  return usuarios
+    .filter((u) => u.tipo === 'admin' && u.email)
+    .map((u) => u.email);
+}
+
+/**
  * Notifica resumo de consumo
  */
 export async function notificarResumoConsumo(

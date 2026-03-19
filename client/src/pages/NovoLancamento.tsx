@@ -108,10 +108,30 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         showPopup({
           descricao: descricao.trim(),
           valor: parseFloat(valor),
-          totalConsumo: 0, // Será calculado no backend
+          totalConsumo: 0,
           nomeCliente: clienteAtual.nome,
-          percentualAumento: 5, // Placeholder - calcular dinamicamente
+          percentualAumento: 5,
         });
+
+        // Enviar notificação apenas para administradores
+        if (usuarioLogado?.tipo === 'admin' && usuarioLogado?.email) {
+          try {
+            await fetch('/api/notificacoes/novo-lancamento', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                emailUsuario: usuarioLogado.email,
+                nomeUsuario: clienteAtual.nome,
+                descricao: descricao.trim(),
+                valor: parseFloat(valor),
+                data: new Date(timestamp).toLocaleDateString('pt-BR'),
+                usuarioTipo: usuarioLogado.tipo,
+              }),
+            });
+          } catch (error) {
+            console.error('Erro ao enviar notificacao:', error);
+          }
+        }
       }
 
       toast.success(
