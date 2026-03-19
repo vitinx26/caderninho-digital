@@ -182,3 +182,15 @@
 - [x] Testar sincronização completa entre múltiplos admins e dispositivos
 - [x] Validar que Conta Geral carrega TODOS os clientes do servidor
 - [x] Validar que todos os admins veem os mesmos clientes e lançamentos
+
+
+## WebSocket - Sincronização em Tempo Real
+
+- [x] Instalar dependências Socket.io (socket.io, socket.io-client)
+- [x] Criar servidor WebSocket com eventos para clientes e lançamentos
+- [x] Implementar cliente WebSocket com conexão ao login
+- [x] Integrar eventos de criação/atualização de clientes
+- [x] Integrar eventos de criação/atualização de lançamentos
+- [x] Implementar sincronização automática ao receber eventos
+- [x] Adicionar testes de sincronização em tempo real (23 testes passando)
+- [ ] Testar com múltiplos clientes simultâneos

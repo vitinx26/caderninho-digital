@@ -6,6 +6,7 @@ import notificationRouter from "./notificationRouter";
 import syncRouter from "./syncRouter";
 import migrationRouter from "./migrationRouter";
 import { initializeEmailService } from "./emailService";
+import { initializeWebSocket } from "./websocket";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +14,10 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Inicializar WebSocket
+  const io = initializeWebSocket(server);
+  console.log('🔌 WebSocket inicializado');
 
   // Inicializar serviço de email
   initializeEmailService();

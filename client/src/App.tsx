@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NavigationProvider, useNavigation } from "./contexts/NavigationContext";
+import { useWebSocket } from "./hooks/useWebSocket";
 import { Layout } from './components/Layout';
 import { updateVictorPassword } from './lib/updatePassword';
 import Login from "./pages/Login";
@@ -30,6 +31,7 @@ import * as backup from "./lib/backup";
 function RouterContent() {
   const { usuarioLogado, carregando, usuarioGeral } = useAuth();
   const { paginaAtual } = useNavigation();
+  const { status: wsStatus } = useWebSocket(usuarioLogado);
 
   // Nota: Migração já é feita no AuthProvider, não duplicar aqui
 
