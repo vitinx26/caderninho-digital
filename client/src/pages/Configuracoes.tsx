@@ -24,6 +24,7 @@ export default function Configuracoes() {
   const [numeroWhatsApp, setNumeroWhatsApp] = useState('');
   const [nomeEstabelecimento, setNomeEstabelecimento] = useState('');
   const [templateWhatsApp, setTemplateWhatsApp] = useState('');
+  const [emailNotificacao, setEmailNotificacao] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [pwaInstalavel, setPwaInstalavel] = useState(false);
@@ -44,6 +45,9 @@ export default function Configuracoes() {
         }
         if (usuarioLogado?.templateWhatsapp) {
           setTemplateWhatsApp(usuarioLogado.templateWhatsapp);
+        }
+        if (usuarioLogado?.emailNotificacao) {
+          setEmailNotificacao(usuarioLogado.emailNotificacao);
         }
         const ultimoBackupTime = backup.obterTimestampUltimoBackup();
         setUltimoBackup(ultimoBackupTime);
@@ -246,6 +250,54 @@ export default function Configuracoes() {
           </Button>
         </div>
       </div>
+
+      {/* Seção de Email de Notificações */}
+      {usuarioLogado?.tipo === 'admin' && (
+        <div className="card-minimal p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">📧 Email de Notificações</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Email para receber notificações de novos consumos
+              </label>
+              <Input
+                type="email"
+                placeholder="seu-email@exemplo.com"
+                value={emailNotificacao}
+                onChange={(e) => setEmailNotificacao(e.target.value)}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Você receberá notificações por email sempre que um novo consumo for registrado.
+              </p>
+            </div>
+            <Button
+              onClick={async () => {
+                try {
+                  setCarregando(true);
+                  if (usuarioLogado) {
+                    const usuarioAtualizado = {
+                      ...usuarioLogado,
+                      emailNotificacao: emailNotificacao,
+                    };
+                    await db.atualizarUsuario(usuarioAtualizado);
+                    toast.success('Email de notificação salvo com sucesso!');
+                  }
+                } catch (error) {
+                  toast.error('Erro ao salvar email de notificação');
+                  console.error(error);
+                } finally {
+                  setCarregando(false);
+                }
+              }}
+              disabled={carregando || !emailNotificacao}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              Salvar Email de Notificação
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Seção de Backup */}
       <div className="card-minimal p-6">
