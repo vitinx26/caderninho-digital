@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import notificationRouter from "./notificationRouter";
 import syncRouter from "./syncRouter";
+import migrationRouter from "./migrationRouter";
 import { initializeEmailService } from "./emailService";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +26,9 @@ async function startServer() {
   
   // Rotas de sincronização
   app.use('/api', syncRouter);
+  
+  // Rotas de migração
+  app.use('/api/sync', migrationRouter);
 
   // Serve static files from dist/public in production
   const staticPath =

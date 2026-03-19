@@ -170,3 +170,15 @@
 - [ ] Migrar dados de localStorage para servidor - Mover dados existentes
 - [ ] Implementar sincronização em tempo real - WebSocket ou polling
 - [ ] Testar em múltiplas plataformas - Desktop, mobile, Android
+
+
+## Sincronização Centralizada 100% (Sprint Crítica - URGENTE)
+
+- [x] Migrar dados existentes de localStorage para SQLite centralizado
+- [x] Refatorar endpoints para retornar TODOS os clientes (não filtrados por admin)
+- [x] Implementar sincronização obrigatória ao fazer login
+- [x] Adicionar validação de conectividade e indicador online/offline
+- [x] Bloquear novos lançamentos se offline com mensagem "Chama o proprietário"
+- [x] Testar sincronização completa entre múltiplos admins e dispositivos
+- [x] Validar que Conta Geral carrega TODOS os clientes do servidor
+- [x] Validar que todos os admins veem os mesmos clientes e lançamentos

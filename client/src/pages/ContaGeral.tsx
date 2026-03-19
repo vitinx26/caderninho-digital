@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, LogOut, Save, Calendar, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientes, useLancamentos } from '@/hooks/useDB';
+import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -14,6 +15,7 @@ import * as db from '@/lib/db';
 import { salvarSenhaSegura } from '@/lib/passwordPersistence';
 import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
 import { recuperarDadosAutomaticamente } from '@/lib/autoRecovery';
+import OnlineStatusIndicator from '@/components/OnlineStatusIndicator';
 
 type AbaType = 'novo-cliente' | 'nova-compra';
 
@@ -21,6 +23,7 @@ export default function ContaGeral() {
   const { fazer_logout, usuarioLogado } = useAuth();
   const { clientes, adicionarCliente } = useClientes();
   const { lancamentos, adicionarLancamento } = useLancamentos();
+  const { isOnline } = useOnlineStatus();
 
   const [aba, setAba] = useState<AbaType>('nova-compra');
   const [estabelecimentoSelecionado, setEstabelecimentoSelecionado] = useState<string>('');
@@ -241,6 +244,12 @@ export default function ContaGeral() {
 
   const handleNovaCompra = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar conectividade
+    if (!isOnline) {
+      toast.error(getOfflineMessage());
+      return;
+    }
 
     if (!clienteSelecionado) {
       toast.error('Selecione um cliente');

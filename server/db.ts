@@ -127,10 +127,31 @@ export async function updateTransaction(id: string, data: Partial<typeof transac
 }
 
 /**
+ * Obter todos os usuários (admins e clientes)
+ */
+export async function getAllUsers() {
+  return db.query.users.findMany();
+}
+
+/**
  * Obter todos os administradores
  */
 export async function getAllAdmins() {
   return db.query.users.findMany({
     where: eq(users.tipo, 'admin'),
   });
+}
+
+/**
+ * Obter TODOS os clientes (de todos os admins)
+ */
+export async function getAllClients() {
+  return db.query.clients.findMany();
+}
+
+/**
+ * Obter TODAS as transações
+ */
+export async function getAllTransactions() {
+  return db.query.transactions.findMany();
 }

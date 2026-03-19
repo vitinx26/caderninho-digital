@@ -10,9 +10,11 @@ import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientes, useLancamentos } from '@/hooks/useDB';
 import { useConsumptionPopup } from '@/hooks/useConsumptionPopup';
+import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ConsumptionPopup from '@/components/ConsumptionPopup';
+import OnlineStatusIndicator from '@/components/OnlineStatusIndicator';
 import { toast } from 'sonner';
 import { gerarMensagemWhatsApp, gerarUrlWhatsApp } from '@/lib/whatsappTemplate';
 import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
@@ -26,6 +28,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   const { usuarioLogado } = useAuth();
   const { clientes, adicionarCliente } = useClientes();
   const { adicionarLancamento } = useLancamentos();
+  const { isOnline } = useOnlineStatus();
 
   // Se for cliente logado, usar seu próprio ID
   const isClienteLogado = usuarioLogado?.tipo === 'cliente';
@@ -72,6 +75,12 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar conectividade
+    if (!isOnline) {
+      toast.error(getOfflineMessage());
+      return;
+    }
 
     if (!valor || parseFloat(valor) <= 0) {
       toast.error('Digite um valor válido');

@@ -12,6 +12,7 @@ import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenh
 import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
 import { garantirAdminsPresentes } from '@/lib/debugAdmins';
 import { sincronizarBidirecional, iniciarSincronizacaoPeriodica, monitorarConexao } from '@/lib/serverSync';
+import { migrarDadosParaServidor, sincronizarDoServidor } from '@/lib/migrationToServer';
 
 interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
@@ -118,20 +119,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             nomeEstabelecimento: usuario.nomeEstabelecimento,
           };
           
-          // Sincronizar bidirecional com servidor
+          // 1. Migrar dados de localStorage para servidor (se houver)
+          console.log('🚀 Migrando dados de localStorage para servidor...');
+          try {
+            await migrarDadosParaServidor(usuarioComDados);
+            console.log('✅ Migração concluída');
+          } catch (migrationError) {
+            console.warn('⚠️ Aviso ao migrar:', migrationError);
+          }
+          
+          // 2. Sincronizar dados do servidor para local
+          console.log('🔄 Sincronizando dados do servidor...');
+          try {
+            await sincronizarDoServidor(usuarioComDados);
+            console.log('✅ Sincronização do servidor concluída');
+          } catch (syncError) {
+            console.warn('⚠️ Aviso ao sincronizar:', syncError);
+          }
+          
+          // 3. Sincronizar bidirecional com servidor
           await sincronizarBidirecional(usuarioComDados);
           
-          // Iniciar sincronização periódica
-          const cancelarSync = iniciarSincronizacaoPeriodica(usuarioComDados, 30000);
+          // 4. Iniciar sincronização periódica (a cada 10 segundos para garantir consistência)
+          const cancelarSync = iniciarSincronizacaoPeriodica(usuarioComDados, 10000);
           
-          // Monitorar reconexão
+          // 5. Monitorar reconexão
           const cancelarMonitor = monitorarConexao(usuarioComDados);
           
           // Armazenar funções de cancelamento
           (window as any).cancelarSyncPeriodica = cancelarSync;
           (window as any).cancelarMonitorConexao = cancelarMonitor;
           
-          console.log('✅ Sincronização com servidor iniciada');
+          console.log('✅ Sincronização com servidor iniciada (a cada 10s)');
         } catch (error) {
           console.error('⚠️ Erro ao sincronizar com servidor:', error);
         }
@@ -148,93 +167,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUsuarioLogado(usuarioLogado);
       localStorage.setItem('caderninho_session', JSON.stringify(usuarioLogado));
       localStorage.removeItem('caderninho_conta_geral');
-      setUsuarioGeral(false);
     } catch (error) {
+      console.error('Erro ao fazer login:', error);
       throw error;
     }
   };
 
   const fazer_registro = async (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string, nomeEstabelecimento?: string) => {
     try {
-      const usuarioExistente = await db.obterUsuarioPorEmail(email);
+      // Verificar se usuário já existe
+      const usuarioExistente = await garantirUsuarioExiste(email);
       if (usuarioExistente) {
         throw new Error('Usuário já existe');
       }
 
-      const novoUsuario: any = {
-        id: Math.random().toString(36).substr(2, 9),
+      // Criar novo usuário
+      const novoUsuario = {
+        id: `user_${Date.now()}`,
         email,
-        senha, // Em produção, fazer hash
         nome,
         tipo,
-        telefone: telefone || '',
-        nomeEstabelecimento: nomeEstabelecimento || '',
+        telefone,
+        nomeEstabelecimento,
+        senha,
         dataCriacao: Date.now(),
       };
 
+      // Salvar no IndexedDB
       await db.adicionarUsuario(novoUsuario);
 
-      // Salvar senha com segurança imediatamente após registro
-      console.log('💾 Salvando senha do novo usuário com segurança...');
+      // Salvar no localStorage
+      const usuariosStorage = localStorage.getItem('caderninho_usuarios');
+      const usuarios = usuariosStorage ? JSON.parse(usuariosStorage) : [];
+      usuarios.push(novoUsuario);
+      localStorage.setItem('caderninho_usuarios', JSON.stringify(usuarios));
+
+      // Salvar senha com segurança
       await salvarSenhaSegura(email, senha);
 
-      // Criar cliente automaticamente para o novo usuário
-      // Isso permite que o usuário apareça na Conta Geral e em listas de seleção
-      try {
-        const novoCliente = {
-          id: novoUsuario.id, // Usar mesmo ID do usuário para vinculação
-          nome: novoUsuario.nome,
-          telefone: novoUsuario.telefone,
-          email: novoUsuario.email,
-          dataCriacao: Date.now(),
-          ativo: true,
-          adminId: tipo === 'admin' ? novoUsuario.id : undefined, // Se é admin, é seu próprio admin
-        };
-        await db.adicionarCliente(novoCliente);
-        console.log('✓ Cliente criado automaticamente para novo usuário:', novoUsuario.email);
-      } catch (e) {
-        console.warn('Erro ao criar cliente para novo usuário:', e);
-        // Não falhar o registro se cliente não for criado
-      }
-
-      const usuarioLogado: UsuarioLogado = {
-        id: novoUsuario.id,
-        email: novoUsuario.email,
-        nome: novoUsuario.nome,
-        tipo: novoUsuario.tipo,
-        telefone: novoUsuario.telefone,
-      };
-
-      setUsuarioLogado(usuarioLogado);
-      localStorage.setItem('caderninho_session', JSON.stringify(usuarioLogado));
-      localStorage.removeItem('caderninho_conta_geral');
-      setUsuarioGeral(false);
-
-      // Se é novo admin, salvar dados para sincronização
-      if (tipo === 'admin') {
-        console.log('💾 Salvando dados do novo admin para sincronização...');
-        const clientes = await db.obterClientes();
-        const lancamentos = await db.obterTodosLancamentos();
-        salvarDadosSync(clientes, lancamentos);
-      }
+      console.log('✅ Usuário registrado com sucesso');
     } catch (error) {
+      console.error('Erro ao registrar:', error);
       throw error;
     }
   };
 
   const fazer_logout = () => {
-    // Se era admin, salvar dados para sincronização com outros admins
-    if (usuarioLogado?.tipo === 'admin') {
-      console.log('💾 Salvando dados para sincronização entre admins...');
-      (async () => {
-        try {
-          const clientes = await db.obterClientes();
-          const lancamentos = await db.obterTodosLancamentos();
-          salvarDadosSync(clientes, lancamentos);
-        } catch (e) {
-          console.error('Erro ao salvar dados para sincronização:', e);
-        }
-      })();
+    // Cancelar sincronização periódica
+    const cancelarSync = (window as any).cancelarSyncPeriodica;
+    if (cancelarSync) {
+      cancelarSync();
+    }
+
+    // Cancelar monitoramento de conexão
+    const cancelarMonitor = (window as any).cancelarMonitorConexao;
+    if (cancelarMonitor) {
+      cancelarMonitor();
     }
 
     setUsuarioLogado(null);
@@ -244,37 +232,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const entrarComContaGeral = () => {
-    try {
-      console.log('Entrando com Conta Geral...');
-      
-      // Limpar sessao anterior
-      localStorage.removeItem('caderninho_session');
-      setUsuarioLogado(null);
-      
-      // Definir Conta Geral
-      localStorage.setItem('caderninho_conta_geral', 'true');
-      setUsuarioGeral(true);
-      
-      console.log('Conta Geral ativada com sucesso!');
-    } catch (error) {
-      console.error('Erro ao ativar Conta Geral:', error);
-      // Tentar novamente sem localStorage
-      setUsuarioGeral(true);
-    }
+    setUsuarioGeral(true);
+    localStorage.setItem('caderninho_conta_geral', 'true');
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        usuarioLogado,
-        carregando,
-        fazer_login,
-        fazer_registro,
-        fazer_logout,
-        usuarioGeral,
-        entrarComContaGeral,
-      }}
-    >
+    <AuthContext.Provider value={{ usuarioLogado, carregando, fazer_login, fazer_registro, fazer_logout, usuarioGeral, entrarComContaGeral }}>
       {children}
     </AuthContext.Provider>
   );
