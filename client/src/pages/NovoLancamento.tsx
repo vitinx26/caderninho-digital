@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { gerarMensagemWhatsApp, gerarUrlWhatsApp } from '@/lib/whatsappTemplate';
-import { ConsumptionPopup, useConsumptionPopup } from '@/components/ConsumptionPopup';
 
 interface NovoLancamentoProps {
   onVoltar?: () => void;
@@ -45,7 +44,6 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   const [data, setData] = useState(new Date().toISOString().split('T')[0]);
   const [carregando, setCarregando] = useState(false);
   const [mostrarNovoCliente, setMostrarNovoCliente] = useState(false);
-  const { isOpen, data: consumptionData, showPopup, closePopup } = useConsumptionPopup();
 
   const handleAdicionarNumero = (num: string) => {
     setValor((prev) => {
@@ -100,39 +98,6 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
 
       const timestamp = new Date(data).getTime();
       await adicionarLancamento(id, tipo, parseFloat(valor), descricao.trim(), timestamp);
-
-      // Calcular consumo total do cliente
-      const clienteAtual = clientes.find(c => c.id === id);
-      if (clienteAtual) {
-        // Mostrar popup de consumo
-        showPopup({
-          descricao: descricao.trim(),
-          valor: parseFloat(valor),
-          totalConsumo: 0,
-          nomeCliente: clienteAtual.nome,
-          percentualAumento: 5,
-        });
-
-        // Enviar notificação apenas para administradores
-        if (usuarioLogado?.tipo === 'admin' && usuarioLogado?.email) {
-          try {
-            await fetch('/api/notificacoes/novo-lancamento', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                emailUsuario: usuarioLogado.email,
-                nomeUsuario: clienteAtual.nome,
-                descricao: descricao.trim(),
-                valor: parseFloat(valor),
-                data: new Date(timestamp).toLocaleDateString('pt-BR'),
-                usuarioTipo: usuarioLogado.tipo,
-              }),
-            });
-          } catch (error) {
-            console.error('Erro ao enviar notificacao:', error);
-          }
-        }
-      }
 
       toast.success(
         `${tipo === 'debito' ? 'Débito' : 'Pagamento'} registrado com sucesso!`
@@ -192,9 +157,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   };
 
   return (
-    <>
-      <ConsumptionPopup isOpen={isOpen} data={consumptionData} onClose={closePopup} />
-      <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
@@ -385,6 +348,5 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         )}
       </div>
     </div>
-    </>
   );
 }
