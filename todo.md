@@ -138,3 +138,10 @@
 - [x] Implementar notificação por email para admins
 - [ ] Implementar notificação por WhatsApp para admins
 - [x] Testar todas as notificações (testes de QA criados)
+
+
+## Bugs Reportados - Notificações (Sprint Atual)
+
+- [x] Email não está sendo enviado - Adicionados logs detalhados para debug
+- [x] Pop-up deve mostrar "Enviado" após registrar - Redesenhado com novo layout
+- [x] Notificação deve ir para TODOS os admins - Implementado com logs de confirmação

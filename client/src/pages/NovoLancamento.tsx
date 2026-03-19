@@ -215,8 +215,6 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         clienteName={consumptionPopup.data?.clienteName || ''}
         description={consumptionPopup.data?.description || ''}
         value={consumptionPopup.data?.value || 0}
-        totalConsumption={consumptionPopup.data?.totalConsumption || 0}
-        percentageIncrease={consumptionPopup.data?.percentageIncrease || 0}
       />
 
       <div className="p-6 space-y-6">

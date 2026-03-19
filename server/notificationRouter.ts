@@ -36,19 +36,27 @@ router.post('/novo-lancamento', async (req: Request, res: Response) => {
     }
 
     // Buscar emails dos administradores
+    console.log('\ud83d\udd0d Buscando administradores...');
     const admins = await dbHelpers.getAllAdmins();
+    console.log(`   Total de admins encontrados: ${admins.length}`);
+    
     const emailsAdmins = admins
       .filter((admin: any) => admin.email && admin.email.trim() !== '')
       .map((admin: any) => admin.email);
 
+    console.log(`   Admins com email: ${emailsAdmins.length}`);
+    console.log(`   Emails: ${emailsAdmins.join(', ')}`);
+
     if (emailsAdmins.length === 0) {
+      console.warn('\u26a0\ufe0f Nenhum administrador com email configurado');
       return res.status(400).json({
         success: false,
         message: 'Nenhum administrador com email configurado',
       });
     }
 
-    // Enviar notificação
+    // Enviar notificação para TODOS os admins
+    console.log(`\ud83d\udce7 Enviando notificação para ${emailsAdmins.length} administrador(es)...`);
     const sucesso = await notificarNovoLancamento(
       emailsAdmins,
       cliente.nome,
@@ -57,11 +65,18 @@ router.post('/novo-lancamento', async (req: Request, res: Response) => {
       descricao
     );
 
+    if (sucesso) {
+      console.log(`\u2705 Notificação enviada com sucesso para: ${emailsAdmins.join(', ')}`);
+    } else {
+      console.error(`\u274c Erro ao enviar notificação para: ${emailsAdmins.join(', ')}`);
+    }
+
     res.json({
       success: sucesso,
       message: sucesso
-        ? 'Notificação enviada com sucesso'
+        ? `Notificação enviada para ${emailsAdmins.length} administrador(es)`
         : 'Erro ao enviar notificação',
+      adminsNotificados: emailsAdmins.length,
     });
   } catch (error) {
     console.error('Erro ao notificar novo lançamento:', error);

@@ -21,8 +21,14 @@ export function initializeEmailService() {
   const emailUser = process.env.EMAIL_USER;
   const emailPassword = process.env.EMAIL_PASSWORD;
 
+  console.log('🔧 Inicializando Email Service...');
+  console.log('   EMAIL_SERVICE:', emailService);
+  console.log('   EMAIL_USER:', emailUser ? '✓ configurado' : '✗ NÃO configurado');
+  console.log('   EMAIL_PASSWORD:', emailPassword ? '✓ configurado' : '✗ NÃO configurado');
+
   if (!emailUser || !emailPassword) {
-    console.warn('⚠️ Email service not configured. Set EMAIL_USER and EMAIL_PASSWORD env vars.');
+    console.error('❌ Email service NÃO configurado. Defina EMAIL_USER e EMAIL_PASSWORD nas variáveis de ambiente.');
+    console.error('   Notificações por email NÃO funcionarão até que as variáveis sejam configuradas.');
     return false;
   }
 
@@ -35,10 +41,11 @@ export function initializeEmailService() {
       },
     });
 
-    console.log('✅ Email service initialized');
+    console.log('✅ Email service inicializado com sucesso!');
+    console.log('   Emails serão enviados de:', emailUser);
     return true;
   } catch (error) {
-    console.error('❌ Failed to initialize email service:', error);
+    console.error('❌ Erro ao inicializar email service:', error);
     return false;
   }
 }
@@ -48,22 +55,26 @@ export function initializeEmailService() {
  */
 export async function enviarEmail(options: EmailOptions): Promise<boolean> {
   if (!transporter) {
-    console.warn('Email service not initialized');
+    console.error('❌ Email service não inicializado. Verifique variáveis de ambiente.');
     return false;
   }
 
   try {
-    await transporter.sendMail({
+    console.log(`📧 Enviando email para: ${Array.isArray(options.para) ? options.para.join(', ') : options.para}`);
+    console.log(`   Assunto: ${options.assunto}`);
+    
+    const resultado = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: Array.isArray(options.para) ? options.para.join(',') : options.para,
       subject: options.assunto,
       html: options.html,
     });
 
-    console.log(`✅ Email sent to ${options.para}`);
+    console.log(`✅ Email enviado com sucesso! ID: ${resultado.messageId}`);
     return true;
   } catch (error) {
-    console.error('❌ Failed to send email:', error);
+    console.error('❌ Erro ao enviar email:', error);
+    console.error('   Verifique se EMAIL_USER e EMAIL_PASSWORD estão corretos.');
     return false;
   }
 }

@@ -1,10 +1,10 @@
 /**
- * ConsumptionPopup - Pop-up de notificação de consumo
- * Exibido após registrar uma despesa
+ * ConsumptionPopup - Pop-up de notificação de consumo enviado
+ * Exibido após registrar uma despesa com sucesso
  */
 
 import React, { useEffect, useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, CheckCircle, Send } from 'lucide-react';
 
 interface ConsumptionPopupProps {
   isOpen: boolean;
@@ -12,8 +12,6 @@ interface ConsumptionPopupProps {
   clienteName: string;
   description: string;
   value: number;
-  totalConsumption: number;
-  percentageIncrease: number;
 }
 
 export default function ConsumptionPopup({
@@ -22,8 +20,6 @@ export default function ConsumptionPopup({
   clienteName,
   description,
   value,
-  totalConsumption,
-  percentageIncrease,
 }: ConsumptionPopupProps) {
   const [isVisible, setIsVisible] = useState(isOpen);
 
@@ -48,11 +44,6 @@ export default function ConsumptionPopup({
     currency: 'BRL',
   });
 
-  const totalFormatted = (totalConsumption / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-
   return (
     <div className="fixed inset-0 flex items-end justify-center pointer-events-none z-50">
       {/* Overlay */}
@@ -71,9 +62,12 @@ export default function ConsumptionPopup({
           <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-white/20 rounded-full p-2">
-                <Check size={20} className="text-white" />
+                <CheckCircle size={24} className="text-white" />
               </div>
-              <h3 className="text-white font-bold text-lg">Despesa Registrada!</h3>
+              <div>
+                <h3 className="text-white font-bold text-lg">✓ Enviado!</h3>
+                <p className="text-white/80 text-xs">Notificação enviada aos administradores</p>
+              </div>
             </div>
             <button
               onClick={() => {
@@ -89,33 +83,30 @@ export default function ConsumptionPopup({
           {/* Content */}
           <div className="px-6 py-4 space-y-4">
             {/* Cliente */}
-            <div>
-              <p className="text-sm text-muted-foreground">Cliente</p>
-              <p className="text-lg font-semibold text-foreground">{clienteName}</p>
+            <div className="flex items-start gap-3">
+              <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-2 mt-1">
+                <Send size={16} className="text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Consumação Registrada</p>
+                <p className="text-lg font-semibold text-foreground">{clienteName}</p>
+                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+              </div>
             </div>
 
-            {/* Descrição */}
-            <div>
-              <p className="text-sm text-muted-foreground">Descrição</p>
-              <p className="text-foreground">{description}</p>
-            </div>
-
-            {/* Valor Registrado */}
-            <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-3 border border-red-200 dark:border-red-900">
+            {/* Valor */}
+            <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 border border-green-200 dark:border-green-900">
               <p className="text-sm text-muted-foreground">Valor Registrado</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{valueFormatted}</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{valueFormatted}</p>
             </div>
 
-            {/* Consumo Total */}
+            {/* Status */}
             <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 border border-blue-200 dark:border-blue-900">
-              <p className="text-sm text-muted-foreground">Consumo Total</p>
-              <div className="flex items-baseline justify-between">
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalFormatted}</p>
-                {percentageIncrease > 0 && (
-                  <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
-                    +{percentageIncrease.toFixed(1)}%
-                  </p>
-                )}
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
+                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                  Notificação enviada para todos os administradores
+                </p>
               </div>
             </div>
           </div>
@@ -130,7 +121,7 @@ export default function ConsumptionPopup({
               }}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors"
             >
-              Entendido
+              OK
             </button>
           </div>
         </div>
