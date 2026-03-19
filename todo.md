@@ -110,3 +110,12 @@
 - [x] Criar sistema de restauração de backups
 - [x] Adicionar interface de gerenciamento de backups
 - [x] Testar sistema de backup completo
+
+
+## Backup na Nuvem com Backend e Dashboard (Nova Sprint)
+
+- [x] Criar endpoints de API para backup na nuvem
+- [x] Implementar sincronização com servidor backend
+- [x] Criar dashboard de sincronização
+- [x] Implementar detecção de conflitos entre admins
+- [x] Testar sincronização e backup completo
