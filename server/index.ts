@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import notificationRouter from "./notificationRouter";
 import syncRouter from "./syncRouter";
 import migrationRouter from "./migrationRouter";
+import menuRouter from "./menuRouter";
 import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
 
@@ -34,6 +35,9 @@ async function startServer() {
   
   // Rotas de migração
   app.use('/api/sync', migrationRouter);
+  
+  // Rotas de cardápios
+  app.use(menuRouter);
 
   // Serve static files from dist/public in production
   const staticPath =

@@ -194,3 +194,13 @@
 - [x] Implementar sincronização automática ao receber eventos
 - [x] Adicionar testes de sincronização em tempo real (23 testes passando)
 - [ ] Testar com múltiplos clientes simultâneos
+
+
+## Cardápio e Gerenciamento (Sprint 2)
+
+- [ ] Corrigir navegação para Conta Geral na página inicial
+- [ ] Popular banco de dados com dois cardápios (Adega e After)
+- [ ] Criar página de gerenciamento de cardápios para admin
+- [ ] Integrar CardapioSelector com Conta Geral
+- [ ] Implementar exportação CSV em Relatórios
+- [ ] Testar todas as funcionalidades

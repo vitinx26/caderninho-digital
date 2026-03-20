@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO `menus` (`id`, `name`, `description`, `is_active`, `created_at`, `updated_at`) VALUES ('adega-1', 'Cardápio Adega', 'Cardápio padrão da Adega', true, UNIX_TIMESTAMP() * 1000, UNIX_TIMESTAMP() * 1000);\n\nINSERT INTO `menus` (`id`, `name`, `description`, `is_active`, `created_at`, `updated_at`) VALUES ('after-1', 'Cardápio After', 'Cardápio After Hours', false, UNIX_TIMESTAMP() * 1000, UNIX_TIMESTAMP() * 1000);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute INSERT INTO `menus` (`id`, `name`, `description`, `is_active`, `created_at`, `updated_at`) VALUES ('adega-1', 'Cardápio Adega', 'Cardápio padrão da Adega', true, UNIX_TIMESTAMP() * 1000, UNIX_TIMESTAMP() * 1000);\n\nINSERT INTO `menus` (`id`, `name`, `description`, `is_active`, `created_at`, `updated_at`) VALUES ('after-1', 'Cardápio After', 'Cardápio After Hours', false, UNIX_TIMESTAMP() * 1000, UNIX_TIMESTAMP() * 1000);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'name' in 'field list'"
+  ]
+}

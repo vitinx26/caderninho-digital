@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1773267853818,
-      "tag": "0000_lovely_warhawk",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1773355687841,
-      "tag": "0001_adorable_deathbird",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1773887837588,
-      "tag": "0002_elite_vulcan",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1774028073225,
-      "tag": "0003_lyrical_wild_child",
+      "when": 1774042249232,
+      "tag": "0000_cloudy_doorman",
       "breakpoints": true
     }
   ]

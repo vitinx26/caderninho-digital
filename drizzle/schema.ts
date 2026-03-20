@@ -69,6 +69,59 @@ export const transactions = mysqlTable(
 );
 
 /**
+ * Tabela de cardápios
+ */
+export const menus = mysqlTable(
+  'menus',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    isActive: boolean('is_active').notNull().default(false),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+    updatedAt: bigint('updated_at', { mode: 'number' }).notNull(),
+  },
+  (table) => ({
+    isActiveIdx: index('is_active_idx').on(table.isActive),
+  })
+);
+
+/**
+ * Tabela de categorias de cardápio
+ */
+export const menuCategories = mysqlTable(
+  'menu_categories',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    menuId: varchar('menu_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    order: int('order').notNull().default(0),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+  },
+  (table) => ({
+    menuIdIdx: index('menu_id_idx').on(table.menuId),
+  })
+);
+
+/**
+ * Tabela de itens de cardápio
+ */
+export const menuItems = mysqlTable(
+  'menu_items',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    categoryId: varchar('category_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    price: int('price').notNull(), // Preço em centavos
+    order: int('order').notNull().default(0),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+  },
+  (table) => ({
+    categoryIdIdx: index('category_id_idx').on(table.categoryId),
+  })
+);
+
+/**
  * Relações entre tabelas
  */
 export const usersRelations = relations(users, ({ many }) => ({
