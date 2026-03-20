@@ -166,6 +166,25 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'vendor-react';
+            if (id.includes('@radix-ui')) return 'vendor-ui';
+            if (id.includes('sonner') || id.includes('date-fns')) return 'vendor-utils';
+            return 'vendor';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 2000,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+      },
+    },
   },
   server: {
     port: 3000,
