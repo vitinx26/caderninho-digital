@@ -16,7 +16,6 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClientePerfil from "./pages/ClientePerfil";
 import NovoLancamento from "./pages/NovoLancamento";
-import NovoLancamentoCardapio from "./pages/NovoLancamentoCardapio";
 import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
@@ -76,7 +75,6 @@ function RouterContent() {
         {paginaAtual === 'dashboard' && <Dashboard />}
         {paginaAtual === 'cliente' && <ClientePerfil />}
         {paginaAtual === 'novo-lancamento' && <NovoLancamento />}
-        {paginaAtual === 'novo-lancamento-cardapio' && <NovoLancamentoCardapio />}
         {paginaAtual === 'relatorios' && <Relatorios />}
         {paginaAtual === 'configuracoes' && <Configuracoes />}
         {paginaAtual === 'gerenciar-usuarios' && <GerenciarUsuarios />}

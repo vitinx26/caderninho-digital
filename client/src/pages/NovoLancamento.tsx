@@ -325,20 +325,48 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         </div>
       )}
 
-      {/* Valor - Input simples sem calculadora */}
+      {/* Valor */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
           Valor (R$)
         </label>
-        <Input
-          type="number"
-          placeholder="0.00"
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
-          step="0.01"
-          min="0"
-          className="w-full text-lg"
-        />
+        <div className="text-4xl font-bold text-primary mb-4">
+          {valor || '0.00'}
+        </div>
+
+        {/* Teclado Numérico */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+            <button
+              key={num}
+              onClick={() => handleAdicionarNumero(num.toString())}
+              className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => handleAdicionarNumero('0')}
+            className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
+          >
+            0
+          </button>
+          <button
+            onClick={handleDecimal}
+            className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
+          >
+            ,
+          </button>
+          <button
+            onClick={handleBackspace}
+            className="py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-white transition-colors"
+          >
+            <Minus size={20} className="mx-auto" />
+          </button>
+        </div>
       </div>
 
       {/* Descrição */}
