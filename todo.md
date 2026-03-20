@@ -198,9 +198,8 @@
 
 ## Cardápio e Gerenciamento (Sprint 2)
 
-- [ ] Corrigir navegação para Conta Geral na página inicial
-- [ ] Popular banco de dados com dois cardápios (Adega e After)
-- [ ] Criar página de gerenciamento de cardápios para admin
-- [ ] Integrar CardapioSelector com Conta Geral
-- [ ] Implementar exportação CSV em Relatórios
-- [ ] Testar todas as funcionalidades
+- [x] Popular banco de dados com dois cardápios (Adega e After) - 132 itens
+- [x] Criar página de gerenciamento de cardápios para admin
+- [x] Integrar CardapioSelector com Conta Geral
+- [x] Implementar exportação CSV em Relatórios
+- [x] Testar todas as funcionalidades (18 testes passando)
