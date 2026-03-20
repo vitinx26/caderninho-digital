@@ -46,6 +46,61 @@ export const clients = mysqlTable(
 );
 
 /**
+ * Tabela de cardápios
+ */
+export const menus = mysqlTable(
+  'menus',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    adminId: varchar('admin_id', { length: 36 }).notNull(), // ID do admin que criou
+    nome: varchar('nome', { length: 255 }).notNull(), // Ex: "Cardápio 1", "Cardápio 2"
+    ativo: boolean('ativo').notNull().default(false), // Apenas um cardápio ativo por vez
+    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
+    dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(),
+  },
+  (table) => ({
+    adminIdIdx: index('menu_admin_id_idx').on(table.adminId),
+    ativoIdx: index('menu_ativo_idx').on(table.ativo),
+  })
+);
+
+/**
+ * Tabela de categorias de cardápio (CERVEJA 350ML, DRINKS, etc)
+ */
+export const menuCategories = mysqlTable(
+  'menu_categories',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    menuId: varchar('menu_id', { length: 36 }).notNull(), // ID do cardápio
+    nome: varchar('nome', { length: 255 }).notNull(), // Ex: "CERVEJA 350ML"
+    ordem: int('ordem').notNull(), // Ordem de exibição
+    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
+  },
+  (table) => ({
+    menuIdIdx: index('category_menu_id_idx').on(table.menuId),
+  })
+);
+
+/**
+ * Tabela de itens de cardápio (Itaipava, Skol, etc)
+ */
+export const menuItems = mysqlTable(
+  'menu_items',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    categoryId: varchar('category_id', { length: 36 }).notNull(), // ID da categoria
+    nome: varchar('nome', { length: 255 }).notNull(), // Ex: "Itaipava"
+    valor: int('valor').notNull(), // Valor em centavos
+    descricao: text('descricao'), // Ex: "acima de 8 um 4,00 cada"
+    ordem: int('ordem').notNull(), // Ordem de exibição
+    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
+  },
+  (table) => ({
+    categoryIdIdx: index('item_category_id_idx').on(table.categoryId),
+  })
+);
+
+/**
  * Tabela de lançamentos (débitos e pagamentos)
  */
 export const transactions = mysqlTable(
@@ -106,3 +161,41 @@ export type NewClient = typeof clients.$inferInsert;
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
+
+/**
+ * Relações de cardápio
+ */
+export const menusRelations = relations(menus, ({ one, many }) => ({
+  admin: one(users, {
+    fields: [menus.adminId],
+    references: [users.id],
+  }),
+  categories: many(menuCategories),
+}));
+
+export const menuCategoriesRelations = relations(menuCategories, ({ one, many }) => ({
+  menu: one(menus, {
+    fields: [menuCategories.menuId],
+    references: [menus.id],
+  }),
+  items: many(menuItems),
+}));
+
+export const menuItemsRelations = relations(menuItems, ({ one }) => ({
+  category: one(menuCategories, {
+    fields: [menuItems.categoryId],
+    references: [menuCategories.id],
+  }),
+}));
+
+/**
+ * Tipos exportados para cardápio
+ */
+export type Menu = typeof menus.$inferSelect;
+export type NewMenu = typeof menus.$inferInsert;
+
+export type MenuCategory = typeof menuCategories.$inferSelect;
+export type NewMenuCategory = typeof menuCategories.$inferInsert;
+
+export type MenuItem = typeof menuItems.$inferSelect;
+export type NewMenuItem = typeof menuItems.$inferInsert;

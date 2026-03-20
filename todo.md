@@ -194,3 +194,24 @@
 - [x] Implementar sincronização automática ao receber eventos
 - [x] Adicionar testes de sincronização em tempo real (23 testes passando)
 - [ ] Testar com múltiplos clientes simultâneos
+
+
+## Cardápio e Sistema de Seleção de Consumo
+
+- [ ] Criar schema de cardápio no banco de dados
+- [ ] Parsear cardápio e popular banco de dados
+- [ ] Criar página de seleção de cardápio (admin only)
+- [ ] Criar página de novo lançamento com cardápio integrado
+- [ ] Remover calculadora de todas as páginas
+- [ ] Implementar exportação CSV de lançamentos
+- [ ] Integrar com relatórios e dashboard
+- [ ] Testar funcionalidade completa
+
+## Cardápio - ETAPA 1 CONCLUÍDA
+
+- [x] Criar schema de cardápio no banco de dados
+- [x] Parsear cardápio e popular banco de dados (seedMenu.ts)
+- [x] Criar componente CardapioSelector (seleção clean sem calculadora)
+- [x] Criar página de novo lançamento com cardápio integrado (NovoLancamentoCardapio)
+- [x] Remover calculadora de NovoLancamento.tsx
+- [x] Adicionar rota de novo lançamento com cardápio
