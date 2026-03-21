@@ -58,10 +58,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUsuarioLogado(usuario);
         }
         
-        const contaGeral = localStorage.getItem('caderninho_conta_geral');
-        if (contaGeral === 'true') {
-          setUsuarioGeral(true);
-        }
+        // Não restaurar Conta Geral automaticamente - sempre começar em Login/Home
+        // const contaGeral = localStorage.getItem('caderninho_conta_geral');
+        // if (contaGeral === 'true') {
+        //   setUsuarioGeral(true);
+        // }
+        
+        // Limpar flag de conta geral ao carregar
+        localStorage.removeItem('caderninho_conta_geral');
+        setUsuarioGeral(false);
       } catch (error) {
         console.error('Erro ao verificar login:', error);
       } finally {

@@ -16,6 +16,7 @@ import { salvarSenhaSegura } from '@/lib/passwordPersistence';
 import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
 import { recuperarDadosAutomaticamente } from '@/lib/autoRecovery';
 import OnlineStatusIndicator from '@/components/OnlineStatusIndicator';
+import CardapioSelectorSimples from '@/components/CardapioSelectorSimples';
 
 type AbaType = 'novo-cliente' | 'nova-compra';
 
@@ -50,6 +51,7 @@ export default function ContaGeral() {
   const [descricao, setDescricao] = useState('');
   const [carregandoCompra, setCarregandoCompra] = useState(false);
   const [dataBrasilia] = useState(() => formatarDataBrasilia(new Date()));
+  const [usarCardapio, setUsarCardapio] = useState(false);
 
   // Clientes salvos (para seleção rápida)
   const [clientesSalvos, setClientesSalvos] = useState<Array<{ id: string; nome: string; telefone?: string }>>([]);
@@ -401,6 +403,32 @@ export default function ContaGeral() {
               )}
             </div>
 
+            {/* Modo: Cardápio ou Valor Manual */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setUsarCardapio(false)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-colors ${
+                  !usarCardapio
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                Valor Manual
+              </button>
+              <button
+                type="button"
+                onClick={() => setUsarCardapio(true)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-colors ${
+                  usarCardapio
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                Cardápio
+              </button>
+            </div>
+
             {/* Descrição */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -423,53 +451,63 @@ export default function ContaGeral() {
             {/* A data é gravada automaticamente ao registrar a compra */}
             {/* Não é exibida para não poluir o visual do formulário */}
 
-            {/* Valor */}
-            <div className="card-minimal p-4">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Valor (R$)
-              </label>
-              <div className="text-4xl font-bold text-primary mb-4">
-                {valor || '0.00'}
-              </div>
+            {/* Valor ou Cardápio */}
+            {usarCardapio ? (
+              <CardapioSelectorSimples
+                onItemsSelected={(items, total) => {
+                  setValor((total / 100).toFixed(2));
+                  setDescricao(items.map(i => i.name).join(', '));
+                }}
+                onCancel={() => setUsarCardapio(false)}
+              />
+            ) : (
+              <div className="card-minimal p-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Valor (R$)
+                </label>
+                <div className="text-4xl font-bold text-primary mb-4">
+                  {valor || '0.00'}
+                </div>
 
-              {/* Teclado Numérico */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                {/* Teclado Numérico */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => handleAdicionarNumero(num.toString())}
+                      className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
                   <button
-                    key={num}
                     type="button"
-                    onClick={() => handleAdicionarNumero(num.toString())}
+                    onClick={() => handleAdicionarNumero('0')}
                     className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
                   >
-                    {num}
+                    0
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={handleDecimal}
+                    className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
+                  >
+                    .
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBackspace}
+                    className="p-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                  >
+                    ← Apagar
+                  </button>
+                </div>
               </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleAdicionarNumero('0')}
-                  className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDecimal}
-                  className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
-                >
-                  .
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBackspace}
-                  className="p-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
-                >
-                  ← Apagar
-                </button>
-              </div>
-            </div>
+            )}
 
             <Button
               type="submit"

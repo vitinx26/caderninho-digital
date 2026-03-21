@@ -203,3 +203,12 @@
 - [x] Integrar CardapioSelector com Conta Geral
 - [x] Implementar exportação CSV em Relatórios
 - [x] Testar todas as funcionalidades (18 testes passando)
+
+
+## Correções Críticas (Sprint 3)
+
+- [x] Corrigir roteamento para abrir em Home ao invés de Conta Geral
+- [x] Integrar CardapioSelector em NovoLancamento para admin
+- [x] Integrar CardapioSelector em Conta Geral
+- [x] Remover calculadora de NovoLancamento
+- [ ] Testar integração em todos os fluxos (admin, cliente logado, conta geral)

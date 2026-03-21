@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ConsumptionPopup from '@/components/ConsumptionPopup';
 import OnlineStatusIndicator from '@/components/OnlineStatusIndicator';
+import CardapioSelectorSimples from '@/components/CardapioSelectorSimples';
 import { toast } from 'sonner';
 import { gerarMensagemWhatsApp, gerarUrlWhatsApp } from '@/lib/whatsappTemplate';
 import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
@@ -49,6 +50,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   const [descricao, setDescricao] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [mostrarNovoCliente, setMostrarNovoCliente] = useState(false);
+  const [usarCardapio, setUsarCardapio] = useState(false);
   const consumptionPopup = useConsumptionPopup();
 
   const handleAdicionarNumero = (num: string) => {
@@ -241,6 +243,30 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         </div>
       </div>
 
+      {/* Modo: Cardápio ou Valor Manual */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setUsarCardapio(false)}
+          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-colors ${
+            !usarCardapio
+              ? 'bg-blue-600 text-white'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+        >
+          Valor Manual
+        </button>
+        <button
+          onClick={() => setUsarCardapio(true)}
+          className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-colors ${
+            usarCardapio
+              ? 'bg-blue-600 text-white'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+        >
+          Cardápio
+        </button>
+      </div>
+
       {/* Tipo de Lançamento */}
       <div className="flex gap-3">
         <button
@@ -325,49 +351,59 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         </div>
       )}
 
-      {/* Valor */}
-      <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Valor (R$)
-        </label>
-        <div className="text-4xl font-bold text-primary mb-4">
-          {valor || '0.00'}
-        </div>
+      {/* Valor ou Cardápio */}
+      {usarCardapio ? (
+        <CardapioSelectorSimples
+          onItemsSelected={(items, total) => {
+            setValor((total / 100).toFixed(2));
+            setDescricao(items.map(i => i.name).join(', '));
+          }}
+          onCancel={() => setUsarCardapio(false)}
+        />
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Valor (R$)
+          </label>
+          <div className="text-4xl font-bold text-primary mb-4">
+            {valor || '0.00'}
+          </div>
 
-        {/* Teclado Numérico */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+          {/* Teclado Numérico */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+              <button
+                key={num}
+                onClick={() => handleAdicionarNumero(num.toString())}
+                className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
             <button
-              key={num}
-              onClick={() => handleAdicionarNumero(num.toString())}
+              onClick={() => handleAdicionarNumero('0')}
               className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
             >
-              {num}
+              0
             </button>
-          ))}
+            <button
+              onClick={handleDecimal}
+              className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
+            >
+              ,
+            </button>
+            <button
+              onClick={handleBackspace}
+              className="py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-white transition-colors"
+            >
+              <Minus size={20} className="mx-auto" />
+            </button>
+          </div>
         </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={() => handleAdicionarNumero('0')}
-            className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
-          >
-            0
-          </button>
-          <button
-            onClick={handleDecimal}
-            className="py-3 bg-muted hover:bg-muted/80 rounded-lg font-semibold text-foreground transition-colors"
-          >
-            ,
-          </button>
-          <button
-            onClick={handleBackspace}
-            className="py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-white transition-colors"
-          >
-            <Minus size={20} className="mx-auto" />
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Descrição */}
       <div>
