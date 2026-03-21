@@ -89,10 +89,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       return;
     }
 
-    if (!descricao.trim()) {
-      toast.error('Digite uma descrição');
-      return;
-    }
+    // Descrição é gerada automaticamente do cardápio ou padrão
 
     try {
       setCarregando(true);
@@ -405,19 +402,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         </div>
       )}
 
-      {/* Descrição */}
-      <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Descrição
-        </label>
-        <Input
-          type="text"
-          placeholder="Ex: Venda de produtos"
-          value={descricao}
-          onChange={(e) => setDescricao(e.target.value)}
-          className="w-full"
-        />
-      </div>
+      {/* Descrição gerada automaticamente do cardápio ou padrão */}
 
       {/* Data - Oculta mas gravada automaticamente com fuso Brasília */}
       {/* A data é gravada automaticamente ao registrar o lançamento */}
@@ -432,7 +417,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         >
           {carregando ? 'Salvando...' : 'Registrar Lançamento'}
         </Button>
-        {tipo === 'debito' && clienteId && valor && descricao && (
+        {tipo === 'debito' && clienteId && valor && (
           <Button
             onClick={handleEnviarWhatsApp}
             disabled={carregando}

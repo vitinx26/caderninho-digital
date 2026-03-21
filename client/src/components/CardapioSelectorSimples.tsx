@@ -32,6 +32,15 @@ export default function CardapioSelectorSimples({
   const [selectedItems, setSelectedItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrar itens por busca
+  const filteredCategories = categories.map(cat => ({
+    ...cat,
+    items: cat.items.filter(item =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+  })).filter(cat => cat.items.length > 0);
 
   useEffect(() => {
     loadActiveMenu();
@@ -164,8 +173,19 @@ export default function CardapioSelectorSimples({
 
   return (
     <div className="space-y-4">
+      {/* Campo de Busca */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar item..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Categorias */}
-      {categories.map(category => (
+      {filteredCategories.map(category => (
         <div key={category.id} className="p-4 bg-card rounded-lg border border-border">
           <h3 className="text-lg font-semibold mb-3">{category.name}</h3>
           

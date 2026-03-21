@@ -15,6 +15,7 @@ export interface Usuario {
   nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
   templateWhatsapp?: string; // Template de mensagem para cobrança via WhatsApp
   dataCriacao: number;
+  ativo?: boolean; // Soft delete: false = deletado, true/undefined = ativo
 }
 
 export interface UsuarioLogado {

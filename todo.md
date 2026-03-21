@@ -248,3 +248,11 @@
 - [x] Descobrir erro 500 no endpoint /api/menus
 - [x] Corrigir db-client.ts para parsear DATABASE_URL corretamente
 - [ ] Testar carregamento de cardápios
+
+
+## Mudanças Críticas Solicitadas
+
+- [x] Corrigir persistência de dados (deletar usuário deve ser permanente)
+- [x] Remover opção "Valor Manual" de Conta Geral (manter apenas Cardápio)
+- [x] Adicionar busca por pesquisa ao CardapioSelector
+- [x] Remover campo "Descrição" de Novo Lançamento

@@ -403,111 +403,21 @@ export default function ContaGeral() {
               )}
             </div>
 
-            {/* Modo: Cardápio ou Valor Manual */}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setUsarCardapio(false)}
-                className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-colors ${
-                  !usarCardapio
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                Valor Manual
-              </button>
-              <button
-                type="button"
-                onClick={() => setUsarCardapio(true)}
-                className={`flex-1 py-2 px-3 rounded-lg font-semibold transition-colors ${
-                  usarCardapio
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                Cardápio
-              </button>
-            </div>
-
-            {/* Descrição */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Descrição
-              </label>
-              <Input
-                type="text"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                placeholder="Ex: Compra de bebidas"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Total de clientes: {clientesSalvos.length}
-              </p>
-            </div>
+            {/* Cardápio obrigatório */}
 
             {/* Data Fixa */}
             {/* Data de Registro - Ocultada mas gravada automaticamente com fuso Brasília */}
             {/* A data é gravada automaticamente ao registrar a compra */}
             {/* Não é exibida para não poluir o visual do formulário */}
 
-            {/* Valor ou Cardápio */}
-            {usarCardapio ? (
-              <CardapioSelectorSimples
-                onItemsSelected={(items, total) => {
-                  setValor((total / 100).toFixed(2));
-                  setDescricao(items.map(i => i.name).join(', '));
-                }}
-                onCancel={() => setUsarCardapio(false)}
-              />
-            ) : (
-              <div className="card-minimal p-4">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Valor (R$)
-                </label>
-                <div className="text-4xl font-bold text-primary mb-4">
-                  {valor || '0.00'}
-                </div>
-
-                {/* Teclado Numérico */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => handleAdicionarNumero(num.toString())}
-                      className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleAdicionarNumero('0')}
-                    className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
-                  >
-                    0
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDecimal}
-                    className="p-4 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
-                  >
-                    .
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBackspace}
-                    className="p-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
-                  >
-                    ← Apagar
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Cardápio */}
+            <CardapioSelectorSimples
+              onItemsSelected={(items, total) => {
+                setValor((total / 100).toFixed(2));
+                setDescricao(items.map(i => i.name).join(', '));
+              }}
+              onCancel={() => {}}
+            />
 
             <Button
               type="submit"

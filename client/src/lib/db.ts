@@ -309,7 +309,11 @@ export async function obterTodosUsuarios(): Promise<Usuario[]> {
     const request = store.getAll();
 
     request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      // Filtrar apenas usuários ativos (não deletados)
+      const usuarios = request.result.filter((u: Usuario) => u.ativo !== false);
+      resolve(usuarios);
+    };
   });
 }
 
