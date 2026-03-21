@@ -273,3 +273,16 @@
 - [ ] Soft delete não está sendo salvo no banco de dados
 - [ ] Backup não está ativo - mudanças de admin não persistem
 - [ ] Sincronização entre frontend e backend quebrada
+
+
+## Recuperação de Usuários Perdidos - CRÍTICO
+
+- [x] Criar página de migração (MigracaoUsuarios.tsx)
+- [x] Implementar exportação de IndexedDB
+- [x] Implementar migração para backend
+- [x] Adicionar sincronização bidirecional em ContaGeral
+- [x] Adicionar polling automático (10s) para sincronização
+- [x] Criar guia de recuperação (GUIA_RECUPERACAO_USUARIOS.md)
+- [ ] Testar CRUD completo (criar, editar, deletar)
+- [ ] Validar sincronização entre múltiplos admins
+- [ ] Testar em múltiplos navegadores/dispositivos

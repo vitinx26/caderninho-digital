@@ -63,24 +63,41 @@ export default function ContaGeral() {
     c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
   );
 
-  // Sincronizar dados ao abrir Conta Geral
+  // Sincronizar dados ao abrir Conta Geral - AGORA TAMBÉM BUSCA DO BACKEND
   useEffect(() => {
     const sincronizarDados = async () => {
       try {
         console.log('🔄 Sincronizando dados em Conta Geral...');
+        
+        // Primeiro, sincronizar dados locais
         const resultado = await recuperarDadosAutomaticamente();
-        console.log('✓ Sincronização concluída:', resultado);
+        console.log('✓ Sincronização local concluída:', resultado);
+        
+        // Depois, carregar clientes do backend
+        try {
+          const response = await fetch('/api/all-clients');
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✓ Clientes do backend carregados:', data.count);
+          }
+        } catch (error) {
+          console.warn('⚠️ Erro ao carregar clientes do backend:', error);
+        }
       } catch (error) {
         console.error('Erro ao sincronizar:', error);
       }
     };
 
     sincronizarDados();
+    
+    // Polling a cada 10 segundos para sincronizar clientes
+    const interval = setInterval(sincronizarDados, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    // Carregar clientes de múltiplas fontes (localStorage + IndexedDB)
-    const carregarClientes = () => {
+    // Carregar clientes de múltiplas fontes (localStorage + IndexedDB + Backend API)
+    const carregarClientes = async () => {
       try {
         const clientesMap = new Map<string, any>();
         
@@ -119,13 +136,35 @@ export default function ContaGeral() {
           });
         }
 
+        // Carregar clientes do Backend API
+        try {
+          const response = await fetch('/api/all-clients');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && Array.isArray(data.data)) {
+              data.data.forEach((c: any) => {
+                if (!clientesMap.has(c.id)) {
+                  clientesMap.set(c.id, {
+                    id: c.id,
+                    nome: c.nome,
+                    telefone: c.telefone
+                  });
+                }
+              });
+              console.log('✓ Clientes do backend carregados:', data.count);
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Erro ao carregar clientes do backend:', error);
+        }
+
         // Converter para array e ordenar
         const clientesOrdenados = Array.from(clientesMap.values()).sort((a, b) => 
           a.nome.localeCompare(b.nome)
         );
         
         setClientesSalvos(clientesOrdenados);
-        console.log('Clientes carregados (localStorage + IndexedDB):', clientesOrdenados);
+        console.log('Clientes carregados (localStorage + IndexedDB + Backend):', clientesOrdenados);
         
         // Se não houver clientes, tentar sincronizar novamente
         if (clientesOrdenados.length === 0) {
@@ -148,8 +187,18 @@ export default function ContaGeral() {
       setSincronizando(true);
       console.log('🔄 Sincronizando dados manualmente...');
       const resultado = await recuperarDadosAutomaticamente();
-      console.log('✓ Sincronização concluída:', resultado);
-      toast.success(`✓ Dados sincronizados! ${resultado.clientes} clientes encontrados.`);
+      console.log('✓ Sincronização local concluída:', resultado);
+      
+      // Carregar clientes do backend
+      const response = await fetch('/api/all-clients');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✓ Clientes do backend sincronizados:', data.count);
+        toast.success(`✓ Dados sincronizados! ${data.count} clientes encontrados.`);
+      } else {
+        toast.success(`✓ Dados sincronizados! ${resultado.clientes} clientes encontrados.`);
+      }
+      
       // Recarregar clientes
       window.location.reload();
     } catch (error) {

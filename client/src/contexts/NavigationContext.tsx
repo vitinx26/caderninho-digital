@@ -5,7 +5,7 @@
 
 import React, { createContext, useContext, useState } from 'react';
 
-export type PageType = 'dashboard' | 'cliente' | 'novo-lancamento' | 'relatorios' | 'configuracoes' | 'gerenciar-usuarios' | 'backups' | 'gerenciar-cardapios';
+export type PageType = 'dashboard' | 'cliente' | 'novo-lancamento' | 'relatorios' | 'configuracoes' | 'gerenciar-usuarios' | 'backups' | 'gerenciar-cardapios' | 'migracao-usuarios';
 
 interface NavigationContextType {
   paginaAtual: PageType;

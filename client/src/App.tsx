@@ -23,6 +23,7 @@ import ContaGeral from "./pages/ContaGeral";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
 import Backups from "./pages/Backups";
 import GerenciarCardapios from "./pages/GerenciarCardapios";
+import MigracaoUsuarios from "./pages/MigracaoUsuarios";
 import { ClienteLayout } from "./components/ClienteLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import UpdateNotification from "./components/UpdateNotification";
@@ -81,6 +82,7 @@ function RouterContent() {
         {paginaAtual === 'gerenciar-usuarios' && <GerenciarUsuarios />}
         {paginaAtual === 'backups' && <Backups />}
         {paginaAtual === 'gerenciar-cardapios' && <GerenciarCardapios />}
+        {paginaAtual === 'migracao-usuarios' && <MigracaoUsuarios />}
       </Layout>
     );
   }
