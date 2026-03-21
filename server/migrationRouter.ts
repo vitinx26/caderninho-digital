@@ -56,45 +56,28 @@ router.post('/sync/migrate', async (req: Request, res: Response) => {
     }
     
     try {
-      // 1. Garantir que usuário existe no banco (ou atualizar se já existe)
-      let usuarioExistente = await dbHelpers.getUserByEmail(usuario.email);
+      // 1. Usar ID do usuário fornecido ou gerar novo
+      const usuarioId = usuario.id || uuidv4();
+      console.log(`➕ Preparando usuário: ${usuario.email} (ID: ${usuarioId})`);
       
-      if (!usuarioExistente) {
-        console.log(`➕ Criando novo usuário: ${usuario.email}`);
-        const novoUsuarioId = usuario.id || uuidv4();
-        
-        try {
-          await dbHelpers.createUser({
-            id: novoUsuarioId,
-            email: usuario.email,
-            nome: usuario.nome || 'Usuário Migrado',
-            tipo: usuario.tipo || 'admin',
-            telefone: usuario.telefone || '',
-            nomeEstabelecimento: usuario.nomeEstabelecimento || '',
-            senha: usuario.senha || 'migrated',
-            ativo: true,
-            dataCriacao: usuario.dataCriacao || Date.now(),
-            dataAtualizacao: usuario.dataAtualizacao || Date.now(),
-          });
-          
-          usuarioExistente = await dbHelpers.getUserByEmail(usuario.email);
-          console.log(`✅ Usuário criado: ${usuario.email}`);
-        } catch (createErr) {
-          console.error(`❌ Erro ao criar usuário:`, createErr);
-          // Se falhar ao criar, tenta buscar novamente (pode ter sido criado por outro request)
-          usuarioExistente = await dbHelpers.getUserByEmail(usuario.email);
-          if (!usuarioExistente) {
-            throw createErr;
-          }
-        }
-      } else {
-        console.log(`✓ Usuário já existe: ${usuario.email}`);
-      }
-      
-      const usuarioId = usuarioExistente?.id;
-      
-      if (!usuarioId) {
-        throw new Error('Não foi possível obter ID do usuário após criação');
+      // Inserir usuário diretamente sem tentar buscar
+      try {
+        await dbHelpers.createUser({
+          id: usuarioId,
+          email: usuario.email,
+          nome: usuario.nome || 'Usuário Migrado',
+          tipo: usuario.tipo || 'admin',
+          telefone: usuario.telefone || '',
+          nomeEstabelecimento: usuario.nomeEstabelecimento || '',
+          senha: usuario.senha || 'migrated',
+          ativo: true,
+          dataCriacao: usuario.dataCriacao || Date.now(),
+          dataAtualizacao: usuario.dataAtualizacao || Date.now(),
+        });
+        console.log(`✅ Usuário processado: ${usuario.email}`);
+      } catch (createErr) {
+        console.error(`❌ Erro ao processar usuário:`, createErr);
+        throw createErr;
       }
       
       // 2. Migrar clientes
@@ -109,24 +92,20 @@ router.post('/sync/migrate', async (req: Request, res: Response) => {
               continue;
             }
             
-            const clienteExistente = await dbHelpers.getClientById(cliente.id);
+            const clienteId = cliente.id || uuidv4();
             
-            if (!clienteExistente) {
-              await dbHelpers.createClient({
-                id: cliente.id || uuidv4(),
-                adminId: usuarioId,
-                nome: cliente.nome,
-                telefone: cliente.telefone || '',
-                email: cliente.email || '',
-                ativo: cliente.ativo !== false,
-                dataCriacao: cliente.dataCriacao || Date.now(),
-                dataAtualizacao: cliente.dataAtualizacao || Date.now(),
-              });
-              clientesMigrados++;
-              console.log(`✅ Cliente migrado: ${cliente.nome}`);
-            } else {
-              console.log(`⏭️ Cliente já existe: ${cliente.nome}`);
-            }
+            await dbHelpers.createClient({
+              id: clienteId,
+              adminId: usuarioId,
+              nome: cliente.nome,
+              telefone: cliente.telefone || '',
+              email: cliente.email || '',
+              ativo: cliente.ativo !== false,
+              dataCriacao: cliente.dataCriacao || Date.now(),
+              dataAtualizacao: cliente.dataAtualizacao || Date.now(),
+            });
+            clientesMigrados++;
+            console.log(`✅ Cliente migrado: ${cliente.nome}`);
           } catch (err) {
             console.error(`❌ Erro ao migrar cliente ${cliente.nome}:`, err);
           }
@@ -145,27 +124,21 @@ router.post('/sync/migrate', async (req: Request, res: Response) => {
               continue;
             }
             
-            // Verificar se lançamento já existe
-            const lancamentoExistente = await dbHelpers.getTransactionsByClientId(lancamento.clienteId);
-            const jaExiste = lancamentoExistente?.some((l: any) => l.id === lancamento.id);
+            const lancamentoId = lancamento.id || uuidv4();
             
-            if (!jaExiste) {
-              await dbHelpers.createTransaction({
-                id: lancamento.id || uuidv4(),
-                adminId: usuarioId,
-                clienteId: lancamento.clienteId,
-                tipo: lancamento.tipo,
-                valor: lancamento.valor,
-                descricao: lancamento.descricao || '',
-                data: lancamento.data || Date.now(),
-                dataCriacao: lancamento.dataCriacao || Date.now(),
-                dataAtualizacao: lancamento.dataAtualizacao || Date.now(),
-              });
-              lancamentosMigrados++;
-              console.log(`✅ Lançamento migrado: ${lancamento.id}`);
-            } else {
-              console.log(`⏭️ Lançamento já existe: ${lancamento.id}`);
-            }
+            await dbHelpers.createTransaction({
+              id: lancamentoId,
+              adminId: usuarioId,
+              clienteId: lancamento.clienteId,
+              tipo: lancamento.tipo,
+              valor: lancamento.valor,
+              descricao: lancamento.descricao || '',
+              data: lancamento.data || Date.now(),
+              dataCriacao: lancamento.dataCriacao || Date.now(),
+              dataAtualizacao: lancamento.dataAtualizacao || Date.now(),
+            });
+            lancamentosMigrados++;
+            console.log(`✅ Lançamento migrado: ${lancamento.id}`);
           } catch (err) {
             console.error(`❌ Erro ao migrar lançamento ${lancamento.id}:`, err);
           }
