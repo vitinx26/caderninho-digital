@@ -245,5 +245,6 @@
 - [x] Investigar por que página está em branco
 - [x] Descobrir que servidor estava rodando apenas Vite, não Express
 - [x] Corrigir script dev em package.json para rodar Node.js + Express
-- [x] Reiniciar servidor com Express ativo
+- [x] Descobrir erro 500 no endpoint /api/menus
+- [x] Corrigir db-client.ts para parsear DATABASE_URL corretamente
 - [ ] Testar carregamento de cardápios

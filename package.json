@@ -4,14 +4,16 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "NODE_ENV=development tsx watch server/index.ts",
+    "dev": "NODE_ENV=development concurrently \"tsx watch server/index.ts\" \"vite --host\"",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "dev:server": "NODE_ENV=development tsx watch server/index.ts",
+    "dev:client": "vite --host"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -90,6 +92,7 @@
     "@vitest/ui": "^4.1.0",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.9",
     "esbuild": "^0.25.0",
     "jsdom": "^28.1.0",

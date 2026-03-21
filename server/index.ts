@@ -39,6 +39,10 @@ async function startServer() {
   // Rotas de cardápios
   app.use(menuRouter);
 
+  // Em desenvolvimento, Vite roda em porta 5173
+  // O cliente acessa via http://localhost:3000 e Express faz proxy das APIs
+  // Vite serve o frontend via HMR
+
   // Serve static files from dist/public in production
   const staticPath =
     process.env.NODE_ENV === "production"
