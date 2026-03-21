@@ -1,0 +1,39 @@
+{
+  "backup_date": "2026-03-21T05:20:00Z",
+  "users": [
+    {
+      "id": "1",
+      "openId": "2SKhtJHLiAG3WucXgpmHdP",
+      "name": "Victor Hugo Gonçalves",
+      "email": "victorhgs26@gmail.com",
+      "loginMethod": "google",
+      "role": "admin",
+      "createdAt": "2026-03-11 21:27:21",
+      "updatedAt": "2026-03-11 21:34:52",
+      "lastSignedIn": "2026-03-11 21:34:53",
+      "template_whatsapp": null,
+      "email_notificacao": null,
+      "ativo": true
+    }
+  ],
+  "clients": [],
+  "menus": [
+    {
+      "id": "adega-menu-1",
+      "name": "Cardápio Adega",
+      "description": "Cardápio padrão da Adega",
+      "is_active": true,
+      "created_at": "1774049400000",
+      "updated_at": "1774049400000"
+    },
+    {
+      "id": "after-menu-1",
+      "name": "Cardápio After",
+      "description": "Cardápio After Hours",
+      "is_active": false,
+      "created_at": "1774049400000",
+      "updated_at": "1774049400000"
+    }
+  ],
+  "notes": "Backup completo de todos os dados antes da reconstrução da base de dados"
+}

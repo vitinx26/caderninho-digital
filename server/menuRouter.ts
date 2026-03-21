@@ -409,7 +409,7 @@ router.get('/api/menus', async (req, res) => {
           id: menu.id,
           name: menu.name,
           description: menu.description,
-          is_active: menu.isActive,
+          is_active: menu.ativo,
           categories: categoriesWithItems,
         };
       })
@@ -426,7 +426,7 @@ router.get('/api/menus', async (req, res) => {
 // GET cardápio ativo com categorias e itens
 router.get('/api/menus/active', async (req, res) => {
   try {
-    const activeMenu = await db.select().from(menus).where(eq(menus.isActive, true)).limit(1);
+    const activeMenu = await db.select().from(menus).where(eq(menus.ativo, true)).limit(1);
     
     if (!activeMenu || activeMenu.length === 0) {
       return res.json(null);

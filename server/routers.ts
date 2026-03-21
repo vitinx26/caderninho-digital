@@ -55,18 +55,18 @@ export const appRouter = router({
               if (existing) {
                 // Atualizar usuário existente
                 await dbHelpers.updateUser(user.id, {
-                  name: user.nome,
-                  role: user.tipo === 'admin' ? 'admin' : 'user',
+                  nome: user.nome,
+                  tipo: user.tipo === 'admin' ? 'admin' : 'cliente',
                 });
                 results.push({ id: user.id, status: 'updated' });
               } else {
                 // Criar novo usuário
                 await dbHelpers.createUser({
-                  openId: Math.random().toString(36).substr(2, 9),
                   email: user.email,
-                  name: user.nome,
-                  role: user.tipo === 'admin' ? 'admin' : 'user',
-                  loginMethod: 'manual',
+                  senha: 'temp-senha',
+                  nome: user.nome,
+                  tipo: user.tipo === 'admin' ? 'admin' : 'cliente',
+                  telefone: '',
                   ativo: true,
                 });
                 results.push({ id: user.id, status: 'created' });
@@ -119,8 +119,8 @@ export const appRouter = router({
                   telefone: client.telefone,
                   email: client.email,
                   ativo: client.ativo,
-                  dataCriacao: client.dataCriacao,
-                  dataAtualizacao: Date.now(),
+                  dataCriacao: new Date(client.dataCriacao),
+                  dataAtualizacao: new Date(),
                 });
                 results.push({ id: client.id, status: 'created' });
               }
@@ -160,9 +160,9 @@ export const appRouter = router({
                 tipo: transaction.tipo as 'debito' | 'pagamento',
                 valor: Math.round(transaction.valor * 100), // Converter para centavos
                 descricao: transaction.descricao,
-                data: transaction.data,
-                dataCriacao: transaction.dataCriacao,
-                dataAtualizacao: Date.now(),
+                data: new Date(transaction.data),
+                dataCriacao: new Date(transaction.dataCriacao),
+                dataAtualizacao: new Date(),
               });
               results.push({ id: transaction.id, status: 'created' });
             } catch (error) {
