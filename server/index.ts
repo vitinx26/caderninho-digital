@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import notificationRouter from "./notificationRouter";
 import syncRouter from "./syncRouter";
 import migrateRouter from "./migrateRouter";
+import migrateUsersRouter from "./migrateUsersRouter";
 import menuRouter from "./menuRouter";
 import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
@@ -32,6 +33,7 @@ async function startServer() {
   
   // Rotas de migração
   app.use('/api', migrateRouter);
+  app.use('/api', migrateUsersRouter);
   
   // Rotas de sincronização
   app.use('/api', syncRouter);

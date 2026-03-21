@@ -239,15 +239,12 @@ router.post('/users', async (req: Request, res: Response) => {
     }
     
     const novoUsuario = await dbHelpers.createUser({
-      id: Math.random().toString(36).substr(2, 9),
+      openId: Math.random().toString(36).substr(2, 9),
       email,
-      nome,
-      tipo,
-      telefone: telefone || '',
-      senha,
+      name: nome,
+      role: tipo === 'admin' ? 'admin' : 'user',
+      loginMethod: 'manual',
       ativo: true,
-      dataCriacao: Date.now(),
-      dataAtualizacao: Date.now(),
     });
     
     console.log(`✅ Usuário criado: ${email}`);
@@ -257,9 +254,8 @@ router.post('/users', async (req: Request, res: Response) => {
       data: {
         id: novoUsuario.id,
         email: novoUsuario.email,
-        nome: novoUsuario.nome,
-        tipo: novoUsuario.tipo,
-        telefone: novoUsuario.telefone,
+        name: novoUsuario.name,
+        role: novoUsuario.role,
       },
     });
   } catch (error) {

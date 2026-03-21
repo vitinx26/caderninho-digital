@@ -173,7 +173,7 @@ export default function MigracaoAutomatica() {
       for (const usuario of dadosEncontrados.usuarios) {
         try {
           console.log(`📤 Migrando usuário: ${usuario.email}`);
-          const response = await fetch('/api/migrate', {
+          const response = await fetch('/api/migrate-users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

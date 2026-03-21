@@ -1,27 +1,29 @@
-import { mysqlTable, varchar, text, int, bigint, boolean, datetime, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, int, timestamp, boolean, index } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 
 /**
  * Tabela de usuários (admins e clientes)
+ * Estrutura real do banco de dados
  */
 export const users = mysqlTable(
   'users',
   {
-    id: varchar('id', { length: 36 }).primaryKey(),
-    email: varchar('email', { length: 255 }).notNull().unique(),
-    nome: varchar('nome', { length: 255 }).notNull(),
-    tipo: varchar('tipo', { length: 20 }).notNull(), // 'admin' ou 'cliente'
-    telefone: varchar('telefone', { length: 20 }),
-    nomeEstabelecimento: varchar('nome_estabelecimento', { length: 255 }), // Para admins
-    templateWhatsapp: text('template_whatsapp'), // Template de mensagem para cobrança via WhatsApp
-    senha: text('senha').notNull(), // Hash da senha
-    ativo: boolean('ativo').notNull().default(true), // Soft delete
-    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
-    dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(),
+    id: int('id').primaryKey().autoincrement(),
+    openId: varchar('openId', { length: 64 }).notNull().unique(),
+    name: text('name'),
+    email: varchar('email', { length: 320 }),
+    loginMethod: varchar('loginMethod', { length: 64 }),
+    role: varchar('role', { length: 20 }).notNull().default('user'), // 'user' ou 'admin'
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+    lastSignedIn: timestamp('lastSignedIn').notNull().defaultNow(),
+    templateWhatsapp: text('template_whatsapp'),
+    emailNotificacao: varchar('email_notificacao', { length: 255 }),
+    ativo: boolean('ativo').notNull().default(true),
   },
   (table) => ({
     emailIdx: index('email_idx').on(table.email),
-    tipoIdx: index('tipo_idx').on(table.tipo),
+    roleIdx: index('role_idx').on(table.role),
   })
 );
 
@@ -37,8 +39,8 @@ export const clients = mysqlTable(
     telefone: varchar('telefone', { length: 20 }),
     email: varchar('email', { length: 255 }),
     ativo: boolean('ativo').notNull().default(true),
-    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
-    dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(),
+    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
+    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
   },
   (table) => ({
     adminIdIdx: index('admin_id_idx').on(table.adminId),
@@ -58,9 +60,9 @@ export const transactions = mysqlTable(
     tipo: varchar('tipo', { length: 20 }).notNull(), // 'debito' ou 'pagamento'
     valor: int('valor').notNull(), // Valor em centavos (para evitar problemas com float)
     descricao: text('descricao').notNull(),
-    data: bigint('data', { mode: 'number' }).notNull(), // Data da transação
-    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
-    dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(),
+    data: timestamp('data').notNull().defaultNow(), // Data da transação
+    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
+    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
   },
   (table) => ({
     adminIdIdx: index('admin_id_idx').on(table.adminId),
@@ -78,13 +80,10 @@ export const menus = mysqlTable(
     id: varchar('id', { length: 36 }).primaryKey(),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
-    isActive: boolean('is_active').notNull().default(false),
-    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
-    updatedAt: bigint('updated_at', { mode: 'number' }).notNull(),
-  },
-  (table) => ({
-    isActiveIdx: index('is_active_idx').on(table.isActive),
-  })
+    restaurantId: varchar('restaurant_id', { length: 36 }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
+  }
 );
 
 /**
@@ -96,12 +95,10 @@ export const menuCategories = mysqlTable(
     id: varchar('id', { length: 36 }).primaryKey(),
     menuId: varchar('menu_id', { length: 36 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
-    order: int('order').notNull().default(0),
-    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
-  },
-  (table) => ({
-    menuIdIdx: index('menu_id_idx').on(table.menuId),
-  })
+    description: text('description'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
+  }
 );
 
 /**
@@ -113,17 +110,15 @@ export const menuItems = mysqlTable(
     id: varchar('id', { length: 36 }).primaryKey(),
     categoryId: varchar('category_id', { length: 36 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
-    price: int('price').notNull(), // Preço em centavos
-    order: int('order').notNull().default(0),
-    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
-  },
-  (table) => ({
-    categoryIdIdx: index('category_id_idx').on(table.categoryId),
-  })
+    description: text('description'),
+    price: int('price').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
+  }
 );
 
 /**
- * Relações entre tabelas
+ * Relações
  */
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),
@@ -148,15 +143,3 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     references: [clients.id],
   }),
 }));
-
-/**
- * Tipos exportados para uso no frontend e backend
- */
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-
-export type Client = typeof clients.$inferSelect;
-export type NewClient = typeof clients.$inferInsert;
-
-export type Transaction = typeof transactions.$inferSelect;
-export type NewTransaction = typeof transactions.$inferInsert;
