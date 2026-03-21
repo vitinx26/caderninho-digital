@@ -7,11 +7,13 @@ import { eq, and } from 'drizzle-orm';
  */
 export async function createUser(user: typeof users.$inferInsert) {
   const now = Date.now();
-  return db.insert(users).values({
+  const userData = {
     ...user,
     dataCriacao: user.dataCriacao || now,
     dataAtualizacao: now,
-  });
+  };
+  await db.insert(users).values(userData);
+  return await getUserById(user.id);
 }
 
 export async function getUserByEmail(email: string) {
@@ -38,10 +40,14 @@ export async function updateUser(id: string, data: Partial<typeof users.$inferIn
  */
 export async function createClient(client: typeof clients.$inferInsert) {
   const now = Date.now();
-  return db.insert(clients).values({
+  const clientData = {
     ...client,
     dataCriacao: client.dataCriacao || now,
     dataAtualizacao: now,
+  };
+  await db.insert(clients).values(clientData);
+  return await db.query.clients.findFirst({
+    where: eq(clients.id, client.id),
   });
 }
 
@@ -80,10 +86,14 @@ export async function updateClient(id: string, data: Partial<typeof clients.$inf
  */
 export async function createTransaction(transaction: typeof transactions.$inferInsert) {
   const now = Date.now();
-  return db.insert(transactions).values({
+  const txData = {
     ...transaction,
     dataCriacao: transaction.dataCriacao || now,
     dataAtualizacao: now,
+  };
+  await db.insert(transactions).values(txData);
+  return await db.query.transactions.findFirst({
+    where: eq(transactions.id, transaction.id),
   });
 }
 
