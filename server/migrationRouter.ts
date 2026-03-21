@@ -11,6 +11,30 @@ import { v4 as uuidv4 } from 'uuid';
 const router = Router();
 
 /**
+ * GET /api/sync/test
+ * Testar conexao com banco de dados
+ */
+router.get('/test', async (req: Request, res: Response) => {
+  try {
+    console.log('Testando conexao com banco...');
+    const usuarios = await dbHelpers.getAllUsers();
+    console.log(`Conexao OK! ${usuarios?.length || 0} usuarios encontrados`);
+    res.json({
+      success: true,
+      message: 'Conexao com banco funcionando',
+      usuariosCount: usuarios?.length || 0,
+    });
+  } catch (error) {
+    console.error('Erro ao testar conexao:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao testar conexao',
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
  * POST /api/sync/migrate
  * Receber dados migrados de localStorage e salvar no banco centralizado
  */
@@ -164,6 +188,10 @@ router.post('/sync/migrate', async (req: Request, res: Response) => {
       });
     } catch (innerError) {
       console.error('❌ Erro interno na migração:', innerError);
+      if (innerError instanceof Error) {
+        console.error('Stack:', innerError.stack);
+        console.error('Message:', innerError.message);
+      }
       throw innerError;
     }
   } catch (error) {
