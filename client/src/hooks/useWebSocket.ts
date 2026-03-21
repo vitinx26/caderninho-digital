@@ -28,6 +28,12 @@ export function useWebSocket(usuario: UsuarioLogado | null) {
   });
 
   useEffect(() => {
+    // WebSocket desabilitado temporariamente
+    console.log('⚠️ WebSocket desabilitado temporariamente');
+    return;
+    
+    // Código antigo comentado:
+    /*
     // Só conectar se for admin e tiver usuário logado
     if (!usuario || usuario.tipo !== 'admin') {
       return;
@@ -43,9 +49,9 @@ export function useWebSocket(usuario: UsuarioLogado | null) {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5,
-    });
+    });*/
 
-    socketRef.current = socket;
+    /*socketRef.current = socket;*/
 
     /**
      * Conectado ao servidor
