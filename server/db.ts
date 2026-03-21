@@ -136,7 +136,13 @@ export async function updateTransaction(id: string, data: Partial<typeof transac
  * Obter todos os usuários (admins e clientes)
  */
 export async function getAllUsers() {
-  return db.query.users.findMany();
+  try {
+    const result = await db.select().from(users);
+    return result || [];
+  } catch (error) {
+    console.error('Erro ao buscar usuarios:', error);
+    return [];
+  }
 }
 
 /**
