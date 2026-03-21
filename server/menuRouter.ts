@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from './db-client';
 import { v4 as uuidv4 } from 'uuid';
+import { eq } from 'drizzle-orm';
 
 // @ts-ignore
 import { menus, menuCategories, menuItems } from '../drizzle/schema.js';
@@ -318,7 +319,7 @@ router.post('/api/menus/seed', async (req, res) => {
         menuId: adegaMenuId,
         name: category.name,
         order: idx,
-        createdAt: now,
+        createdAt: now as any,
       });
 
       for (let itemIdx = 0; itemIdx < category.items.length; itemIdx++) {
@@ -354,7 +355,7 @@ router.post('/api/menus/seed', async (req, res) => {
         menuId: afterMenuId,
         name: category.name,
         order: idx,
-        createdAt: now,
+        createdAt: now as any,
       });
 
       for (let itemIdx = 0; itemIdx < category.items.length; itemIdx++) {
@@ -385,11 +386,11 @@ router.get('/api/menus', async (req, res) => {
     // Carregar categorias e itens para cada cardápio
     const menusWithCategories = await Promise.all(
       allMenus.map(async (menu: any) => {
-        const categories = await db.select().from(menuCategories).where((c: any) => c.menuId === menu.id);
+        const categories = await db.select().from(menuCategories).where(eq(menuCategories.menuId, menu.id));
         
         const categoriesWithItems = await Promise.all(
           categories.map(async (cat: any) => {
-            const items = await db.select().from(menuItems).where((i: any) => i.categoryId === cat.id);
+            const items = await db.select().from(menuItems).where(eq(menuItems.categoryId, cat.id));
             return {
               id: cat.id,
               name: cat.name,
@@ -422,18 +423,18 @@ router.get('/api/menus', async (req, res) => {
 // GET cardápio ativo com categorias e itens
 router.get('/api/menus/active', async (req, res) => {
   try {
-    const activeMenu = await db.select().from(menus).where((m: any) => m.isActive === true).limit(1);
+    const activeMenu = await db.select().from(menus).where(eq(menus.isActive, true)).limit(1);
     
     if (!activeMenu || activeMenu.length === 0) {
       return res.json(null);
     }
 
     const menuId = activeMenu[0].id;
-    const categories = await db.select().from(menuCategories).where((c: any) => c.menuId === menuId);
+    const categories = await db.select().from(menuCategories).where(eq(menuCategories.menuId, menuId));
     
     const categoriesWithItems = await Promise.all(
       categories.map(async (cat: any) => {
-        const items = await db.select().from(menuItems).where((i: any) => i.categoryId === cat.id);
+        const items = await db.select().from(menuItems).where(eq(menuItems.categoryId, cat.id));
         return { ...cat, items };
       })
     );
@@ -453,7 +454,7 @@ router.put('/api/menus/:menuId/toggle', async (req, res) => {
     await db.update(menus).set({ isActive: false });
 
     // Ativar o cardápio selecionado
-    await db.update(menus).set({ isActive: true }).where((m: any) => m.id === menuId);
+    await db.update(menus).set({ isActive: true }).where(eq(menus.id, menuId));
 
     res.json({ message: '✅ Cardápio ativado com sucesso!' });
   } catch (error) {
@@ -472,7 +473,7 @@ router.put('/api/menus/items/:itemId/price', async (req, res) => {
       return res.status(400).json({ error: 'Preço inválido' });
     }
 
-    await db.update(menuItems).set({ price }).where((i: any) => i.id === itemId);
+    await db.update(menuItems).set({ price }).where(eq(menuItems.id, itemId));
 
     res.json({ message: '✅ Preço atualizado com sucesso!' });
   } catch (error) {
@@ -491,7 +492,7 @@ router.put('/api/menus/items/:itemId/name', async (req, res) => {
       return res.status(400).json({ error: 'Nome inválido' });
     }
 
-    await db.update(menuItems).set({ name: name.trim() }).where((i: any) => i.id === itemId);
+    await db.update(menuItems).set({ name: name.trim() }).where(eq(menuItems.id, itemId));
 
     res.json({ message: '✅ Nome atualizado com sucesso!' });
   } catch (error) {
@@ -532,7 +533,7 @@ router.delete('/api/menus/items/:itemId', async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    await db.delete(menuItems).where((i: any) => i.id === itemId);
+    await db.delete(menuItems).where(eq(menuItems.id, itemId));
 
     res.json({ message: '✅ Item removido com sucesso!' });
   } catch (error) {

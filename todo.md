@@ -230,3 +230,11 @@
 - [ ] Adicionar sincronização WebSocket para atualizações em tempo real
 - [x] Integrar página no menu de admin
 - [ ] Testar funcionalidades completas
+
+
+## Bug: Erro ao Carregar Cardápio em Conta Geral
+
+- [x] Investigar erro "Erro ao carregar cardápio. Tente novamente."
+- [x] Verificar endpoint /api/menus
+- [x] Corrigir sintaxe Drizzle ORM em menuRouter.ts
+- [ ] Testar carregamento em todos os fluxos
