@@ -7,6 +7,7 @@ import syncRouter from "./syncRouter";
 import migrateRouter from "./migrateRouter";
 import migrateUsersRouter from "./migrateUsersRouter";
 import menuRouter from "./menuRouter";
+import syncPollingRouter from "./syncPollingRouter";
 import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
 
@@ -37,6 +38,7 @@ async function startServer() {
   
   // Rotas de sincronização
   app.use('/api', syncRouter);
+  app.use('/api/sync', syncPollingRouter);
   
   // Rotas de cardápios
   app.use(menuRouter);

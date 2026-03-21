@@ -55,18 +55,17 @@ export const appRouter = router({
               if (existing) {
                 // Atualizar usuário existente
                 await dbHelpers.updateUser(user.id, {
-                  nome: user.nome,
-                  tipo: user.tipo === 'admin' ? 'admin' : 'cliente',
+                  name: user.nome || user.name,
+                  role: user.tipo === 'admin' ? 'admin' : 'user',
                 });
                 results.push({ id: user.id, status: 'updated' });
               } else {
                 // Criar novo usuário
                 await dbHelpers.createUser({
                   email: user.email,
-                  senha: 'temp-senha',
-                  nome: user.nome,
-                  tipo: user.tipo === 'admin' ? 'admin' : 'cliente',
-                  telefone: '',
+                  name: user.nome || user.name || 'Usuário',
+                  role: user.tipo === 'admin' ? 'admin' : 'user',
+                  openId: user.openId,
                   ativo: true,
                 });
                 results.push({ id: user.id, status: 'created' });

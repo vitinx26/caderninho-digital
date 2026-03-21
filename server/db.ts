@@ -6,11 +6,8 @@ import { eq, and } from 'drizzle-orm';
  * Operações de usuários
  */
 export async function createUser(user: typeof users.$inferInsert) {
-  const now = Date.now();
   const userData = {
     ...user,
-    dataCriacao: user.dataCriacao || now,
-    dataAtualizacao: now,
   };
   await db.insert(users).values(userData);
   return userData;
@@ -22,17 +19,17 @@ export async function getUserByEmail(email: string) {
   });
 }
 
-export async function getUserById(id: string) {
+export async function getUserById(id: number | string) {
   return db.query.users.findFirst({
-    where: eq(users.id, id),
+    where: eq(users.id, typeof id === 'string' ? parseInt(id) : id),
   });
 }
 
-export async function updateUser(id: string, data: Partial<typeof users.$inferInsert>) {
+export async function updateUser(id: number | string, data: Partial<typeof users.$inferInsert>) {
   return db.update(users).set({
     ...data,
     dataAtualizacao: Date.now(),
-  }).where(eq(users.id, id));
+  }).where(eq(users.id, typeof id === 'string' ? parseInt(id) : id));
 }
 
 /**
@@ -60,9 +57,9 @@ export async function createManyClients(clientsList: (typeof clients.$inferInser
   );
 }
 
-export async function getClientsByAdminId(adminId: string) {
+export async function getClientsByAdminId(adminId: number | string) {
   return db.query.clients.findMany({
-    where: eq(clients.adminId, adminId),
+    where: eq(clients.adminId, typeof adminId === 'string' ? parseInt(adminId) : adminId),
   });
 }
 
@@ -104,9 +101,9 @@ export async function createManyTransactions(transactionsList: (typeof transacti
   );
 }
 
-export async function getTransactionsByAdminId(adminId: string) {
+export async function getTransactionsByAdminId(adminId: number | string) {
   return db.query.transactions.findMany({
-    where: eq(transactions.adminId, adminId),
+    where: eq(transactions.adminId, typeof adminId === 'string' ? parseInt(adminId) : adminId),
   });
 }
 
@@ -116,10 +113,10 @@ export async function getTransactionsByClientId(clientId: string) {
   });
 }
 
-export async function getTransactionsByAdminAndClient(adminId: string, clientId: string) {
+export async function getTransactionsByAdminAndClient(adminId: number | string, clientId: string) {
   return db.query.transactions.findMany({
     where: and(
-      eq(transactions.adminId, adminId),
+      eq(transactions.adminId, typeof adminId === 'string' ? parseInt(adminId) : adminId),
       eq(transactions.clienteId, clientId)
     ),
   });
@@ -150,7 +147,7 @@ export async function getAllUsers() {
  */
 export async function getAllAdmins() {
   return db.query.users.findMany({
-    where: eq(users.tipo, 'admin'),
+    where: eq(users.role, 'admin'),
   });
 }
 

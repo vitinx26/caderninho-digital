@@ -11,6 +11,7 @@ import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancas
 import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
 import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
 import { garantirAdminsPresentes } from '@/lib/debugAdmins';
+import { iniciarPollingHTTP, pararPolling } from '@/lib/httpPolling';
 // import { sincronizarBidirecional, iniciarSincronizacaoPeriodica, monitorarConexao } from '@/lib/serverSync';
 // import { migrarDadosParaServidor, sincronizarDoServidor } from '@/lib/migrationToServer';
 
@@ -111,9 +112,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('💾 Salvando senha com segurança...');
       await salvarSenhaSegura(email, senha);
 
-      // Se é admin, sincronizar dados com servidor
+      // Se é admin, iniciar polling HTTP para sincronização
       if (usuario.tipo === 'admin') {
-        console.log('🔄 Sincronizando dados com servidor...');
+        console.log('🔄 Iniciando polling HTTP para sincronização...');
         try {
           const usuarioComDados: UsuarioLogado = {
             id: usuario.id,
@@ -124,11 +125,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             nomeEstabelecimento: usuario.nomeEstabelecimento,
           };
           
-          // Sincronização simplificada (sem WebSocket por enquanto)
-          console.log('✅ Login bem-sucedido, dados sincronizados localmente');
-          // TODO: Implementar sincronização em tempo real após estabilizar
+          // Iniciar polling HTTP (5 segundos)
+          const cancelarPolling = iniciarPollingHTTP(usuarioComDados, 5000);
+          (window as any).cancelarPollingHTTP = cancelarPolling;
+          console.log('✅ Polling HTTP iniciado com sucesso');
         } catch (error) {
-          console.error('⚠️ Erro ao sincronizar com servidor:', error);
+          console.error('⚠️ Erro ao iniciar polling HTTP:', error);
         }
       }
 
@@ -189,6 +191,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fazer_logout = () => {
+    // Cancelar polling HTTP
+    const cancelarPolling = (window as any).cancelarPollingHTTP;
+    if (cancelarPolling) {
+      cancelarPolling();
+      pararPolling();
+    }
+
     // Cancelar sincronização periódica
     const cancelarSync = (window as any).cancelarSyncPeriodica;
     if (cancelarSync) {

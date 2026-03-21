@@ -48,22 +48,20 @@ router.post('/migrate', async (req: Request, res: Response) => {
       await db.insert(users).values({
         id: usuarioId,
         email: usuario.email,
-        nome: usuario.nome || 'Usuario Migrado',
-        tipo: usuario.tipo || 'admin',
-        telefone: usuario.telefone || '',
-        nomeEstabelecimento: usuario.nomeEstabelecimento || '',
-        senha: usuario.senha || 'migrated',
+        name: usuario.nome || usuario.name || 'Usuario Migrado',
+        role: usuario.tipo === 'admin' ? 'admin' : 'user',
+        openId: usuario.openId,
         ativo: true,
-        dataCriacao: usuario.dataCriacao || now,
-        dataAtualizacao: now,
+        createdAt: usuario.dataCriacao ? new Date(usuario.dataCriacao) : new Date(),
+        updatedAt: new Date(),
       }).onDuplicateKeyUpdate({
-        nome: usuario.nome || 'Usuario Migrado',
-        tipo: usuario.tipo || 'admin',
-        dataAtualizacao: now,
+        name: usuario.nome || usuario.name || 'Usuario Migrado',
+        role: usuario.tipo === 'admin' ? 'admin' : 'user',
+        updatedAt: new Date(),
       });
       
       resultado.usuariosMigrados = 1;
-      console.log(`   ✅ Usuario processado`);
+      console.log(`   ✅ Usuario processado: ${usuario.email}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`   ❌ Erro: ${msg}`);
@@ -90,11 +88,11 @@ router.post('/migrate', async (req: Request, res: Response) => {
             telefone: cliente.telefone || '',
             email: cliente.email || '',
             ativo: cliente.ativo !== false,
-            dataCriacao: cliente.dataCriacao || now,
-            dataAtualizacao: now,
+            dataCriacao: cliente.dataCriacao ? new Date(cliente.dataCriacao) : new Date(),
+            dataAtualizacao: new Date(),
           }).onDuplicateKeyUpdate({
             nome: cliente.nome,
-            dataAtualizacao: now,
+            dataAtualizacao: new Date(),
           });
           
           resultado.clientesMigrados++;
@@ -127,12 +125,12 @@ router.post('/migrate', async (req: Request, res: Response) => {
             tipo: lancamento.tipo,
             valor: lancamento.valor,
             descricao: lancamento.descricao || '',
-            data: lancamento.data || now,
-            dataCriacao: lancamento.dataCriacao || now,
-            dataAtualizacao: now,
+            data: lancamento.data ? new Date(lancamento.data) : new Date(),
+            dataCriacao: lancamento.dataCriacao ? new Date(lancamento.dataCriacao) : new Date(),
+            dataAtualizacao: new Date(),
           }).onDuplicateKeyUpdate({
             descricao: lancamento.descricao || '',
-            dataAtualizacao: now,
+            dataAtualizacao: new Date(),
           });
           
           resultado.lancamentosMigrados++;
@@ -150,6 +148,10 @@ router.post('/migrate', async (req: Request, res: Response) => {
     console.log(`   Clientes: ${resultado.clientesMigrados}`);
     console.log(`   Lancamentos: ${resultado.lancamentosMigrados}`);
     console.log(`   Erros: ${resultado.erros.length}`);
+    if (resultado.erros.length > 0) {
+      console.log(`   Detalhes dos erros:`);
+      resultado.erros.forEach(err => console.log(`     - ${err}`));
+    }
     console.log('=== FIM MIGRACAO ===\n');
     
     res.json({

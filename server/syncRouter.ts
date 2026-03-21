@@ -240,10 +240,8 @@ router.post('/users', async (req: Request, res: Response) => {
     
     const novoUsuario = await dbHelpers.createUser({
       email,
-      senha: senha || 'temp-senha',
-      nome,
-      tipo: tipo === 'admin' ? 'admin' : 'cliente',
-      telefone: '',
+      name: nome || 'Usuário',
+      role: tipo === 'admin' ? 'admin' : 'user',
       ativo: true,
     });
     
@@ -254,8 +252,8 @@ router.post('/users', async (req: Request, res: Response) => {
       data: {
         id: novoUsuario.id,
         email: novoUsuario.email,
-        nome: novoUsuario.nome,
-        tipo: novoUsuario.tipo,
+        name: novoUsuario.name,
+        role: novoUsuario.role,
       },
     });
   } catch (error) {

@@ -14,18 +14,17 @@ export const users = mysqlTable(
   'users',
   {
     id: int('id').primaryKey().autoincrement(),
+    openId: varchar('open_id', { length: 255 }),
+    name: varchar('name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),
-    senha: text('senha').notNull(), // Hash da senha
-    nome: varchar('nome', { length: 255 }).notNull(),
-    tipo: varchar('tipo', { length: 20 }).notNull().default('cliente'), // 'admin' ou 'cliente'
-    telefone: varchar('telefone', { length: 20 }),
+    role: varchar('role', { length: 20 }).notNull().default('user'), // 'admin' ou 'user'
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
     ativo: boolean('ativo').notNull().default(true),
-    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
-    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
   },
   (table) => ({
     emailIdx: index('email_idx').on(table.email),
-    tipoIdx: index('tipo_idx').on(table.tipo),
+    roleIdx: index('role_idx').on(table.role),
   })
 );
 
