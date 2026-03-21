@@ -22,6 +22,7 @@ import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
 import Backups from "./pages/Backups";
+import GerenciarCardapios from "./pages/GerenciarCardapios";
 import { ClienteLayout } from "./components/ClienteLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import UpdateNotification from "./components/UpdateNotification";
@@ -79,6 +80,7 @@ function RouterContent() {
         {paginaAtual === 'configuracoes' && <Configuracoes />}
         {paginaAtual === 'gerenciar-usuarios' && <GerenciarUsuarios />}
         {paginaAtual === 'backups' && <Backups />}
+        {paginaAtual === 'gerenciar-cardapios' && <GerenciarCardapios />}
       </Layout>
     );
   }

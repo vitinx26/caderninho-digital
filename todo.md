@@ -219,3 +219,14 @@
 - [x] iPhone não carrega o app (tela em branco) - Corrigido erro de Buffer
 - [ ] CardapioSelector não aparece em Novo Lançamento ao clicar no botão
 - [ ] Falta página dedicada para gerenciar cardápios (seleção de itens)
+
+
+## Gerenciamento de Cardápios - Concluído
+
+- [x] Analisar estrutura de dados de cardápios no banco
+- [x] Criar endpoints de API para CRUD de cardápios
+- [x] Implementar página GerenciarCardapios com UI de edição
+- [x] Integrar modal de edição de itens e preços
+- [ ] Adicionar sincronização WebSocket para atualizações em tempo real
+- [x] Integrar página no menu de admin
+- [ ] Testar funcionalidades completas

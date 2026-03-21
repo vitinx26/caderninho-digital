@@ -444,4 +444,101 @@ router.get('/api/menus/active', async (req, res) => {
   }
 });
 
+// PUT - Ativar/desativar cardápio
+router.put('/api/menus/:menuId/toggle', async (req, res) => {
+  try {
+    const { menuId } = req.params;
+
+    // Desativar todos os cardápios
+    await db.update(menus).set({ isActive: false });
+
+    // Ativar o cardápio selecionado
+    await db.update(menus).set({ isActive: true }).where((m: any) => m.id === menuId);
+
+    res.json({ message: '✅ Cardápio ativado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao ativar cardápio:', error);
+    res.status(500).json({ error: 'Erro ao ativar cardápio' });
+  }
+});
+
+// PUT - Atualizar preço de um item
+router.put('/api/menus/items/:itemId/price', async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { price } = req.body;
+
+    if (!price || price < 0) {
+      return res.status(400).json({ error: 'Preço inválido' });
+    }
+
+    await db.update(menuItems).set({ price }).where((i: any) => i.id === itemId);
+
+    res.json({ message: '✅ Preço atualizado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao atualizar preço:', error);
+    res.status(500).json({ error: 'Erro ao atualizar preço' });
+  }
+});
+
+// PUT - Atualizar nome de um item
+router.put('/api/menus/items/:itemId/name', async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { name } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Nome inválido' });
+    }
+
+    await db.update(menuItems).set({ name: name.trim() }).where((i: any) => i.id === itemId);
+
+    res.json({ message: '✅ Nome atualizado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao atualizar nome:', error);
+    res.status(500).json({ error: 'Erro ao atualizar nome' });
+  }
+});
+
+// POST - Adicionar novo item em uma categoria
+router.post('/api/menus/categories/:categoryId/items', async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { name, price } = req.body;
+
+    if (!name || !name.trim() || !price || price < 0) {
+      return res.status(400).json({ error: 'Nome e preço são obrigatórios' });
+    }
+
+    const itemId = uuidv4();
+    await db.insert(menuItems).values({
+      id: itemId,
+      categoryId,
+      name: name.trim(),
+      price,
+      order: 0,
+      createdAt: Date.now(),
+    });
+
+    res.json({ id: itemId, name: name.trim(), price });
+  } catch (error) {
+    console.error('Erro ao adicionar item:', error);
+    res.status(500).json({ error: 'Erro ao adicionar item' });
+  }
+});
+
+// DELETE - Remover item
+router.delete('/api/menus/items/:itemId', async (req, res) => {
+  try {
+    const { itemId } = req.params;
+
+    await db.delete(menuItems).where((i: any) => i.id === itemId);
+
+    res.json({ message: '✅ Item removido com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao remover item:', error);
+    res.status(500).json({ error: 'Erro ao remover item' });
+  }
+});
+
 export default router;
