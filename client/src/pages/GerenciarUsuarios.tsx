@@ -11,8 +11,6 @@ import { useNavigation } from '@/contexts/NavigationContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import * as db from '@/lib/db';
-import { salvarSenhaSegura } from '@/lib/passwordPersistence';
 import { Usuario } from '@/types';
 
 export default function GerenciarUsuarios() {
@@ -35,13 +33,17 @@ export default function GerenciarUsuarios() {
     telefone: '',
   });
 
-  // Carregar usuários
+  // Carregar usuários do servidor
   useEffect(() => {
     const carregarUsuarios = async () => {
       try {
         setCarregando(true);
-        const usuariosCarregados = await db.obterTodosUsuarios();
-        setUsuarios(usuariosCarregados);
+        const response = await fetch('/api/users');
+        if (!response.ok) {
+          throw new Error('Erro ao carregar usuários');
+        }
+        const data = await response.json();
+        setUsuarios(data.data || []);
       } catch (error) {
         console.error('Erro ao carregar usuários:', error);
         toast.error('Erro ao carregar usuários');
@@ -87,24 +89,22 @@ export default function GerenciarUsuarios() {
     }
 
     try {
-      const usuarioAtualizado: Usuario = {
-        id: editandoId,
-        email: formData.email.trim(),
-        nome: formData.nome.trim(),
-        tipo: formData.tipo || 'cliente',
-        telefone: formData.telefone || '',
-        senha: formData.senha || '',
-        dataCriacao: formData.dataCriacao || Date.now(),
-      };
+      const response = await fetch(`/api/users/${editandoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: formData.nome.trim(),
+          tipo: formData.tipo || 'cliente',
+          telefone: formData.telefone || '',
+        }),
+      });
 
-      await db.adicionarUsuario(usuarioAtualizado);
-
-      // Se senha foi alterada, salvar com segurança
-      if (formData.senha && formData.senha.trim()) {
-        await salvarSenhaSegura(formData.email.trim(), formData.senha.trim());
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar usuário');
       }
 
-      setUsuarios(usuarios.map(u => u.id === editandoId ? usuarioAtualizado : u));
+      const usuarioAtualizado = await response.json();
+      setUsuarios(usuarios.map(u => u.id === editandoId ? usuarioAtualizado.data : u));
       setEditandoId(null);
       toast.success('Usuário atualizado com sucesso!');
     } catch (error) {
@@ -119,20 +119,16 @@ export default function GerenciarUsuarios() {
     }
 
     try {
-      // Nota: IndexedDB não tem método delete nativo, então apenas removemos da lista
-      // Em produção, seria necessário implementar um método de soft delete
-      const usuarioADeletar = usuarios.find(u => u.id === id);
-      
-      if (usuarioADeletar) {
-        // Marcar como deletado (soft delete)
-        const usuarioDeletado = {
-          ...usuarioADeletar,
-          ativo: false,
-        };
-        await db.adicionarUsuario(usuarioDeletado);
-        setUsuarios(usuarios.filter(u => u.id !== id));
-        toast.success('Usuário deletado com sucesso!');
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao deletar usuário');
       }
+
+      setUsuarios(usuarios.filter(u => u.id !== id));
+      toast.success('Usuário deletado com sucesso!');
     } catch (error) {
       console.error('Erro ao deletar usuário:', error);
       toast.error('Erro ao deletar usuário');
@@ -163,27 +159,25 @@ export default function GerenciarUsuarios() {
     }
 
     try {
-      // Verificar se email já existe
-      const usuarioExistente = await db.obterUsuarioPorEmail(novoUsuario.email.trim());
-      if (usuarioExistente) {
-        toast.error('Email já cadastrado');
-        return;
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: novoUsuario.email.trim(),
+          nome: novoUsuario.nome.trim(),
+          tipo: novoUsuario.tipo,
+          telefone: novoUsuario.telefone || '',
+          senha: novoUsuario.senha,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao criar usuário');
       }
 
-      const usuarioNovo: Usuario = {
-        id: Math.random().toString(36).substr(2, 9),
-        email: novoUsuario.email.trim(),
-        senha: novoUsuario.senha,
-        nome: novoUsuario.nome.trim(),
-        tipo: novoUsuario.tipo,
-        telefone: novoUsuario.telefone || '',
-        dataCriacao: Date.now(),
-      };
-
-      await db.adicionarUsuario(usuarioNovo);
-      await salvarSenhaSegura(novoUsuario.email.trim(), novoUsuario.senha);
-
-      setUsuarios([...usuarios, usuarioNovo]);
+      const usuarioNovo = await response.json();
+      setUsuarios([...usuarios, usuarioNovo.data]);
       setNovoUsuario({
         email: '',
         senha: '',
@@ -195,242 +189,222 @@ export default function GerenciarUsuarios() {
       toast.success('Usuário criado com sucesso!');
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
-      toast.error('Erro ao criar usuário');
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar usuário');
     }
   };
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={voltar}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
-          >
-            <ArrowLeft size={24} className="text-foreground" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Gerenciar Usuários</h1>
-            <p className="text-muted-foreground">Edite ou delete usuários cadastrados</p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={voltar}
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Gerenciar Usuários</h1>
+              <p className="text-muted-foreground">Administre admins e clientes do sistema</p>
+            </div>
           </div>
+          <Button
+            onClick={() => setMostrarFormNovoUsuario(!mostrarFormNovoUsuario)}
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Usuário
+          </Button>
         </div>
-
-        {/* Botão Novo Usuário */}
-        <Button
-          onClick={() => setMostrarFormNovoUsuario(!mostrarFormNovoUsuario)}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          <Plus size={20} />
-          Novo Usuário
-        </Button>
 
         {/* Formulário Novo Usuário */}
         {mostrarFormNovoUsuario && (
-          <form onSubmit={handleAdicionarNovoUsuario} className="card-minimal p-6 space-y-4">
-            <h2 className="text-xl font-bold text-foreground">Adicionar Novo Usuário</h2>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Nome *</label>
-              <Input
-                type="text"
-                value={novoUsuario.nome}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, nome: e.target.value })}
-                placeholder="Nome do usuário"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Email *</label>
-              <Input
-                type="email"
-                value={novoUsuario.email}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, email: e.target.value })}
-                placeholder="email@example.com"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Senha *</label>
-              <Input
-                type="password"
-                value={novoUsuario.senha}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, senha: e.target.value })}
-                placeholder="Mínimo 6 caracteres"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Telefone</label>
-              <Input
-                type="tel"
-                value={novoUsuario.telefone}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, telefone: e.target.value })}
-                placeholder="(11) 99999-9999"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Tipo</label>
-              <select
-                value={novoUsuario.tipo}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, tipo: e.target.value as any })}
-                className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="cliente">Cliente</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                Criar Usuário
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setMostrarFormNovoUsuario(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </form>
+          <div className="bg-card border border-border rounded-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Criar Novo Usuário</h2>
+            <form onSubmit={handleAdicionarNovoUsuario} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Nome
+                  </label>
+                  <Input
+                    type="text"
+                    value={novoUsuario.nome}
+                    onChange={(e) => setNovoUsuario({ ...novoUsuario, nome: e.target.value })}
+                    placeholder="Nome do usuário"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    value={novoUsuario.email}
+                    onChange={(e) => setNovoUsuario({ ...novoUsuario, email: e.target.value })}
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Tipo
+                  </label>
+                  <select
+                    value={novoUsuario.tipo as string}
+                    onChange={(e) => setNovoUsuario({ ...novoUsuario, tipo: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                  >
+                    <option value="cliente">Cliente</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Telefone
+                  </label>
+                  <Input
+                    type="tel"
+                    value={novoUsuario.telefone}
+                    onChange={(e) => setNovoUsuario({ ...novoUsuario, telefone: e.target.value })}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Senha
+                  </label>
+                  <Input
+                    type="password"
+                    value={novoUsuario.senha}
+                    onChange={(e) => setNovoUsuario({ ...novoUsuario, senha: e.target.value })}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit">Criar Usuário</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMostrarFormNovoUsuario(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </div>
         )}
 
         {/* Lista de Usuários */}
-        <div className="space-y-3">
-          <h2 className="text-xl font-semibold text-foreground">Usuários Cadastrados</h2>
-
-          {carregando ? (
-            <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-          ) : usuarios.length === 0 ? (
-            <div className="card-minimal p-8 text-center">
-              <p className="text-muted-foreground">Nenhum usuário encontrado</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {usuarios.map((usuario) => (
-                <div key={usuario.id} className="card-minimal p-4">
-                  {editandoId === usuario.id ? (
-                    // Modo Edição
-                    <div className="space-y-4">
+        {carregando ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Carregando usuários...</p>
+          </div>
+        ) : usuarios.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Nenhum usuário encontrado</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {usuarios.map((usuario) => (
+              <div
+                key={usuario.id}
+                className="bg-card border border-border rounded-lg p-4 flex items-center justify-between"
+              >
+                {editandoId === usuario.id ? (
+                  <div className="flex-1 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Nome</label>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Nome
+                        </label>
                         <Input
                           type="text"
                           value={formData.nome || ''}
                           onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                          className="w-full"
                         />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Email
+                        </label>
                         <Input
                           type="email"
                           value={formData.email || ''}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full"
+                          disabled
+                          className="opacity-50"
                         />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Nova Senha (deixe em branco para não alterar)</label>
-                        <Input
-                          type="password"
-                          value={formData.senha || ''}
-                          onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-                          placeholder="Deixe em branco para manter a senha atual"
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Telefone</label>
-                        <Input
-                          type="tel"
-                          value={formData.telefone || ''}
-                          onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">Tipo</label>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Tipo
+                        </label>
                         <select
-                          value={formData.tipo || 'cliente'}
+                          value={(formData.tipo as string) || 'cliente'}
                           onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
-                          className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                         >
                           <option value="cliente">Cliente</option>
                           <option value="admin">Admin</option>
                         </select>
                       </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleSalvarEdicao}
-                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                        >
-                          Salvar
-                        </Button>
-                        <Button
-                          onClick={() => setEditandoId(null)}
-                          variant="outline"
-                          className="flex-1"
-                        >
-                          Cancelar
-                        </Button>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Telefone
+                        </label>
+                        <Input
+                          type="tel"
+                          value={formData.telefone || ''}
+                          onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                        />
                       </div>
                     </div>
-                  ) : (
-                    // Modo Visualização
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{usuario.nome}</p>
-                        <p className="text-sm text-muted-foreground">{usuario.email}</p>
-                        <div className="flex gap-2 mt-2">
-                          <span className="text-xs px-2 py-1 rounded bg-secondary text-secondary-foreground">
-                            {usuario.tipo === 'admin' ? '👤 Admin' : '👥 Cliente'}
-                          </span>
-                          {usuario.telefone && (
-                            <span className="text-xs px-2 py-1 rounded bg-secondary text-secondary-foreground">
-                              📱 {usuario.telefone}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditarUsuario(usuario)}
-                          className="p-2 hover:bg-muted rounded-lg transition-colors"
-                          title="Editar usuário"
-                        >
-                          <Edit2 size={20} className="text-primary" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletarUsuario(usuario.id)}
-                          className="p-2 hover:bg-muted rounded-lg transition-colors"
-                          title="Deletar usuário"
-                        >
-                          <Trash2 size={20} className="text-red-600" />
-                        </button>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSalvarEdicao}>Salvar</Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditandoId(null)}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">{usuario.nome}</p>
+                      <p className="text-sm text-muted-foreground">{usuario.email}</p>
+                      <div className="flex gap-2 mt-2">
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                          {usuario.tipo === 'admin' ? 'Administrador' : 'Cliente'}
+                        </span>
+                        {usuario.telefone && (
+                          <span className="text-xs text-muted-foreground">{usuario.telefone}</span>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditarUsuario(usuario)}
+                        className="p-2 hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeletarUsuario(usuario.id)}
+                        className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

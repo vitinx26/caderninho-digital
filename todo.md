@@ -264,3 +264,12 @@
 - [x] Implementar polling a cada 5 segundos em CardapioSelectorSimples
 - [x] Adicionar invalidação de cache em todas as operações de admin
 - [ ] Testar sincronização em tempo real
+
+
+## Bug Crítico: Persistência de Usuários Não Funciona
+
+- [ ] Usuários deletados reaparecem após recarregar a página
+- [ ] Novos usuários (Lucas Peres, Anna Carolina) não aparecem em Conta Geral
+- [ ] Soft delete não está sendo salvo no banco de dados
+- [ ] Backup não está ativo - mudanças de admin não persistem
+- [ ] Sincronização entre frontend e backend quebrada

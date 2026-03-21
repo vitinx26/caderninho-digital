@@ -15,6 +15,7 @@ export const users = mysqlTable(
     nomeEstabelecimento: varchar('nome_estabelecimento', { length: 255 }), // Para admins
     templateWhatsapp: text('template_whatsapp'), // Template de mensagem para cobrança via WhatsApp
     senha: text('senha').notNull(), // Hash da senha
+    ativo: boolean('ativo').notNull().default(true), // Soft delete
     dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(),
     dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(),
   },

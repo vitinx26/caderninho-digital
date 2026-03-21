@@ -28,10 +28,12 @@ router.get('/users', async (req: Request, res: Response) => {
     // Buscar TODOS os usuários (não apenas admins)
     const usuarios = await dbHelpers.getAllUsers();
     
+    // Filtrar apenas usuários ativos
+    let usuariosFiltrados = usuarios.filter((u: any) => u.ativo !== false);
+    
     // Filtrar por tipo se especificado
-    let usuariosFiltrados = usuarios;
     if (tipo && (tipo === 'admin' || tipo === 'cliente')) {
-      usuariosFiltrados = usuarios.filter((u: any) => u.tipo === tipo);
+      usuariosFiltrados = usuariosFiltrados.filter((u: any) => u.tipo === tipo);
     }
     
     console.log(`✅ Retornando ${usuariosFiltrados.length} usuários`);
@@ -207,6 +209,127 @@ router.get('/all-clients', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao buscar clientes',
+      message: String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/users
+ * Criar novo usuário
+ */
+router.post('/users', async (req: Request, res: Response) => {
+  try {
+    const { email, nome, tipo, telefone, senha } = req.body;
+    
+    if (!email || !nome || !tipo || !senha) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email, nome, tipo e senha são obrigatórios',
+      });
+    }
+    
+    // Verificar se email já existe
+    const usuarioExistente = await dbHelpers.getUserByEmail(email);
+    if (usuarioExistente) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email já cadastrado',
+      });
+    }
+    
+    const novoUsuario = await dbHelpers.createUser({
+      id: Math.random().toString(36).substr(2, 9),
+      email,
+      nome,
+      tipo,
+      telefone: telefone || '',
+      senha,
+      ativo: true,
+      dataCriacao: Date.now(),
+      dataAtualizacao: Date.now(),
+    });
+    
+    console.log(`✅ Usuário criado: ${email}`);
+    
+    res.status(201).json({
+      success: true,
+      data: {
+        id: novoUsuario.id,
+        email: novoUsuario.email,
+        nome: novoUsuario.nome,
+        tipo: novoUsuario.tipo,
+        telefone: novoUsuario.telefone,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Erro ao criar usuário:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao criar usuário',
+      message: String(error),
+    });
+  }
+});
+
+/**
+ * PUT /api/users/:id
+ * Atualizar usuário
+ */
+router.put('/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { nome, tipo, telefone, ativo } = req.body;
+    
+    const usuarioAtualizado = await dbHelpers.updateUser(id, {
+      nome,
+      tipo,
+      telefone,
+      ativo,
+      dataAtualizacao: Date.now(),
+    } as any);
+    
+    console.log(`✅ Usuário atualizado: ${id}`);
+    
+    res.json({
+      success: true,
+      data: usuarioAtualizado,
+    });
+  } catch (error) {
+    console.error('❌ Erro ao atualizar usuário:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao atualizar usuário',
+      message: String(error),
+    });
+  }
+});
+
+/**
+ * DELETE /api/users/:id
+ * Deletar usuário (soft delete - marca como ativo: false)
+ */
+router.delete('/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // Soft delete - marcar como inativo
+    await dbHelpers.updateUser(id, {
+      ativo: false,
+      dataAtualizacao: Date.now(),
+    } as any);
+    
+    console.log(`✅ Usuário deletado (soft delete): ${id}`);
+    
+    res.json({
+      success: true,
+      message: 'Usuário deletado com sucesso',
+    });
+  } catch (error) {
+    console.error('❌ Erro ao deletar usuário:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao deletar usuário',
       message: String(error),
     });
   }
