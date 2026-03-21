@@ -24,9 +24,9 @@ export async function salvarSenhaSegura(email: string, senha: string): Promise<v
       return;
     }
 
-    // Salvar no localStorage com prefixo seguro
-    const chave = SENHA_STORAGE_PREFIX + Buffer.from(email).toString('base64');
-    localStorage.setItem(chave, Buffer.from(senha).toString('base64'));
+    // Salvar no localStorage com prefixo seguro (usando base64 nativo do navegador)
+    const chave = SENHA_STORAGE_PREFIX + btoa(email);
+    localStorage.setItem(chave, btoa(senha));
     
     console.log(`✓ Senha salva com segurança para ${email}`);
   } catch (error) {
@@ -43,7 +43,7 @@ export async function recuperarSenhaSegura(email: string): Promise<string | null
       return null;
     }
 
-    const chave = SENHA_STORAGE_PREFIX + Buffer.from(email).toString('base64');
+    const chave = SENHA_STORAGE_PREFIX + btoa(email);
     const senhaCodificada = localStorage.getItem(chave);
     
     if (!senhaCodificada) {
@@ -51,7 +51,7 @@ export async function recuperarSenhaSegura(email: string): Promise<string | null
       return null;
     }
 
-    const senha = Buffer.from(senhaCodificada, 'base64').toString('utf-8');
+    const senha = atob(senhaCodificada);
     console.log(`✓ Senha recuperada para ${email}`);
     return senha;
   } catch (error) {

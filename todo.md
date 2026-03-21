@@ -212,3 +212,10 @@
 - [x] Integrar CardapioSelector em Conta Geral
 - [x] Remover calculadora de NovoLancamento
 - [ ] Testar integração em todos os fluxos (admin, cliente logado, conta geral)
+
+
+## Bugs Reportados - iPhone e CardapioSelector
+
+- [x] iPhone não carrega o app (tela em branco) - Corrigido erro de Buffer
+- [ ] CardapioSelector não aparece em Novo Lançamento ao clicar no botão
+- [ ] Falta página dedicada para gerenciar cardápios (seleção de itens)

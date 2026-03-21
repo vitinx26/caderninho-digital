@@ -377,12 +377,44 @@ router.post('/api/menus/seed', async (req, res) => {
   }
 });
 
-// GET todos os cardápios
+// GET todos os cardápios com categorias e itens
 router.get('/api/menus', async (req, res) => {
   try {
     const allMenus = await db.select().from(menus);
-    res.json(allMenus);
+    
+    // Carregar categorias e itens para cada cardápio
+    const menusWithCategories = await Promise.all(
+      allMenus.map(async (menu: any) => {
+        const categories = await db.select().from(menuCategories).where((c: any) => c.menuId === menu.id);
+        
+        const categoriesWithItems = await Promise.all(
+          categories.map(async (cat: any) => {
+            const items = await db.select().from(menuItems).where((i: any) => i.categoryId === cat.id);
+            return {
+              id: cat.id,
+              name: cat.name,
+              items: items.map((item: any) => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+              })),
+            };
+          })
+        );
+
+        return {
+          id: menu.id,
+          name: menu.name,
+          description: menu.description,
+          is_active: menu.isActive,
+          categories: categoriesWithItems,
+        };
+      })
+    );
+
+    res.json({ menus: menusWithCategories });
   } catch (error) {
+    console.error('Erro ao buscar cardápios:', error);
     res.status(500).json({ error: 'Erro ao buscar cardápios' });
   }
 });

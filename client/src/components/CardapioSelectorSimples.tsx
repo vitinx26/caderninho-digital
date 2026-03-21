@@ -1,6 +1,7 @@
 /**
  * CardapioSelectorSimples.tsx - Seletor de cardápio simplificado para Conta Geral
  * Interface clean para clientes selecionarem itens de consumo
+ * Carrega cardápios do servidor via API
  */
 
 import { useState, useEffect } from 'react';
@@ -30,6 +31,7 @@ export default function CardapioSelectorSimples({
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [selectedItems, setSelectedItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadActiveMenu();
@@ -38,18 +40,74 @@ export default function CardapioSelectorSimples({
   const loadActiveMenu = async () => {
     try {
       setLoading(true);
-      // Carregar cardápio ativo do localStorage
-      const savedMenus = localStorage.getItem('menus');
-      if (savedMenus) {
-        const menus = JSON.parse(savedMenus);
-        const activeMenu = menus.find((m: any) => m.is_active);
+      setError(null);
+
+      // Tentar carregar do localStorage primeiro (cache)
+      const cachedMenus = localStorage.getItem('menus_cache');
+      if (cachedMenus) {
+        try {
+          const menus = JSON.parse(cachedMenus);
+          const activeMenu = menus.find((m: any) => m.is_active);
+          
+          if (activeMenu && activeMenu.categories) {
+            const formattedCategories = activeMenu.categories.map((cat: any) => ({
+              id: cat.id,
+              name: cat.name,
+              items: cat.items.map((item: any) => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+              })),
+            }));
+            setCategories(formattedCategories);
+            return;
+          }
+        } catch (e) {
+          console.warn('Erro ao parsear cache de menus:', e);
+        }
+      }
+
+      // Se não tiver cache, carregar do servidor
+      const response = await fetch('/api/menus', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao carregar cardápios: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.menus && data.menus.length > 0) {
+        // Salvar em cache
+        localStorage.setItem('menus_cache', JSON.stringify(data.menus));
+
+        // Encontrar cardápio ativo
+        const activeMenu = data.menus.find((m: any) => m.is_active);
         
         if (activeMenu && activeMenu.categories) {
-          setCategories(activeMenu.categories);
+          const formattedCategories = activeMenu.categories.map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            items: cat.items.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+            })),
+          }));
+          setCategories(formattedCategories);
+        } else {
+          setError('Nenhum cardápio ativo encontrado');
         }
+      } else {
+        setError('Nenhum cardápio disponível');
       }
     } catch (error) {
       console.error('Erro ao carregar cardápio:', error);
+      setError('Erro ao carregar cardápio. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -78,6 +136,28 @@ export default function CardapioSelectorSimples({
     return (
       <div className="flex items-center justify-center p-8">
         <p className="text-muted-foreground">Carregando cardápio...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
+        <p className="text-red-800 dark:text-red-300 font-medium">{error}</p>
+        <button
+          onClick={loadActiveMenu}
+          className="mt-2 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Tentar Novamente
+        </button>
+      </div>
+    );
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900 rounded-lg">
+        <p className="text-yellow-800 dark:text-yellow-300 font-medium">Nenhum item disponível no cardápio</p>
       </div>
     );
   }
