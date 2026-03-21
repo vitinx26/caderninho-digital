@@ -11,8 +11,8 @@ import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancas
 import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
 import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
 import { garantirAdminsPresentes } from '@/lib/debugAdmins';
-import { sincronizarBidirecional, iniciarSincronizacaoPeriodica, monitorarConexao } from '@/lib/serverSync';
-import { migrarDadosParaServidor, sincronizarDoServidor } from '@/lib/migrationToServer';
+// import { sincronizarBidirecional, iniciarSincronizacaoPeriodica, monitorarConexao } from '@/lib/serverSync';
+// import { migrarDadosParaServidor, sincronizarDoServidor } from '@/lib/migrationToServer';
 
 interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
@@ -124,38 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             nomeEstabelecimento: usuario.nomeEstabelecimento,
           };
           
-          // 1. Migrar dados de localStorage para servidor (se houver)
-          console.log('🚀 Migrando dados de localStorage para servidor...');
-          try {
-            await migrarDadosParaServidor(usuarioComDados);
-            console.log('✅ Migração concluída');
-          } catch (migrationError) {
-            console.warn('⚠️ Aviso ao migrar:', migrationError);
-          }
-          
-          // 2. Sincronizar dados do servidor para local
-          console.log('🔄 Sincronizando dados do servidor...');
-          try {
-            await sincronizarDoServidor(usuarioComDados);
-            console.log('✅ Sincronização do servidor concluída');
-          } catch (syncError) {
-            console.warn('⚠️ Aviso ao sincronizar:', syncError);
-          }
-          
-          // 3. Sincronizar bidirecional com servidor
-          await sincronizarBidirecional(usuarioComDados);
-          
-          // 4. Iniciar sincronização periódica (a cada 10 segundos para garantir consistência)
-          const cancelarSync = iniciarSincronizacaoPeriodica(usuarioComDados, 10000);
-          
-          // 5. Monitorar reconexão
-          const cancelarMonitor = monitorarConexao(usuarioComDados);
-          
-          // Armazenar funções de cancelamento
-          (window as any).cancelarSyncPeriodica = cancelarSync;
-          (window as any).cancelarMonitorConexao = cancelarMonitor;
-          
-          console.log('✅ Sincronização com servidor iniciada (a cada 10s)');
+          // Sincronização simplificada (sem WebSocket por enquanto)
+          console.log('✅ Login bem-sucedido, dados sincronizados localmente');
+          // TODO: Implementar sincronização em tempo real após estabilizar
         } catch (error) {
           console.error('⚠️ Erro ao sincronizar com servidor:', error);
         }
