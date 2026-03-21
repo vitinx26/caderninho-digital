@@ -9,6 +9,7 @@ import migrateUsersRouter from "./migrateUsersRouter";
 import menuRouter from "./menuRouter";
 import syncPollingRouter from "./syncPollingRouter";
 import backupRouter from "./backupRouter";
+import multiUserRouter from "./multiUserRouter";
 import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
 
@@ -46,6 +47,9 @@ async function startServer() {
   
   // Rotas de backup
   app.use('/api/backup', backupRouter);
+  
+  // Rotas de sistema multi-usuário
+  app.use('/api/multiuser', multiUserRouter);
 
   // Em desenvolvimento, Vite roda em porta 5173
   // O cliente acessa via http://localhost:3000 e Express faz proxy das APIs
