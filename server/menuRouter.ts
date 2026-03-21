@@ -381,7 +381,9 @@ router.post('/api/menus/seed', async (req, res) => {
 // GET todos os cardápios com categorias e itens
 router.get('/api/menus', async (req, res) => {
   try {
+    console.log('[GET /api/menus] Iniciando...');
     const allMenus = await db.select().from(menus);
+    console.log('[GET /api/menus] Cardapios encontrados:', allMenus.length);
     
     // Carregar categorias e itens para cada cardápio
     const menusWithCategories = await Promise.all(
@@ -413,9 +415,10 @@ router.get('/api/menus', async (req, res) => {
       })
     );
 
+    console.log('[GET /api/menus] Retornando', menusWithCategories.length, 'cardapios');
     res.json({ menus: menusWithCategories });
   } catch (error) {
-    console.error('Erro ao buscar cardápios:', error);
+    console.error('[GET /api/menus] Erro:', error);
     res.status(500).json({ error: 'Erro ao buscar cardápios' });
   }
 });

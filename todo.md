@@ -238,3 +238,12 @@
 - [x] Verificar endpoint /api/menus
 - [x] Corrigir sintaxe Drizzle ORM em menuRouter.ts
 - [ ] Testar carregamento em todos os fluxos
+
+
+## Bug: Página GerenciarCardapios em Branco
+
+- [x] Investigar por que página está em branco
+- [x] Descobrir que servidor estava rodando apenas Vite, não Express
+- [x] Corrigir script dev em package.json para rodar Node.js + Express
+- [x] Reiniciar servidor com Express ativo
+- [ ] Testar carregamento de cardápios
