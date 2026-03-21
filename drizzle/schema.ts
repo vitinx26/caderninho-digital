@@ -80,12 +80,11 @@ export const menus = mysqlTable(
   'menus',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
-    adminId: int('admin_id').notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
-    ativo: boolean('ativo').notNull().default(true),
-    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
-    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
+    is_active: boolean('is_active').notNull().default(false),
+    created_at: bigint('created_at', { mode: 'number' }).notNull(),
+    updated_at: bigint('updated_at', { mode: 'number' }).notNull(),
   }
 );
 
@@ -98,9 +97,8 @@ export const menuCategories = mysqlTable(
     id: varchar('id', { length: 36 }).primaryKey(),
     menuId: varchar('menu_id', { length: 36 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
-    description: text('description'),
-    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
-    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
+    order: int('order').notNull().default(0),
+    created_at: bigint('created_at', { mode: 'number' }).notNull(),
   }
 );
 
@@ -113,10 +111,8 @@ export const menuItems = mysqlTable(
     id: varchar('id', { length: 36 }).primaryKey(),
     categoryId: varchar('category_id', { length: 36 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
-    description: text('description'),
     price: int('price').notNull(),
-    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
-    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
+    created_at: bigint('created_at', { mode: 'number' }).notNull(),
   }
 );
 
@@ -169,11 +165,7 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
-export const menusRelations = relations(menus, ({ one, many }) => ({
-  admin: one(users, {
-    fields: [menus.adminId],
-    references: [users.id],
-  }),
+export const menusRelations = relations(menus, ({ many }) => ({
   categories: many(menuCategories),
 }));
 

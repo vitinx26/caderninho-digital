@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total FROM menus;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute SELECT COUNT(*) as total FROM menus;",
+  "rows": [
+    {
+      "total": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n2\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}
