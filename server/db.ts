@@ -13,7 +13,7 @@ export async function createUser(user: typeof users.$inferInsert) {
     dataAtualizacao: now,
   };
   await db.insert(users).values(userData);
-  return await getUserById(user.id);
+  return userData;
 }
 
 export async function getUserByEmail(email: string) {
@@ -46,9 +46,7 @@ export async function createClient(client: typeof clients.$inferInsert) {
     dataAtualizacao: now,
   };
   await db.insert(clients).values(clientData);
-  return await db.query.clients.findFirst({
-    where: eq(clients.id, client.id),
-  });
+  return clientData;
 }
 
 export async function createManyClients(clientsList: (typeof clients.$inferInsert)[]) {
@@ -92,9 +90,7 @@ export async function createTransaction(transaction: typeof transactions.$inferI
     dataAtualizacao: now,
   };
   await db.insert(transactions).values(txData);
-  return await db.query.transactions.findFirst({
-    where: eq(transactions.id, transaction.id),
-  });
+  return txData;
 }
 
 export async function createManyTransactions(transactionsList: (typeof transactions.$inferInsert)[]) {
