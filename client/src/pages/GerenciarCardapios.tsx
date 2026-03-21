@@ -81,6 +81,8 @@ export default function GerenciarCardapios() {
       const response = await fetch(`/api/menus/${menuId}/toggle`, { method: 'PUT' });
       if (response.ok) {
         toast.success('Cardápio ativado com sucesso!');
+        // Invalidar cache para sincronização em tempo real
+        localStorage.removeItem('menus_cache');
         await carregarCardapios();
         setSelectedMenuId(menuId);
       } else {
@@ -103,6 +105,8 @@ export default function GerenciarCardapios() {
 
       if (response.ok) {
         toast.success('Preço atualizado!');
+        // Invalidar cache para sincronização em tempo real
+        localStorage.removeItem('menus_cache');
         setEditingItemId(null);
         await carregarCardapios();
       } else {
@@ -124,6 +128,8 @@ export default function GerenciarCardapios() {
 
       if (response.ok) {
         toast.success('Nome atualizado!');
+        // Invalidar cache para sincronização em tempo real
+        localStorage.removeItem('menus_cache');
         setEditingItemId(null);
         await carregarCardapios();
       } else {
@@ -142,6 +148,8 @@ export default function GerenciarCardapios() {
       const response = await fetch(`/api/menus/items/${itemId}`, { method: 'DELETE' });
       if (response.ok) {
         toast.success('Item removido!');
+        // Invalidar cache para sincronização em tempo real
+        localStorage.removeItem('menus_cache');
         await carregarCardapios();
       } else {
         toast.error('Erro ao remover item');

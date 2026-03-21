@@ -256,3 +256,11 @@
 - [x] Remover opção "Valor Manual" de Conta Geral (manter apenas Cardápio)
 - [x] Adicionar busca por pesquisa ao CardapioSelector
 - [x] Remover campo "Descrição" de Novo Lançamento
+
+
+## Bug Crítico: Sincronização de Cardápio em Tempo Real
+
+- [x] Remover cache de localStorage que impedia sincronização
+- [x] Implementar polling a cada 5 segundos em CardapioSelectorSimples
+- [x] Adicionar invalidação de cache em todas as operações de admin
+- [ ] Testar sincronização em tempo real

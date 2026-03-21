@@ -44,6 +44,13 @@ export default function CardapioSelectorSimples({
 
   useEffect(() => {
     loadActiveMenu();
+    
+    // Polling a cada 5 segundos para sincronização em tempo real
+    const interval = setInterval(() => {
+      loadActiveMenu();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadActiveMenu = async () => {
@@ -51,32 +58,7 @@ export default function CardapioSelectorSimples({
       setLoading(true);
       setError(null);
 
-      // Tentar carregar do localStorage primeiro (cache)
-      const cachedMenus = localStorage.getItem('menus_cache');
-      if (cachedMenus) {
-        try {
-          const menus = JSON.parse(cachedMenus);
-          const activeMenu = menus.find((m: any) => m.is_active);
-          
-          if (activeMenu && activeMenu.categories) {
-            const formattedCategories = activeMenu.categories.map((cat: any) => ({
-              id: cat.id,
-              name: cat.name,
-              items: cat.items.map((item: any) => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-              })),
-            }));
-            setCategories(formattedCategories);
-            return;
-          }
-        } catch (e) {
-          console.warn('Erro ao parsear cache de menus:', e);
-        }
-      }
-
-      // Se não tiver cache, carregar do servidor
+      // Sempre carregar do servidor (sem cache para sincronização em tempo real)
       const response = await fetch('/api/menus', {
         method: 'GET',
         headers: {
@@ -91,9 +73,6 @@ export default function CardapioSelectorSimples({
       const data = await response.json();
       
       if (data.menus && data.menus.length > 0) {
-        // Salvar em cache
-        localStorage.setItem('menus_cache', JSON.stringify(data.menus));
-
         // Encontrar cardápio ativo
         const activeMenu = data.menus.find((m: any) => m.is_active);
         
