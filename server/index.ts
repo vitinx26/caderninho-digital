@@ -4,8 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import notificationRouter from "./notificationRouter";
 import syncRouter from "./syncRouter";
-import migrationRouter from "./migrationRouter";
-import simpleRouter from "./simpleRouter";
+import migrateRouter from "./migrateRouter";
 import menuRouter from "./menuRouter";
 import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
@@ -17,9 +16,9 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Inicializar WebSocket
-  const io = initializeWebSocket(server);
-  console.log('🔌 WebSocket inicializado com CORS correto');
+  // Inicializar WebSocket (desabilitado temporariamente)
+  // const io = initializeWebSocket(server);
+  // console.log('🔌 WebSocket inicializado com CORS correto');
 
   // Inicializar serviço de email
   initializeEmailService();
@@ -31,11 +30,8 @@ async function startServer() {
   // Rotas de notificação
   app.use('/api/notificacoes', notificationRouter);
   
-  // Rotas de migração (DEVE VIR ANTES de syncRouter)
-  app.use('/api', migrationRouter);
-  
-  // Rotas simples de migração (teste)
-  app.use('/api', simpleRouter);
+  // Rotas de migração
+  app.use('/api', migrateRouter);
   
   // Rotas de sincronização
   app.use('/api', syncRouter);
