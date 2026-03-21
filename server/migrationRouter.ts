@@ -19,112 +19,143 @@ router.post('/sync/migrate', async (req: Request, res: Response) => {
     const { usuario, clientes, lancamentos } = req.body;
     
     console.log(`📥 POST /api/sync/migrate - Recebendo migração de dados`);
-    console.log(`   Usuario: ${usuario.email}`);
+    console.log(`   Usuario: ${usuario?.email || 'indefinido'}`);
     console.log(`   Clientes: ${clientes?.length || 0}`);
     console.log(`   Lançamentos: ${lancamentos?.length || 0}`);
     
     if (!usuario || !usuario.email) {
+      console.error('❌ Erro: Dados de usuário inválidos');
       return res.status(400).json({
         success: false,
         error: 'Dados de usuário inválidos',
       });
     }
     
-    // 1. Garantir que usuário existe no banco
-    let usuarioExistente = await dbHelpers.getUserByEmail(usuario.email);
-    
-    if (!usuarioExistente) {
-      console.log(`➕ Criando novo usuário: ${usuario.email}`);
-      await dbHelpers.createUser({
-        id: usuario.id || uuidv4(),
-        email: usuario.email,
-        nome: usuario.nome,
-        tipo: usuario.tipo || 'admin',
-        telefone: usuario.telefone,
-        nomeEstabelecimento: usuario.nomeEstabelecimento,
-        senha: 'migrated', // Placeholder - será atualizado pelo usuário
-        dataCriacao: Date.now(),
-        dataAtualizacao: Date.now(),
+    try {
+      // 1. Garantir que usuário existe no banco
+      let usuarioExistente = await dbHelpers.getUserByEmail(usuario.email);
+      
+      if (!usuarioExistente) {
+        console.log(`➕ Criando novo usuário: ${usuario.email}`);
+        const novoUsuarioId = usuario.id || uuidv4();
+        
+        await dbHelpers.createUser({
+          id: novoUsuarioId,
+          email: usuario.email,
+          nome: usuario.nome || 'Usuário Migrado',
+          tipo: usuario.tipo || 'admin',
+          telefone: usuario.telefone || '',
+          nomeEstabelecimento: usuario.nomeEstabelecimento || '',
+          senha: usuario.senha || 'migrated',
+          ativo: true,
+          dataCriacao: usuario.dataCriacao || Date.now(),
+          dataAtualizacao: usuario.dataAtualizacao || Date.now(),
+        });
+        
+        usuarioExistente = await dbHelpers.getUserByEmail(usuario.email);
+        console.log(`✅ Usuário criado: ${usuario.email}`);
+      } else {
+        console.log(`✓ Usuário já existe: ${usuario.email}`);
+      }
+      
+      const usuarioId = usuarioExistente?.id;
+      
+      if (!usuarioId) {
+        throw new Error('Não foi possível obter ID do usuário após criação');
+      }
+      
+      // 2. Migrar clientes
+      let clientesMigrados = 0;
+      if (clientes && Array.isArray(clientes) && clientes.length > 0) {
+        console.log(`📦 Migrando ${clientes.length} clientes...`);
+        
+        for (const cliente of clientes) {
+          try {
+            if (!cliente.nome) {
+              console.warn(`⚠️ Cliente sem nome, pulando...`);
+              continue;
+            }
+            
+            const clienteExistente = await dbHelpers.getClientById(cliente.id);
+            
+            if (!clienteExistente) {
+              await dbHelpers.createClient({
+                id: cliente.id || uuidv4(),
+                adminId: usuarioId,
+                nome: cliente.nome,
+                telefone: cliente.telefone || '',
+                email: cliente.email || '',
+                ativo: cliente.ativo !== false,
+                dataCriacao: cliente.dataCriacao || Date.now(),
+                dataAtualizacao: cliente.dataAtualizacao || Date.now(),
+              });
+              clientesMigrados++;
+              console.log(`✅ Cliente migrado: ${cliente.nome}`);
+            } else {
+              console.log(`⏭️ Cliente já existe: ${cliente.nome}`);
+            }
+          } catch (err) {
+            console.error(`❌ Erro ao migrar cliente ${cliente.nome}:`, err);
+          }
+        }
+      }
+      
+      // 3. Migrar lançamentos
+      let lancamentosMigrados = 0;
+      if (lancamentos && Array.isArray(lancamentos) && lancamentos.length > 0) {
+        console.log(`📦 Migrando ${lancamentos.length} lançamentos...`);
+        
+        for (const lancamento of lancamentos) {
+          try {
+            if (!lancamento.clienteId || !lancamento.tipo || lancamento.valor === undefined) {
+              console.warn(`⚠️ Lançamento inválido, pulando...`);
+              continue;
+            }
+            
+            await dbHelpers.createTransaction({
+              id: lancamento.id || uuidv4(),
+              adminId: usuarioId,
+              clienteId: lancamento.clienteId,
+              tipo: lancamento.tipo,
+              valor: lancamento.valor,
+              descricao: lancamento.descricao || '',
+              data: lancamento.data || Date.now(),
+              dataCriacao: lancamento.dataCriacao || Date.now(),
+              dataAtualizacao: lancamento.dataAtualizacao || Date.now(),
+            });
+            lancamentosMigrados++;
+            console.log(`✅ Lançamento migrado: ${lancamento.id}`);
+          } catch (err) {
+            console.error(`❌ Erro ao migrar lançamento ${lancamento.id}:`, err);
+          }
+        }
+      }
+      
+      console.log(`✅ Migração concluída: ${clientesMigrados} clientes, ${lancamentosMigrados} lançamentos`);
+      
+      res.json({
+        success: true,
+        message: 'Migração concluída com sucesso',
+        data: {
+          usuarioId,
+          usuarioEmail: usuario.email,
+          clientesMigrados,
+          lancamentosMigrados,
+          total: clientesMigrados + lancamentosMigrados,
+        },
+        timestamp: Date.now(),
       });
-      
-      usuarioExistente = await dbHelpers.getUserByEmail(usuario.email);
+    } catch (innerError) {
+      console.error('❌ Erro interno na migração:', innerError);
+      throw innerError;
     }
-    
-    const usuarioId = usuarioExistente?.id;
-    
-    // 2. Migrar clientes
-    let clientesMigrados = 0;
-    if (clientes && clientes.length > 0) {
-      console.log(`📦 Migrando ${clientes.length} clientes...`);
-      
-      for (const cliente of clientes) {
-        const clienteExistente = await dbHelpers.getClientById(cliente.id);
-        
-        if (!clienteExistente) {
-          await dbHelpers.createClient({
-            id: cliente.id,
-            adminId: usuarioId!,
-            nome: cliente.nome,
-            telefone: cliente.telefone,
-            email: cliente.email,
-            ativo: cliente.ativo !== false,
-            dataCriacao: cliente.dataCriacao || Date.now(),
-            dataAtualizacao: cliente.dataAtualizacao || Date.now(),
-          });
-          clientesMigrados++;
-        }
-      }
-    }
-    
-    // 3. Migrar lançamentos
-    let lancamentosMigrados = 0;
-    if (lancamentos && lancamentos.length > 0) {
-      console.log(`📦 Migrando ${lancamentos.length} lançamentos...`);
-      
-      for (const lancamento of lancamentos) {
-        // Verificar se lançamento já existe
-        const lancamentoExistente = await dbHelpers.getTransactionsByAdminAndClient(
-          usuarioId!,
-          lancamento.clienteId
-        );
-        
-        const jaExiste = lancamentoExistente.some((l: any) => l.id === lancamento.id);
-        
-        if (!jaExiste) {
-          await dbHelpers.createTransaction({
-            id: lancamento.id,
-            adminId: usuarioId!,
-            clienteId: lancamento.clienteId,
-            tipo: lancamento.tipo,
-            valor: lancamento.valor,
-            descricao: lancamento.descricao,
-            data: lancamento.data || Date.now(),
-            dataCriacao: lancamento.dataCriacao || Date.now(),
-            dataAtualizacao: lancamento.dataAtualizacao || Date.now(),
-          });
-          lancamentosMigrados++;
-        }
-      }
-    }
-    
-    console.log(`✅ Migração concluída: ${clientesMigrados} clientes, ${lancamentosMigrados} lançamentos`);
-    
-    res.json({
-      success: true,
-      message: 'Migração concluída com sucesso',
-      data: {
-        usuarioId,
-        clientesMigrados,
-        lancamentosMigrados,
-      },
-      timestamp: Date.now(),
-    });
   } catch (error) {
     console.error('❌ Erro ao migrar dados:', error);
     res.status(500).json({
       success: false,
       error: 'Erro ao migrar dados',
-      message: String(error),
+      message: error instanceof Error ? error.message : String(error),
+      timestamp: Date.now(),
     });
   }
 });
