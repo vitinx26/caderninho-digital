@@ -14,7 +14,7 @@ const router = Router();
  * POST /api/sync/migrate
  * Receber dados migrados de localStorage e salvar no banco centralizado
  */
-router.post('/migrate', async (req: Request, res: Response) => {
+router.post('/sync/migrate', async (req: Request, res: Response) => {
   try {
     const { usuario, clientes, lancamentos } = req.body;
     

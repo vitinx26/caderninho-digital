@@ -30,11 +30,11 @@ async function startServer() {
   // Rotas de notificação
   app.use('/api/notificacoes', notificationRouter);
   
+  // Rotas de migração (DEVE VIR ANTES de syncRouter)
+  app.use('/api', migrationRouter);
+  
   // Rotas de sincronização
   app.use('/api', syncRouter);
-  
-  // Rotas de migração
-  app.use('/api/sync', migrationRouter);
   
   // Rotas de cardápios
   app.use(menuRouter);
