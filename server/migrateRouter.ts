@@ -50,7 +50,6 @@ router.post('/migrate', async (req: Request, res: Response) => {
         email: usuario.email,
         name: usuario.nome || usuario.name || 'Usuario Migrado',
         role: usuario.tipo === 'admin' ? 'admin' : 'user',
-        openId: usuario.openId,
         ativo: true,
         createdAt: usuario.dataCriacao ? new Date(usuario.dataCriacao) : new Date(),
         updatedAt: new Date(),

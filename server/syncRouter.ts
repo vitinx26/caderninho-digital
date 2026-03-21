@@ -68,6 +68,40 @@ router.get('/users', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/all-clients
+ * Retorna TODOS os clientes (de todos os admins)
+ * Usado pela Conta Geral para sincronizar
+ */
+router.get('/all-clients', async (req: Request, res: Response) => {
+  try {
+    console.log(`📫 GET /api/all-clients`);
+    
+    // Buscar TODOS os clientes
+    const clientes = await dbHelpers.getAllClients();
+    
+    // Filtrar apenas ativos
+    const clientesAtivos = clientes.filter((c: any) => c.ativo !== false);
+    
+    console.log(`✅ Retornando ${clientesAtivos.length} clientes`);
+    
+    res.json({
+      success: true,
+      data: clientesAtivos,
+      count: clientesAtivos.length,
+      timestamp: Date.now(),
+      source: 'backend',
+    });
+  } catch (error) {
+    console.error('❌ Erro ao buscar clientes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao buscar clientes',
+      message: String(error),
+    });
+  }
+});
+
+/**
  * GET /api/clients
  * Retorna clientes de um admin específico (ou TODOS se não especificar)
  * 

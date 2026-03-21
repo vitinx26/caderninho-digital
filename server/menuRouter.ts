@@ -305,9 +305,9 @@ router.post('/api/menus/seed', async (req, res) => {
       id: adegaMenuId,
       name: 'Cardápio Adega',
       description: 'Cardápio padrão da Adega',
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
+      is_active: true,
+      created_at: now,
+      updated_at: now,
     });
 
     // Criar categorias e itens do Cardápio Adega
@@ -341,9 +341,9 @@ router.post('/api/menus/seed', async (req, res) => {
       id: afterMenuId,
       name: 'Cardápio After',
       description: 'Cardápio After Hours',
-      isActive: false,
-      createdAt: now,
-      updatedAt: now,
+      is_active: false,
+      created_at: now,
+      updated_at: now,
     });
 
     // Criar categorias e itens do Cardápio After
@@ -454,10 +454,10 @@ router.put('/api/menus/:menuId/toggle', async (req, res) => {
     const { menuId } = req.params;
 
     // Desativar todos os cardápios
-    await db.update(menus).set({ isActive: false });
+    await db.update(menus).set({ is_active: false });
 
     // Ativar o cardápio selecionado
-    await db.update(menus).set({ isActive: true }).where(eq(menus.id, menuId));
+    await db.update(menus).set({ is_active: true }).where(eq(menus.id, menuId));
 
     res.json({ message: '✅ Cardápio ativado com sucesso!' });
   } catch (error) {

@@ -14,7 +14,6 @@ export const users = mysqlTable(
   'users',
   {
     id: int('id').primaryKey().autoincrement(),
-    openId: varchar('open_id', { length: 255 }),
     name: varchar('name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),
     role: varchar('role', { length: 20 }).notNull().default('user'), // 'admin' ou 'user'

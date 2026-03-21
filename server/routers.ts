@@ -65,7 +65,6 @@ export const appRouter = router({
                   email: user.email,
                   name: user.nome || user.name || 'Usuário',
                   role: user.tipo === 'admin' ? 'admin' : 'user',
-                  openId: user.openId,
                   ativo: true,
                 });
                 results.push({ id: user.id, status: 'created' });
