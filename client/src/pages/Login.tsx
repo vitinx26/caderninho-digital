@@ -26,7 +26,6 @@ export default function Login() {
   const [senhaRegistro, setSenhaRegistro] = useState('');
   const [nomeRegistro, setNomeRegistro] = useState('');
   const [telefoneRegistro, setTelefoneRegistro] = useState('');
-  const [nomeEstabelecimento, setNomeEstabelecimento] = useState('');
   const [tipoUsuario, setTipoUsuario] = useState<'admin' | 'cliente'>('cliente');
   const [carregandoRegistro, setCarregandoRegistro] = useState(false);
 
@@ -57,7 +56,7 @@ export default function Login() {
 
     try {
       setCarregandoRegistro(true);
-      await fazer_registro(emailRegistro, senhaRegistro, nomeRegistro, tipoUsuario, telefoneRegistro || undefined, tipoUsuario === 'admin' ? nomeEstabelecimento : undefined);
+      await fazer_registro(emailRegistro, senhaRegistro, nomeRegistro, tipoUsuario, telefoneRegistro || undefined);
       toast.success('Cadastro realizado com sucesso!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao fazer registro');

@@ -27,16 +27,6 @@ export default function ContaGeral() {
   const { isOnline } = useOnlineStatus();
 
   const [aba, setAba] = useState<AbaType>('nova-compra');
-  const [estabelecimentoSelecionado, setEstabelecimentoSelecionado] = useState<string>('');
-  const [nomeEstabelecimento, setNomeEstabelecimento] = useState<string>('');
-
-  // Carregar nome do estabelecimento ao montar
-  useEffect(() => {
-    const estabelecimento = localStorage.getItem('caderninho_estabelecimento');
-    if (estabelecimento) {
-      setNomeEstabelecimento(estabelecimento);
-    }
-  }, []);
 
   // Novo Cliente
   const [novoClienteNome, setNovoClienteNome] = useState('');
@@ -359,12 +349,7 @@ export default function ContaGeral() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Conta Geral - Compras Rápidas</h1>
-            <p className="text-muted-foreground mt-1">Selecione o estabelecimento e registre compras</p>
-            {(nomeEstabelecimento || usuarioLogado?.nomeEstabelecimento) && (
-              <p className="text-sm font-semibold text-primary mt-2">
-                📍 Estabelecimento: {nomeEstabelecimento || usuarioLogado?.nomeEstabelecimento}
-              </p>
-            )}
+            <p className="text-muted-foreground mt-1">Registre compras e gerenciar clientes</p>
             <p className="text-xs text-muted-foreground mt-1">
               {clientesSalvos.length} cliente(s) disponível(is)
             </p>

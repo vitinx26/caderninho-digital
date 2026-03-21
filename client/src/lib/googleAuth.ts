@@ -103,7 +103,6 @@ async function autenticarComGoogle(googleUser: GoogleUser): Promise<{
         nome: googleUser.name,
         tipo: 'cliente', // Novos usuários do Google são clientes por padrão
         telefone: '',
-        nomeEstabelecimento: '',
         senha: `google-${googleUser.id}`, // Senha dummy para usuários Google
         dataCriacao: Date.now(),
         templateWhatsapp: '',

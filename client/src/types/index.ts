@@ -12,7 +12,6 @@ export interface Usuario {
   nome: string;
   tipo: TipoUsuario;
   telefone?: string;
-  nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
   templateWhatsapp?: string; // Template de mensagem para cobrança via WhatsApp
   dataCriacao: number;
   ativo?: boolean; // Soft delete: false = deletado, true/undefined = ativo
@@ -24,7 +23,6 @@ export interface UsuarioLogado {
   nome: string;
   tipo: TipoUsuario;
   telefone?: string;
-  nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
   templateWhatsapp?: string; // Template de mensagem para cobrança via WhatsApp
 }
 
@@ -62,7 +60,6 @@ export interface ConfiguracaoApp {
   ultimoBackup: number; // timestamp do último backup
   versao: string;
   numeroWhatsAppAdmin?: string; // Número do WhatsApp do admin para cobranças
-  nomeEstabelecimento?: string; // Nome do estabelecimento (para admins)
   templateWhatsapp?: string; // Template de mensagem para cobrança via WhatsApp
 }
 

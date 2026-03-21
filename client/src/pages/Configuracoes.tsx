@@ -22,7 +22,6 @@ export default function Configuracoes() {
   const { usuarioLogado } = useAuth();
   const [diasParaVencer, setDiasParaVencer] = useState(30);
   const [numeroWhatsApp, setNumeroWhatsApp] = useState('');
-  const [nomeEstabelecimento, setNomeEstabelecimento] = useState('');
   const [templateWhatsApp, setTemplateWhatsApp] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -39,9 +38,7 @@ export default function Configuracoes() {
           setDiasParaVencer(config.diasParaVencer);
           setNumeroWhatsApp(config.numeroWhatsAppAdmin || '');
         }
-        if (usuarioLogado?.nomeEstabelecimento) {
-          setNomeEstabelecimento(usuarioLogado.nomeEstabelecimento);
-        }
+
         if (usuarioLogado?.templateWhatsapp) {
           setTemplateWhatsApp(usuarioLogado.templateWhatsapp);
         }
@@ -76,13 +73,12 @@ export default function Configuracoes() {
 
   const handleSalvarConfig = async () => {
     try {
-      // Salvar TODAS as configuracoes no IndexedDB (banco persistente)
+      // Salvar TODAS as configuraçoes no IndexedDB (banco persistente)
       await db.salvarConfiguracao({
         diasParaVencer,
         ultimoBackup: Date.now(),
         versao: '1.0.0',
         numeroWhatsAppAdmin: numeroWhatsApp || undefined,
-        nomeEstabelecimento: nomeEstabelecimento || undefined,
         templateWhatsapp: templateWhatsApp || undefined,
       });
       
@@ -90,7 +86,6 @@ export default function Configuracoes() {
       if (usuarioLogado) {
         const usuarioAtualizado = {
           ...usuarioLogado,
-          nomeEstabelecimento,
           templateWhatsapp: templateWhatsApp,
         };
         localStorage.setItem('caderninho_session', JSON.stringify(usuarioAtualizado));
@@ -131,27 +126,7 @@ export default function Configuracoes() {
         <p className="text-muted-foreground mt-1">Personalize o seu Caderninho</p>
       </div>
 
-      {/* Seção de Estabelecimento */}
-      <div className="card-minimal p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Estabelecimento</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Nome do Estabelecimento
-            </label>
-            <Input
-              type="text"
-              placeholder="Ex: Padaria do João"
-              value={nomeEstabelecimento}
-              onChange={(e) => setNomeEstabelecimento(e.target.value)}
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Este nome será exibido no topo do Dashboard
-            </p>
-          </div>
-        </div>
-      </div>
+
 
       {/* Seção de Dias para Vencer */}
       <div className="card-minimal p-6">

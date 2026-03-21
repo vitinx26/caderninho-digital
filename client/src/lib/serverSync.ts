@@ -30,7 +30,6 @@ export async function sincronizarDadosParaServidor(usuario: UsuarioLogado) {
         nome: usuario.nome,
         tipo: usuario.tipo,
         telefone: usuario.telefone,
-        nomeEstabelecimento: usuario.nomeEstabelecimento,
         senha: 'hashed', // Não enviar senha real
         dataCriacao: Date.now(),
       },

@@ -57,7 +57,6 @@ export async function migrarDadosParaServidor(usuario: UsuarioLogado) {
         nome: usuario.nome,
         tipo: usuario.tipo,
         telefone: usuario.telefone,
-        nomeEstabelecimento: usuario.nomeEstabelecimento,
       },
       clientes: clientesMerged.map((c: any) => ({
         id: c.id,

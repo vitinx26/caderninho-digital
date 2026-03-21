@@ -65,7 +65,6 @@ export async function migrateAllOldData(): Promise<{
                 nome: usuario.nome,
                 tipo: usuario.tipo || 'cliente',
                 telefone: usuario.telefone,
-                nomeEstabelecimento: usuario.nomeEstabelecimento,
                 senha: usuario.senha, // Preservar senha original SEMPRE
                 dataCriacao: usuario.dataCriacao || Date.now(),
               };
@@ -220,7 +219,6 @@ export async function migrateAllOldData(): Promise<{
                 nome: usuario.nome,
                 tipo: usuario.tipo || 'cliente',
                 telefone: usuario.telefone,
-                nomeEstabelecimento: usuario.nomeEstabelecimento,
                 senha: usuario.senha || 'temp123',
                 dataCriacao: usuario.dataCriacao || Date.now(),
               };

@@ -104,7 +104,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{usuarioLogado?.nome || usuarioLogado?.nomeEstabelecimento || 'Caderninho Digital'}</h1>
+          <h1 className="text-3xl font-bold text-foreground">{usuarioLogado?.nome || 'Caderninho Digital'}</h1>
           <p className="text-muted-foreground mt-1">
             {usuarioLogado?.tipo === 'admin' ? 'Resumo do seu caderninho' : 'Acompanhe seus gastos'}
           </p>

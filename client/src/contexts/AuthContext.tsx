@@ -19,7 +19,7 @@ interface AuthContextType {
   usuarioLogado: UsuarioLogado | null;
   carregando: boolean;
   fazer_login: (email: string, senha: string) => Promise<void>;
-  fazer_registro: (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string, nomeEstabelecimento?: string) => Promise<void>;
+  fazer_registro: (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string) => Promise<void>;
   fazer_logout: () => void;
   usuarioGeral: boolean;
   entrarComContaGeral: () => void;
@@ -122,7 +122,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             nome: usuario.nome,
             tipo: usuario.tipo,
             telefone: usuario.telefone,
-            nomeEstabelecimento: usuario.nomeEstabelecimento,
           };
           
           // Iniciar polling HTTP (5 segundos)
@@ -151,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fazer_registro = async (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string, nomeEstabelecimento?: string) => {
+  const fazer_registro = async (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string) => {
     try {
       // Verificar se usuário já existe
       const usuarioExistente = await garantirUsuarioExiste(email);
@@ -166,7 +165,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         nome,
         tipo,
         telefone,
-        nomeEstabelecimento,
         senha,
         dataCriacao: Date.now(),
       };
