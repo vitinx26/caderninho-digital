@@ -286,3 +286,16 @@
 - [ ] Testar CRUD completo (criar, editar, deletar)
 - [ ] Validar sincronização entre múltiplos admins
 - [ ] Testar em múltiplos navegadores/dispositivos
+
+
+## Migração Automática Definitiva (Sprint Crítica - URGENTE)
+
+- [x] Criar página MigracaoAutomatica.tsx para recuperar dados de localStorage/IndexedDB
+- [x] Implementar busca automática de usuários, clientes e lançamentos
+- [x] Integrar endpoint /api/sync/migrate para migração em massa
+- [x] Adicionar polling automático (5s) em GerenciarUsuarios.tsx
+- [x] Adicionar item "Recuperar Dados" ao menu admin
+- [ ] Testar migração com dados reais
+- [ ] Validar que dados persistem após sair e voltar
+- [ ] Testar sincronização em tempo real entre admins
+- [ ] Garantir que mudanças de admin refletem imediatamente em Conta Geral
