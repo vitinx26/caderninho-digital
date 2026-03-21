@@ -33,9 +33,17 @@ const eventQueue: SyncEvent[] = [];
 export function initializeWebSocket(httpServer: HTTPServer) {
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: '*',
+      origin: function(origin, callback) {
+        // Permitir todas as origens em desenvolvimento
+        // Em producao, voce deve especificar origens conhecidas
+        callback(null, true);
+      },
       methods: ['GET', 'POST'],
+      credentials: true,
     },
+    transports: ['websocket', 'polling'],
+    pingInterval: 25000,
+    pingTimeout: 60000,
   });
 
   /**

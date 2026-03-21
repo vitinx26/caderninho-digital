@@ -17,9 +17,9 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Inicializar WebSocket (desabilitado temporariamente para debug)
-  // const io = initializeWebSocket(server);
-  // console.log('🔌 WebSocket inicializado');
+  // Inicializar WebSocket
+  const io = initializeWebSocket(server);
+  console.log('🔌 WebSocket inicializado com CORS correto');
 
   // Inicializar serviço de email
   initializeEmailService();
