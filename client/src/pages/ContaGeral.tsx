@@ -48,9 +48,10 @@ export default function ContaGeral() {
   const [sincronizando, setSincronizando] = useState(false);
   const [buscaCliente, setBuscaCliente] = useState('');
   
-  // Filtrar clientes por busca
+  // Filtrar clientes por busca e remover teste1
   const clientesFiltrados = clientesSalvos.filter(c => 
-    c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
+    c.nome.toLowerCase().includes(buscaCliente.toLowerCase()) &&
+    c.nome.toLowerCase() !== 'teste1'
   );
 
   // Sincronizar dados ao abrir Conta Geral - AGORA TAMBÉM BUSCA DO BACKEND

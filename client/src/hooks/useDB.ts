@@ -31,7 +31,7 @@ export function useClientes() {
 
   useEffect(() => {
     carregar();
-  }, [carregar]);
+  }, []); // Carregamento único na montagem
 
   const adicionarCliente = useCallback(async (nome: string, telefone?: string, email?: string) => {
     try {
