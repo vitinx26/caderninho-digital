@@ -34,24 +34,25 @@ export default function GerenciarUsuarios() {
   });
 
   // Carregar usuários do servidor
-  useEffect(() => {
-    const carregarUsuarios = async () => {
-      try {
-        setCarregando(true);
-        const response = await fetch('/api/users');
-        if (!response.ok) {
-          throw new Error('Erro ao carregar usuários');
-        }
-        const data = await response.json();
-        setUsuarios(data.data || []);
-      } catch (error) {
-        console.error('Erro ao carregar usuários:', error);
-        toast.error('Erro ao carregar usuários');
-      } finally {
-        setCarregando(false);
+  const carregarUsuarios = async () => {
+    try {
+      setCarregando(true);
+      const response = await fetch('/api/users');
+      if (!response.ok) {
+        throw new Error('Erro ao carregar usuários');
       }
-    };
+      const data = await response.json();
+      setUsuarios(data.data || []);
+      toast.success('Usuários sincronizados com sucesso');
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao carregar usuários');
+    } finally {
+      setCarregando(false);
+    }
+  };
 
+  useEffect(() => {
     carregarUsuarios();
     // Polling desabilitado - carregamento único na montagem
   }, []);
@@ -216,13 +217,23 @@ export default function GerenciarUsuarios() {
               <p className="text-muted-foreground">Administre admins e clientes do sistema</p>
             </div>
           </div>
-          <Button
-            onClick={() => setMostrarFormNovoUsuario(!mostrarFormNovoUsuario)}
-            className="gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Usuário
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={carregarUsuarios}
+              variant="outline"
+              className="gap-2"
+              disabled={carregando}
+            >
+              {carregando ? 'Sincronizando...' : 'Sincronizar'}
+            </Button>
+            <Button
+              onClick={() => setMostrarFormNovoUsuario(!mostrarFormNovoUsuario)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Usuário
+            </Button>
+          </div>
         </div>
 
         {/* Formulário Novo Usuário */}
