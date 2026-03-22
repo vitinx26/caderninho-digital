@@ -31,9 +31,13 @@ router.get('/users', async (req: Request, res: Response) => {
     // Filtrar apenas usuários ativos
     let usuariosFiltrados = usuarios.filter((u: any) => u.ativo !== false);
     
-    // Filtrar por tipo se especificado
-    if (tipo && (tipo === 'admin' || tipo === 'cliente')) {
-      usuariosFiltrados = usuariosFiltrados.filter((u: any) => u.tipo === tipo);
+    // Filtrar por tipo se especificado (mapear cliente -> user, admin -> admin)
+    if (tipo && typeof tipo === 'string') {
+      const roleMap: any = { 'cliente': 'user', 'admin': 'admin' };
+      const roleFilter = roleMap[tipo];
+      if (roleFilter) {
+        usuariosFiltrados = usuariosFiltrados.filter((u: any) => u.role === roleFilter);
+      }
     }
     
     console.log(`✅ Retornando ${usuariosFiltrados.length} usuários`);

@@ -86,20 +86,65 @@ export default function ContaGeral() {
   }, []);
 
   useEffect(() => {
-    // Carregar clientes de múltiplas fontes (localStorage + IndexedDB + Backend API)
+    // Carregar clientes de múltiplas fontes (Backend API PRIMEIRO, depois localStorage como fallback)
     const carregarClientes = async () => {
       try {
         const clientesMap = new Map<string, any>();
         
-        // Carregar clientes salvos do localStorage
+        // PRIORIDADE 1: Carregar do Backend API (dados mais atualizados)
+        // Carregar usuários (clientes) da tabela users
+        try {
+          const response = await fetch('/api/users?tipo=cliente');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && Array.isArray(data.data)) {
+              data.data.forEach((u: any) => {
+                clientesMap.set(u.id, {
+                  id: u.id,
+                  nome: u.name || u.nome,
+                  telefone: u.telefone || ''
+                });
+              });
+              console.log('✓ Usuários (clientes) do backend carregados:', data.data.length);
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Erro ao carregar usuários do backend:', error);
+        }
+        
+        // PRIORIDADE 2: Carregar clientes do /api/all-clients
+        try {
+          const response = await fetch('/api/all-clients');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && Array.isArray(data.data)) {
+              data.data.forEach((c: any) => {
+                if (!clientesMap.has(c.id)) {
+                  clientesMap.set(c.id, {
+                    id: c.id,
+                    nome: c.nome,
+                    telefone: c.telefone
+                  });
+                }
+              });
+              console.log('✓ Clientes do backend carregados:', data.count);
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Erro ao carregar clientes do backend:', error);
+        }
+        
+        // PRIORIDADE 3: Carregar clientes salvos do localStorage (apenas como fallback)
         const salvos = localStorage.getItem('caderninho_clientes_salvos');
         if (salvos) {
           JSON.parse(salvos).forEach((c: any) => {
-            clientesMap.set(c.id, c);
+            if (!clientesMap.has(c.id)) {
+              clientesMap.set(c.id, c);
+            }
           });
         }
 
-        // Carregar clientes principais do localStorage
+        // PRIORIDADE 4: Carregar clientes principais do localStorage
         const principais = localStorage.getItem('caderninho_clientes');
         if (principais) {
           JSON.parse(principais).forEach((c: any) => {
