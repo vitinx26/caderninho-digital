@@ -97,18 +97,23 @@ export default function GerenciarUsuarios() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: formData.nome.trim(),
-          tipo: formData.tipo || 'cliente',
-          telefone: formData.telefone || '',
+          name: formData.nome.trim(),
+          role: formData.tipo || 'user',
+          ativo: true,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao atualizar usuário');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao atualizar usuário');
       }
 
-      const usuarioAtualizado = await response.json();
-      setUsuarios(usuarios.map(u => u.id === editandoId ? usuarioAtualizado.data : u));
+      // Recarregar usuários após atualização
+      const usuariosResponse = await fetch('/api/users');
+      if (usuariosResponse.ok) {
+        const data = await usuariosResponse.json();
+        setUsuarios(data.data || []);
+      }
       setEditandoId(null);
       toast.success('Usuário atualizado com sucesso!');
     } catch (error) {
