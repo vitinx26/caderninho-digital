@@ -279,6 +279,7 @@ router.post('/users', async (req: Request, res: Response) => {
       email,
       name: nome || 'Usuário',
       role: tipo === 'admin' ? 'admin' : 'user',
+      telefone: telefone || '',
       ativo: true,
     });
     

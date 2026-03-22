@@ -16,6 +16,7 @@ export const users = mysqlTable(
     id: int('id').primaryKey().autoincrement(),
     name: varchar('name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),
+    telefone: varchar('telefone', { length: 20 }),
     role: varchar('role', { length: 20 }).notNull().default('user'),
     openId: varchar('openId', { length: 255 }).notNull().default(''),
     ativo: boolean('ativo').notNull().default(true),
