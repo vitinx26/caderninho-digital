@@ -1,0 +1,85 @@
+{
+  "query": "\nSELECT \n  TABLE_NAME,\n  TABLE_ROWS,\n  DATA_LENGTH,\n  INDEX_LENGTH\nFROM INFORMATION_SCHEMA.TABLES\nWHERE TABLE_SCHEMA = DATABASE()\nORDER BY TABLE_NAME;\n\nSELECT 'users' as tabela, COUNT(*) as total FROM users\nUNION ALL\nSELECT 'clients', COUNT(*) FROM clients\nUNION ALL\nSELECT 'transactions', COUNT(*) FROM transactions\nUNION ALL\nSELECT 'menus', COUNT(*) FROM menus\nUNION ALL\nSELECT 'menu_categories', COUNT(*) FROM menu_categories\nUNION ALL\nSELECT 'menu_items', COUNT(*) FROM menu_items\nUNION ALL\nSELECT 'sync_log', COUNT(*) FROM sync_log;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute \nSELECT \n  TABLE_NAME,\n  TABLE_ROWS,\n  DATA_LENGTH,\n  INDEX_LENGTH\nFROM INFORMATION_SCHEMA.TABLES\nWHERE TABLE_SCHEMA = DATABASE()\nORDER BY TABLE_NAME;\n\nSELECT 'users' as tabela, COUNT(*) as total FROM users\nUNION ALL\nSELECT 'clients', COUNT(*) FROM clients\nUNION ALL\nSELECT 'transactions', COUNT(*) FROM transactions\nUNION ALL\nSELECT 'menus', COUNT(*) FROM menus\nUNION ALL\nSELECT 'menu_categories', COUNT(*) FROM menu_categories\nUNION ALL\nSELECT 'menu_items', COUNT(*) FROM menu_items\nUNION ALL\nSELECT 'sync_log', COUNT(*) FROM sync_log;\n",
+  "rows": [
+    {
+      "TABLE_NAME": "__drizzle_migrations",
+      "TABLE_ROWS": "1",
+      "DATA_LENGTH": "16",
+      "INDEX_LENGTH": "8"
+    },
+    {
+      "TABLE_NAME": "clientes",
+      "TABLE_ROWS": "0",
+      "DATA_LENGTH": "0",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "clients",
+      "TABLE_ROWS": "0",
+      "DATA_LENGTH": "0",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "estabelecimentos",
+      "TABLE_ROWS": "0",
+      "DATA_LENGTH": "0",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "lancamentos",
+      "TABLE_ROWS": "0",
+      "DATA_LENGTH": "0",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "menu_categories",
+      "TABLE_ROWS": "26",
+      "DATA_LENGTH": "416",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "menu_items",
+      "TABLE_ROWS": "132",
+      "DATA_LENGTH": "3168",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "menus",
+      "TABLE_ROWS": "2",
+      "DATA_LENGTH": "48",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "sync_log",
+      "TABLE_ROWS": "0",
+      "DATA_LENGTH": "0",
+      "INDEX_LENGTH": "0"
+    },
+    {
+      "TABLE_NAME": "transactions",
+      "TABLE_ROWS": "14",
+      "DATA_LENGTH": "448",
+      "INDEX_LENGTH": "112"
+    },
+    {
+      "TABLE_NAME": "users",
+      "TABLE_ROWS": "9",
+      "DATA_LENGTH": "432",
+      "INDEX_LENGTH": "0"
+    }
+  ],
+  "messages": [
+    "tabela\ttotal",
+    "menu_categories\t26",
+    "transactions\t14",
+    "menus\t2",
+    "clients\t0",
+    "users\t9",
+    "menu_items\t132",
+    "sync_log\t0"
+  ],
+  "stdout": "TABLE_NAME\tTABLE_ROWS\tDATA_LENGTH\tINDEX_LENGTH\n__drizzle_migrations\t1\t16\t8\nclientes\t0\t0\t0\nclients\t0\t0\t0\nestabelecimentos\t0\t0\t0\nlancamentos\t0\t0\t0\nmenu_categories\t26\t416\t0\nmenu_items\t132\t3168\t0\nmenus\t2\t48\t0\nsync_log\t0\t0\t0\ntransactions\t14\t448\t112\nusers\t9\t432\t0\ntabela\ttotal\nmenu_categories\t26\ntransactions\t14\nmenus\t2\nclients\t0\nusers\t9\nmenu_items\t132\nsync_log\t0\n",
+  "stderr": "",
+  "execution_time_ms": 69
+}

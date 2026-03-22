@@ -6,7 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { db } from './db-client';
-import { users, clients, transactions } from '../drizzle/schema';
+import { users, transactions } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -95,18 +95,18 @@ router.post('/migrate', async (req: Request, res: Response) => {
           
           const clienteId = cliente.id || uuidv4();
           
-          await db.insert(clients).values({
-            id: clienteId,
-            adminId: usuario.id || 1,
-            nome: cliente.nome,
+          // Clientes agora são users com role='user'
+          await db.insert(users).values({
+            id: parseInt(clienteId.substring(0, 10)) || undefined, // Converter UUID para int se possível
+            name: cliente.nome,
             telefone: cliente.telefone || '',
             email: cliente.email || '',
             ativo: cliente.ativo !== false,
-            dataCriacao: cliente.dataCriacao ? new Date(cliente.dataCriacao) : new Date(),
-            dataAtualizacao: new Date(),
+            role: 'user',
           }).onDuplicateKeyUpdate({
-            nome: cliente.nome,
-            dataAtualizacao: new Date(),
+            name: cliente.nome,
+          }).catch((err: any) => {
+            console.warn(`   ⚠️ Erro ao migrar cliente ${cliente.nome}: ${err.message}`);
           });
           
           resultado.clientesMigrados++;
@@ -134,17 +134,19 @@ router.post('/migrate', async (req: Request, res: Response) => {
           
           await db.insert(transactions).values({
             id: lancamentoId,
-            adminId: usuario.id || 1,
-            clienteId: lancamento.clienteId,
+            admin_id: String(usuario.id || 1),
+            cliente_id: lancamento.clienteId,
             tipo: lancamento.tipo,
             valor: lancamento.valor,
             descricao: lancamento.descricao || '',
-            data: lancamento.data ? new Date(lancamento.data) : new Date(),
-            dataCriacao: lancamento.dataCriacao ? new Date(lancamento.dataCriacao) : new Date(),
-            dataAtualizacao: new Date(),
+            data: lancamento.data ? (typeof lancamento.data === 'number' ? lancamento.data : new Date(lancamento.data).getTime()) : Date.now(),
+            dataCriacao: Date.now(),
+            dataAtualizacao: Date.now(),
           }).onDuplicateKeyUpdate({
             descricao: lancamento.descricao || '',
-            dataAtualizacao: new Date(),
+            dataAtualizacao: Date.now(),
+          }).catch((err: any) => {
+            console.warn(`   ⚠️ Erro ao migrar lançamento ${lancamento.id}: ${err.message}`);
           });
           
           resultado.lancamentosMigrados++;

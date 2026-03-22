@@ -1,0 +1,32 @@
+{
+  "query": "\n-- Verificar usuários\nSELECT COUNT(*) as total_users, \n       SUM(CASE WHEN role='admin' THEN 1 ELSE 0 END) as admins,\n       SUM(CASE WHEN role='user' THEN 1 ELSE 0 END) as clients\nFROM users;\n\n-- Verificar transações\nSELECT COUNT(*) as total_transactions,\n       SUM(CASE WHEN tipo='debito' THEN 1 ELSE 0 END) as debitos,\n       SUM(CASE WHEN tipo='pagamento' THEN 1 ELSE 0 END) as pagamentos\nFROM transactions;\n\n-- Verificar últimas 5 transações\nSELECT id, admin_id, cliente_id, tipo, valor, descricao, data \nFROM transactions \nORDER BY data DESC \nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute \n-- Verificar usuários\nSELECT COUNT(*) as total_users, \n       SUM(CASE WHEN role='admin' THEN 1 ELSE 0 END) as admins,\n       SUM(CASE WHEN role='user' THEN 1 ELSE 0 END) as clients\nFROM users;\n\n-- Verificar transações\nSELECT COUNT(*) as total_transactions,\n       SUM(CASE WHEN tipo='debito' THEN 1 ELSE 0 END) as debitos,\n       SUM(CASE WHEN tipo='pagamento' THEN 1 ELSE 0 END) as pagamentos\nFROM transactions;\n\n-- Verificar últimas 5 transações\nSELECT id, admin_id, cliente_id, tipo, valor, descricao, data \nFROM transactions \nORDER BY data DESC \nLIMIT 5;\n",
+  "rows": [
+    {
+      "total_users": "9",
+      "admins": "3",
+      "clients": "6"
+    },
+    {
+      "total_users": "total_transactions",
+      "admins": "debitos",
+      "clients": "pagamentos"
+    },
+    {
+      "total_users": "14",
+      "admins": "14",
+      "clients": "0"
+    }
+  ],
+  "messages": [
+    "id\tadmin_id\tcliente_id\ttipo\tvalor\tdescricao\tdata",
+    "test-carol-001\t1\t30016\tdebito\t5000\tTeste Carol\t20260322044934",
+    "jjjF6GwMXH6n3tCozy_pQ\t1\t30016\tdebito\t500000\tTeste\t1774156834000",
+    "H73gUVCfCKKtJe-EMC2bB\t1\t30017\tdebito\t45000\tItaipava\t1774148400000",
+    "8EEvvna3k_2H0ipKmKv8q\t1\t30017\tdebito\t45000\tItaipava\t1774148400000",
+    "dVeeeDKQerss7Bnhlr8Cm\t1\t30017\tdebito\t45000\tItaipava\t1774148400000"
+  ],
+  "stdout": "total_users\tadmins\tclients\n9\t3\t6\ntotal_transactions\tdebitos\tpagamentos\n14\t14\t0\nid\tadmin_id\tcliente_id\ttipo\tvalor\tdescricao\tdata\ntest-carol-001\t1\t30016\tdebito\t5000\tTeste Carol\t20260322044934\njjjF6GwMXH6n3tCozy_pQ\t1\t30016\tdebito\t500000\tTeste\t1774156834000\nH73gUVCfCKKtJe-EMC2bB\t1\t30017\tdebito\t45000\tItaipava\t1774148400000\n8EEvvna3k_2H0ipKmKv8q\t1\t30017\tdebito\t45000\tItaipava\t1774148400000\ndVeeeDKQerss7Bnhlr8Cm\t1\t30017\tdebito\t45000\tItaipava\t1774148400000\n",
+  "stderr": "",
+  "execution_time_ms": 67
+}

@@ -383,7 +383,7 @@ router.delete('/users/:id', async (req: Request, res: Response) => {
  */
 router.post('/lancamentos', async (req: Request, res: Response) => {
   try {
-    const { clienteId, tipo, valor, descricao, data } = req.body;
+    const { clienteId, tipo, valor, descricao, data, adminId } = req.body;
     
     // Validar campos obrigatórios
     if (!clienteId || !tipo || !valor) {
@@ -412,14 +412,14 @@ router.post('/lancamentos', async (req: Request, res: Response) => {
     console.log(`📋 POST /api/lancamentos - clienteId: ${clienteId}, tipo: ${tipo}, valor: ${valor}`);
     console.log(`  Dados recebidos:`, { clienteId, tipo, valor, descricao, data });
     
-    // Criar lançamento com adminId padrão (1)
+    // Criar lançamento com adminId do usuário autenticado
     console.log('  Chamando dbHelpers.createTransaction...');
     // Converter valor para centavos (valor em reais * 100)
     const valorEmCentavos = Math.round(valor * 100);
     const novoLancamento = await dbHelpers.createTransaction({
       id: nanoid(),
-      adminId: 1,
-      clienteId: String(clienteId),
+      admin_id: String(adminId || 1), // Usar adminId fornecido ou padrão 1
+      cliente_id: String(clienteId),
       tipo,
       valor: valorEmCentavos,
       descricao: descricao || '',

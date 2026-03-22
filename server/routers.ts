@@ -97,28 +97,26 @@ export const appRouter = router({
           const results = [];
           for (const client of input.clients) {
             try {
-              // Verificar se cliente já existe
-              const existing = await dbHelpers.getClientById(client.id);
+              // Clientes agora são users com role='user'
+              const existing = await dbHelpers.getUserById(client.id);
               if (existing) {
-                // Atualizar cliente existente
-                await dbHelpers.updateClient(client.id, {
-                  nome: client.nome,
+                // Atualizar usuário existente
+                await dbHelpers.updateUser(client.id, {
+                  name: client.nome,
                   telefone: client.telefone,
                   email: client.email,
                   ativo: client.ativo,
+                  role: 'user',
                 });
                 results.push({ id: client.id, status: 'updated' });
               } else {
-                // Criar novo cliente
-                await dbHelpers.createClient({
-                  id: client.id,
-                  adminId: input.adminId,
-                  nome: client.nome,
+                // Criar novo usuário com role='user'
+                await dbHelpers.createUser({
+                  name: client.nome,
                   telefone: client.telefone,
                   email: client.email,
                   ativo: client.ativo,
-                  dataCriacao: new Date(client.dataCriacao),
-                  dataAtualizacao: new Date(),
+                  role: 'user',
                 });
                 results.push({ id: client.id, status: 'created' });
               }
@@ -153,8 +151,8 @@ export const appRouter = router({
               // Criar nova transação (não atualizar, pois são registros históricos)
               await dbHelpers.createTransaction({
                 id: transaction.id,
-                adminId: input.adminId,
-                clienteId: transaction.clienteId,
+                admin_id: input.adminId,
+                cliente_id: transaction.clienteId,
                 tipo: transaction.tipo as 'debito' | 'pagamento',
                 valor: Math.round(transaction.valor * 100), // Converter para centavos
                 descricao: transaction.descricao,
@@ -195,14 +193,22 @@ export const appRouter = router({
             dataAtualizacao: Date.now(),
           });
           
-          // 2. Sincronizar clientes
-          const clientsResult = await dbHelpers.createManyClients(
-            input.clients.map((c: z.infer<typeof clientSchema>) => ({
-              ...c,
-              adminId: input.user.id,
-              dataAtualizacao: Date.now(),
-            }))
-          );
+          // 2. Sincronizar clientes (agora são users com role='user')
+          const clientsResult = [];
+          for (const c of input.clients) {
+            try {
+              await dbHelpers.createUser({
+                name: c.nome,
+                email: c.email,
+                telefone: c.telefone,
+                ativo: c.ativo,
+                role: 'user',
+              });
+              clientsResult.push({ status: 'created' });
+            } catch (error) {
+              clientsResult.push({ status: 'error', error: String(error) });
+            }
+          }
           
           // 3. Sincronizar transações
           const transactionsResult = await dbHelpers.createManyTransactions(

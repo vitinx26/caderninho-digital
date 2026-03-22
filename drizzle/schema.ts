@@ -2,24 +2,30 @@ import { mysqlTable, varchar, text, int, timestamp, boolean, index, bigint } fro
 import { relations } from 'drizzle-orm';
 
 /**
- * SCHEMA LIMPO E SIMPLES
- * Estrutura otimizada para sincronização em tempo real
+ * SCHEMA ATUALIZADO PARA CORRESPONDER AO BANCO REAL
+ * Estrutura sincronizada com a base de dados existente
  */
 
 /**
- * Tabela de usuários (admins e clientes)
- * Estrutura simples: email, senha, nome, tipo
+ * Tabela de usuários (admins e clientes logados)
+ * Estrutura sincronizada com banco real
  */
 export const users = mysqlTable(
   'users',
   {
     id: int('id').primaryKey().autoincrement(),
-    name: varchar('name', { length: 255 }).notNull(),
-    email: varchar('email', { length: 255 }).notNull().unique(),
-    telefone: varchar('telefone', { length: 20 }),
-    role: varchar('role', { length: 20 }).notNull().default('user'),
     openId: varchar('openId', { length: 255 }).notNull().default(''),
+    name: text('name'),
+    email: varchar('email', { length: 320 }),
+    loginMethod: varchar('loginMethod', { length: 64 }),
+    role: varchar('role', { length: 20 }).notNull().default('user'), // 'user' ou 'admin'
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+    lastSignedIn: timestamp('lastSignedIn').notNull().defaultNow(),
+    template_whatsapp: text('template_whatsapp'),
+    email_notificacao: varchar('email_notificacao', { length: 255 }),
     ativo: boolean('ativo').notNull().default(true),
+    telefone: varchar('telefone', { length: 20 }),
   },
   (table) => ({
     emailIdx: index('email_idx').on(table.email),
@@ -28,44 +34,25 @@ export const users = mysqlTable(
 );
 
 /**
- * Tabela de clientes (criados por admins)
- */
-export const clients = mysqlTable(
-  'clients',
-  {
-    id: varchar('id', { length: 36 }).primaryKey(),
-    adminId: int('admin_id').notNull(), // ID do admin que criou
-    nome: varchar('nome', { length: 255 }).notNull(),
-    telefone: varchar('telefone', { length: 20 }),
-    email: varchar('email', { length: 255 }),
-    ativo: boolean('ativo').notNull().default(true),
-    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
-    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
-  },
-  (table) => ({
-    adminIdIdx: index('admin_id_idx').on(table.adminId),
-    nomeIdx: index('nome_idx').on(table.nome),
-  })
-);
-
-/**
  * Tabela de transações (débitos e pagamentos)
+ * Estrutura sincronizada com banco real
  */
 export const transactions = mysqlTable(
   'transactions',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
-    adminId: int('admin_id').notNull(), // ID do admin que registrou
-    clienteId: varchar('cliente_id', { length: 36 }).notNull(), // ID do cliente (pode ser user ou client)
+    admin_id: varchar('admin_id', { length: 36 }).notNull(), // ID do admin que registrou (pode ser string)
+    cliente_id: varchar('cliente_id', { length: 36 }).notNull(), // ID do cliente (pode ser user ou client)
     tipo: varchar('tipo', { length: 20 }).notNull(), // 'debito' ou 'pagamento'
     valor: int('valor').notNull(), // Valor em centavos
     descricao: text('descricao').notNull(),
-    data: bigint('data', { mode: 'number' }).notNull(), // Timestamp em milissegundos
-    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(), // Timestamp em milissegundos
-    dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(), // Timestamp em milissegundos
+    data: bigint('data', { mode: 'number' }), // Timestamp em milissegundos
+    dataCriacao: bigint('data_criacao', { mode: 'number' }), // Timestamp em milissegundos
+    dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }), // Timestamp em milissegundos
   },
   (table) => ({
-    clienteIdIdx: index('cliente_id_idx').on(table.clienteId),
+    clienteIdIdx: index('cliente_id_idx').on(table.cliente_id),
+    adminIdIdx: index('admin_id_idx').on(table.admin_id),
   })
 );
 
@@ -113,50 +100,16 @@ export const menuItems = mysqlTable(
 );
 
 /**
- * Tabela de sincronização (rastreia mudanças para sincronização em tempo real)
- */
-export const syncLog = mysqlTable(
-  'sync_log',
-  {
-    id: int('id').primaryKey().autoincrement(),
-    tabela: varchar('tabela', { length: 50 }).notNull(), // Nome da tabela modificada
-    operacao: varchar('operacao', { length: 20 }).notNull(), // 'INSERT', 'UPDATE', 'DELETE'
-    registroId: varchar('registro_id', { length: 36 }).notNull(), // ID do registro modificado
-    usuarioId: int('usuario_id').notNull(), // ID do usuário que fez a mudança
-    dados: text('dados'), // JSON com dados da mudança
-    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
-  },
-  (table) => ({
-    tabelaIdx: index('tabela_idx').on(table.tabela),
-    usuarioIdIdx: index('usuario_id_idx').on(table.usuarioId),
-    dataCriacaoIdx: index('data_criacao_idx').on(table.dataCriacao),
-  })
-);
-
-/**
  * Relações
  */
 export const usersRelations = relations(users, ({ many }) => ({
-  clients: many(clients),
   transactions: many(transactions),
   menus: many(menus),
 }));
 
-export const clientsRelations = relations(clients, ({ one, many }) => ({
-  admin: one(users, {
-    fields: [clients.adminId],
-    references: [users.id],
-  }),
-  transactions: many(transactions),
-}));
-
 export const transactionsRelations = relations(transactions, ({ one }) => ({
-  admin: one(users, {
-    fields: [transactions.adminId],
-    references: [users.id],
-  }),
-  // clienteId pode ser um user (cliente logado) ou um cliente tradicional
-  // Remover foreign key constraint para permitir ambos
+  // admin pode ser um user ou um valor string
+  // clienteId pode ser um user ou um valor string
 }));
 
 export const menusRelations = relations(menus, ({ many }) => ({

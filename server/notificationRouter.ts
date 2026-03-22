@@ -26,8 +26,8 @@ router.post('/novo-lancamento', async (req: Request, res: Response) => {
       });
     }
 
-    // Buscar dados do cliente
-    const cliente = await dbHelpers.getClientById(clienteId);
+    // Buscar dados do cliente (agora é um user com role='user')
+    const cliente = await dbHelpers.getUserById(clienteId);
     if (!cliente) {
       return res.status(404).json({
         success: false,
@@ -104,8 +104,8 @@ router.post('/cobranca', async (req: Request, res: Response) => {
       });
     }
 
-    // Buscar dados do cliente
-    const cliente = await dbHelpers.getClientById(clienteId);
+    // Buscar dados do cliente (agora é um user com role='user')
+    const cliente = await dbHelpers.getUserById(clienteId);
     if (!cliente) {
       return res.status(404).json({
         success: false,
@@ -166,8 +166,8 @@ router.post('/pagamento-recebido', async (req: Request, res: Response) => {
       });
     }
 
-    // Buscar dados do cliente
-    const cliente = await dbHelpers.getClientById(clienteId);
+    // Buscar dados do cliente (agora é um user com role='user')
+    const cliente = await dbHelpers.getUserById(clienteId);
     if (!cliente) {
       return res.status(404).json({
         success: false,
@@ -276,8 +276,8 @@ router.post('/resumo-consumo', async (req: Request, res: Response) => {
       });
     }
 
-    // Buscar dados do cliente
-    const cliente = await dbHelpers.getClientById(clienteId);
+    // Buscar dados do cliente (agora é um user com role='user')
+    const cliente = await dbHelpers.getUserById(clienteId);
     if (!cliente) {
       return res.status(404).json({
         success: false,

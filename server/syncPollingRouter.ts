@@ -4,7 +4,7 @@
 
 import express, { Request, Response } from 'express';
 import { db } from './db-client';
-import { clients, transactions } from '../drizzle/schema';
+import { users, transactions } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 const router = express.Router();
@@ -20,18 +20,18 @@ router.post('/dados', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'usuarioId é obrigatório' });
     }
 
-    // Buscar clientes atualizados
+    // Buscar usuários (clientes) - todos os users com role='user'
     const clientesAtualizados = await db
       .select()
-      .from(clients)
-      .where(eq(clients.adminId, parseInt(usuarioId)))
+      .from(users)
+      .where(eq(users.role, 'user'))
       .execute();
 
     // Buscar lançamentos atualizados
     const lancamentosAtualizados = await db
       .select()
       .from(transactions)
-      .where(eq(transactions.adminId, parseInt(usuarioId)))
+      .where(eq(transactions.admin_id, String(usuarioId)))
       .execute();
 
     res.json({
@@ -60,14 +60,14 @@ router.post('/enviar', async (req: Request, res: Response) => {
     let lancamentosCriados = 0;
     let erros = [];
 
-    // Sincronizar clientes
+    // Sincronizar clientes (agora são users com role='user')
     for (const cliente of clientesLocal || []) {
       try {
-        await db.insert(clients).values({
+        await db.insert(users).values({
           ...cliente,
-          adminId: parseInt(usuarioId),
+          role: 'user',
         }).onDuplicateKeyUpdate({
-          set: cliente,
+          set: { ...cliente, role: 'user' },
         }).execute();
         clientesCriados++;
       } catch (error) {
@@ -80,9 +80,9 @@ router.post('/enviar', async (req: Request, res: Response) => {
       try {
         await db.insert(transactions).values({
           ...lancamento,
-          adminId: parseInt(usuarioId),
+          admin_id: String(usuarioId),
         }).onDuplicateKeyUpdate({
-          set: lancamento,
+          set: { ...lancamento, admin_id: String(usuarioId) },
         }).execute();
         lancamentosCriados++;
       } catch (error) {

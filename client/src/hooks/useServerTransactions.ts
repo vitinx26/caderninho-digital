@@ -27,17 +27,18 @@ export function useServerTransactions() {
       const dados = resposta.data || resposta;
       const lancamentosFormatados: Lancamento[] = (Array.isArray(dados) ? dados : []).map((t: any) => ({
         id: t.id,
-        clienteId: t.clienteId,
+        clienteId: t.cliente_id || t.clienteId, // Suportar ambos snake_case e camelCase
         tipo: t.tipo as 'debito' | 'pagamento',
         valor: Math.round(t.valor / 100), // Converter centavos para reais
         descricao: t.descricao,
-        data: typeof t.data === 'number' ? t.data : new Date(t.data).getTime(),
-        dataCriacao: typeof t.dataCriacao === 'number' ? t.dataCriacao : new Date(t.dataCriacao).getTime(),
+        data: typeof t.data === 'number' ? t.data : (t.data ? new Date(t.data).getTime() : Date.now()),
+        dataCriacao: typeof t.dataCriacao === 'number' ? t.dataCriacao : (typeof t.data_criacao === 'number' ? t.data_criacao : Date.now()),
       }));
 
       // Ordenar por data (mais recente primeiro)
       lancamentosFormatados.sort((a, b) => b.data - a.data);
       
+      console.log(`✅ ${lancamentosFormatados.length} transações carregadas do servidor`);
       setLancamentos(lancamentosFormatados);
       setErro(null);
     } catch (e) {

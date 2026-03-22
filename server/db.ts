@@ -1,5 +1,5 @@
 import { db } from './db-client';
-import { users, clients, transactions } from '../drizzle/schema';
+import { users, transactions } from '../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
 /**
@@ -28,48 +28,9 @@ export async function updateUser(id: number | string, data: Partial<typeof users
 }
 
 /**
- * Operações de clientes
+ * Operações de clientes (legado - usar users em vez disso)
+ * Clientes agora são usuários com role='user' na tabela users
  */
-export async function createClient(client: typeof clients.$inferInsert) {
-  const now = Date.now();
-  const clientData = {
-    ...client,
-    dataCriacao: client.dataCriacao || now,
-    dataAtualizacao: now,
-  };
-  await db.insert(clients).values(clientData);
-  return clientData;
-}
-
-export async function createManyClients(clientsList: (typeof clients.$inferInsert)[]) {
-  const now = Date.now();
-  return db.insert(clients).values(
-    clientsList.map(client => ({
-      ...client,
-      dataCriacao: client.dataCriacao || now,
-      dataAtualizacao: now,
-    }))
-  );
-}
-
-export async function getClientsByAdminId(adminId: number | string) {
-  return db.query.clients.findMany({
-    where: eq(clients.adminId, typeof adminId === 'string' ? parseInt(adminId) : adminId),
-  });
-}
-
-export async function getClientById(id: string) {
-  return db.query.clients.findFirst({
-    where: eq(clients.id, id),
-  });
-}
-
-export async function updateClient(id: string, data: Partial<typeof clients.$inferInsert>) {
-  return db.update(clients).set({
-    ...data,
-    dataAtualizacao: Date.now(),
-  }).where(eq(clients.id, id));
-}
 
 /**
  * Operações de transações
@@ -98,21 +59,21 @@ export async function createManyTransactions(transactionsList: (typeof transacti
 
 export async function getTransactionsByAdminId(adminId: number | string) {
   return db.query.transactions.findMany({
-    where: eq(transactions.adminId, typeof adminId === 'string' ? parseInt(adminId) : adminId),
+    where: eq(transactions.admin_id, typeof adminId === 'string' ? adminId : String(adminId)),
   });
 }
 
 export async function getTransactionsByClientId(clientId: string) {
   return db.query.transactions.findMany({
-    where: eq(transactions.clienteId, clientId),
+    where: eq(transactions.cliente_id, clientId),
   });
 }
 
 export async function getTransactionsByAdminAndClient(adminId: number | string, clientId: string) {
   return db.query.transactions.findMany({
     where: and(
-      eq(transactions.adminId, typeof adminId === 'string' ? parseInt(adminId) : adminId),
-      eq(transactions.clienteId, clientId)
+      eq(transactions.admin_id, typeof adminId === 'string' ? adminId : String(adminId)),
+      eq(transactions.cliente_id, clientId)
     ),
   });
 }
@@ -123,6 +84,10 @@ export async function updateTransaction(id: string, data: Partial<typeof transac
     dataAtualizacao: Date.now(),
   }).where(eq(transactions.id, id));
 }
+
+/**
+ * Operações de transações
+ */
 
 /**
  * Obter todos os usuários (admins e clientes)

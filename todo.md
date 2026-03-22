@@ -315,3 +315,19 @@
 - [ ] Testar fluxo completo: admin cria lançamento → aparece no Dashboard imediatamente
 - [ ] Publicar aplicativo após validação completa
 - [ ] Implementar indicadores visuais de sincronização (⏳ sincronizando → ✓ sincronizado)
+
+
+## Sincronização Centralizada de Banco de Dados (Sprint Crítica - URGENTE)
+
+- [x] Análise completa do banco de dados
+- [x] Identificação de tabelas vazias (clientes, lancamentos, estabelecimentos, sync_log)
+- [x] Atualização do schema Drizzle para corresponder ao banco real
+- [x] Correção de referências adminId → admin_id e clienteId → cliente_id
+- [x] Remoção de funções de clients (legado)
+- [x] Atualização de componentes para usar users em vez de clients
+- [x] Correção de endpoints para sincronizar com servidor
+- [ ] Testar Dashboard com lançamentos do servidor
+- [ ] Validar que admins veem todos os lançamentos em tempo real
+- [ ] Implementar filtro de lançamentos por admin
+- [ ] Testar sincronização entre múltiplos admins
+- [ ] Publicar aplicativo após validação
