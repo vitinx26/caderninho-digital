@@ -50,7 +50,8 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   const [descricao, setDescricao] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [mostrarNovoCliente, setMostrarNovoCliente] = useState(false);
-  const [usarCardapio, setUsarCardapio] = useState(false);
+  // Abrir cardapio por padrao para usuarios logados (admin ou cliente)
+  const [usarCardapio, setUsarCardapio] = useState(!!usuarioLogado);
   const consumptionPopup = useConsumptionPopup();
 
   const handleAdicionarNumero = (num: string) => {
