@@ -309,6 +309,25 @@ export default function ContaGeral() {
       // Se forneceu email e senha, criar usuário automaticamente
       if (novoClienteEmail.trim() && novoClienteSenha.trim()) {
         try {
+          // PRIMEIRO: Enviar para servidor
+          const responseServidor = await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: novoClienteEmail.trim(),
+              nome: novoClienteNome.trim(),
+              tipo: 'user', // cliente
+              telefone: novoClienteTelefone || '',
+              senha: novoClienteSenha,
+            }),
+          });
+
+          if (!responseServidor.ok) {
+            const errorData = await responseServidor.json();
+            throw new Error(errorData.error || 'Erro ao criar usuário no servidor');
+          }
+
+          // DEPOIS: Salvar localmente como backup
           const novoUsuario = {
             id: novoCliente.id,
             email: novoClienteEmail.trim(),
@@ -324,7 +343,7 @@ export default function ContaGeral() {
           toast.success('✅ Cliente e usuário criados! Ele pode fazer login agora.');
         } catch (e) {
           console.warn('Erro ao criar usuário para cliente:', e);
-          toast.success('Cliente adicionado, mas não foi possível criar login. Tente novamente.');
+          toast.error('Erro ao criar cliente: ' + (e instanceof Error ? e.message : 'Erro desconhecido'));
         }
       } else {
         toast.success('Cliente adicionado com sucesso!');
