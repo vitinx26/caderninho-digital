@@ -95,7 +95,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
     try {
       setCarregando(true);
 
-      let id = clienteId;
+      let id = clienteId || clienteIdFixo;
 
       // Se for novo cliente, criar primeiro
       if (mostrarNovoCliente && novoClienteNome.trim()) {
