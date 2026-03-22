@@ -305,15 +305,14 @@ router.post('/users', async (req: Request, res: Response) => {
 router.put('/users/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { nome, tipo, telefone, ativo } = req.body;
+    const { name, role, ativo } = req.body;
     
-    const usuarioAtualizado = await dbHelpers.updateUser(id, {
-      nome,
-      tipo,
-      telefone,
-      ativo,
-      dataAtualizacao: Date.now(),
-    } as any);
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (role !== undefined) updateData.role = role;
+    if (ativo !== undefined) updateData.ativo = ativo;
+    
+    const usuarioAtualizado = await dbHelpers.updateUser(id, updateData as any);
     
     console.log(`✅ Usuário atualizado: ${id}`);
     

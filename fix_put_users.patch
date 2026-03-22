@@ -1,0 +1,34 @@
+--- a/server/syncRouter.ts
++++ b/server/syncRouter.ts
+@@ -305,17 +305,31 @@ router.put('/users/:id', async (req: Request, res: Response) => {
+   try {
+     const { id } = req.params;
+-    const { nome, tipo, telefone, ativo } = req.body;
++    const { name, role, ativo } = req.body;
++    
++    console.log(`📝 Atualizando usuário ${id}:`, { name, role, ativo });
++    
++    // Construir objeto de atualização
++    const updateData: any = {};
++    if (name !== undefined) updateData.name = name;
++    if (role !== undefined) updateData.role = role;
++    if (ativo !== undefined) updateData.ativo = ativo;
++    
++    if (Object.keys(updateData).length === 0) {
++      return res.status(400).json({
++        success: false,
++        error: 'Nenhum campo para atualizar',
++      });
++    }
+     
+-    const usuarioAtualizado = await dbHelpers.updateUser(id, {
+-      nome,
+-      tipo,
+-      telefone,
+-      ativo,
+-      dataAtualizacao: Date.now(),
+-    } as any);
++    // Usar db helpers para atualizar
++    const usuarioAtualizado = await dbHelpers.updateUser(id, updateData as any);
+     
+     console.log(`✅ Usuário atualizado: ${id}`);

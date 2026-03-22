@@ -49,7 +49,7 @@ router.post('/migrate', async (req: Request, res: Response) => {
         email: usuario.email,
         name: usuario.nome || usuario.name || 'Usuario Migrado',
         role: usuario.tipo === 'admin' ? 'admin' : 'user',
-        openId: usuario.openId || '',
+        openId: usuario.openId || uuidv4(),
         ativo: true,
       };
       

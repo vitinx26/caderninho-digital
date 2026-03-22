@@ -26,10 +26,7 @@ export async function getUserById(id: number | string) {
 }
 
 export async function updateUser(id: number | string, data: Partial<typeof users.$inferInsert>) {
-  return db.update(users).set({
-    ...data,
-    dataAtualizacao: Date.now(),
-  }).where(eq(users.id, typeof id === 'string' ? parseInt(id) : id));
+  return db.update(users).set(data).where(eq(users.id, typeof id === 'string' ? parseInt(id) : id));
 }
 
 /**
