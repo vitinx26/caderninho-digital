@@ -111,6 +111,12 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       // Registrar lançamento localmente
       await adicionarLancamento(id, tipo, parseFloat(valor), descricao.trim(), obterTimestampBrasilia());
 
+      // DEBUG: Logs detalhados
+      console.log('🔍 DEBUG - Verificando sincronização:');
+      console.log('  usuarioLogado:', usuarioLogado);
+      console.log('  usuarioLogado?.tipo:', usuarioLogado?.tipo);
+      console.log('  Condição (usuarioLogado && usuarioLogado.tipo === "cliente"):', usuarioLogado && usuarioLogado.tipo === 'cliente');
+
       // Sincronizar com servidor se usuário está logado (cliente)
       if (usuarioLogado && usuarioLogado.tipo === 'cliente') {
         try {
@@ -119,7 +125,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              clienteId: id,
+              clienteId: clienteIdFixo || clienteSelecionado,
               tipo,
               valor: Math.round(parseFloat(valor) * 100),
               descricao: descricao.trim(),
@@ -128,16 +134,20 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
           });
           
           const resultado = await response.json();
+          console.log('  Status:', response.status);
+          console.log('  Resposta:', resultado);
           if (resultado.success) {
             console.log('✅ Lançamento sincronizado com servidor');
             toast.success('✅ Lançamento registrado com sucesso');
           } else {
             console.warn('⚠️ Erro ao sincronizar:', resultado.error);
-            toast.warning('⚠️ Lançamento salvo localmente, mas não sincronizou');
+            toast.error('❌ ' + (resultado.error || 'Erro desconhecido'));
           }
         } catch (error) {
           console.error('❌ Erro ao sincronizar lançamento:', error);
-          toast.warning('⚠️ Lançamento salvo localmente, mas não sincronizou');
+          console.error('  Detalhes:', (error as any)?.message);
+          console.error('  Stack:', (error as any)?.stack);
+          toast.error('❌ Erro ao sincronizar com servidor. Tente novamente.');
         }
       }
 
@@ -257,7 +267,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         value={consumptionPopup.data?.value || 0}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 pb-24">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
@@ -440,13 +450,15 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       {/* A data é gravada automaticamente ao registrar o lançamento */}
       {/* Não é exibida para não poluir o visual do formulário */}
 
-      {/* Botões Salvar e WhatsApp */}
-      <div className="flex gap-3">
+      </div>
+
+      {/* Botões Salvar e WhatsApp - Fixo na parte inferior */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 flex gap-3 z-50">
         <Button
-          onClick={handleSubmit}
-          disabled={carregando}
-          className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-        >
+        onClick={handleSubmit}
+        disabled={carregando}
+        className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+      >
           {carregando ? 'Salvando...' : 'Registrar Lançamento'}
         </Button>
         {tipo === 'debito' && clienteId && valor && (
@@ -460,7 +472,6 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
           </Button>
         )}
       </div>
-    </div>
     </>
   );
 }

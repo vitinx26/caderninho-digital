@@ -56,7 +56,7 @@ export const transactions = mysqlTable(
   {
     id: varchar('id', { length: 36 }).primaryKey(),
     adminId: int('admin_id').notNull(), // ID do admin que registrou
-    clienteId: varchar('cliente_id', { length: 36 }).notNull(), // ID do cliente
+    clienteId: varchar('cliente_id', { length: 36 }).notNull(), // ID do cliente (pode ser user ou client)
     tipo: varchar('tipo', { length: 20 }).notNull(), // 'debito' ou 'pagamento'
     valor: int('valor').notNull(), // Valor em centavos
     descricao: text('descricao').notNull(),
@@ -157,10 +157,8 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     fields: [transactions.adminId],
     references: [users.id],
   }),
-  client: one(clients, {
-    fields: [transactions.clienteId],
-    references: [clients.id],
-  }),
+  // clienteId pode ser um user (cliente logado) ou um cliente tradicional
+  // Remover foreign key constraint para permitir ambos
 }));
 
 export const menusRelations = relations(menus, ({ many }) => ({

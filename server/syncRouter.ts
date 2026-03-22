@@ -409,15 +409,19 @@ router.post('/lancamentos', async (req: Request, res: Response) => {
       });
     }
     
-    console.log(`📝 POST /api/lancamentos - clienteId: ${clienteId}, tipo: ${tipo}, valor: ${valor}`);
+    console.log(`📋 POST /api/lancamentos - clienteId: ${clienteId}, tipo: ${tipo}, valor: ${valor}`);
+    console.log(`  Dados recebidos:`, { clienteId, tipo, valor, descricao, data });
     
     // Criar lançamento com adminId padrão (1)
+    console.log('  Chamando dbHelpers.createTransaction...');
+    // Converter valor para centavos (valor em reais * 100)
+    const valorEmCentavos = Math.round(valor * 100);
     const novoLancamento = await dbHelpers.createTransaction({
       id: nanoid(), // Gerar ID único
       adminId: 1, // ID do admin padrão
       clienteId: String(clienteId), // Converter para string
       tipo,
-      valor,
+      valor: valorEmCentavos,
       descricao: descricao || '',
       data: new Date(data || Date.now()),
     });
@@ -431,10 +435,13 @@ router.post('/lancamentos', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('❌ Erro ao criar lançamento:', error);
+    console.error('  Stack:', (error as any)?.stack);
+    console.error('  Message:', (error as any)?.message);
     res.status(500).json({
       success: false,
       error: 'Erro ao criar lançamento',
       message: String(error),
+      details: (error as any)?.message,
     });
   }
 });
