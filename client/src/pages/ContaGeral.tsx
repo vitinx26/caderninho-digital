@@ -394,8 +394,34 @@ export default function ContaGeral() {
     try {
       setCarregandoCompra(true);
       const timestamp = obterTimestampBrasilia();
+      
+      // Salvar localmente primeiro
       await adicionarLancamento(clienteSelecionado, 'debito', parseFloat(valor), descricao.trim(), timestamp);
-      toast.success('Compra registrada com sucesso!');
+      
+      // Sincronizar com servidor
+      try {
+        const response = await fetch('/api/lancamentos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clienteId: clienteSelecionado,
+            tipo: 'debito',
+            valor: Math.round(parseFloat(valor) * 100), // Converter para centavos
+            descricao: descricao.trim(),
+            data: timestamp,
+          }),
+        });
+
+        if (response.ok) {
+          toast.success('✓ Compra registrada e sincronizada!');
+        } else {
+          toast.warning('⚠️ Compra registrada localmente, mas não sincronizou');
+        }
+      } catch (syncError) {
+        console.error('Erro ao sincronizar:', syncError);
+        toast.warning('⚠️ Compra registrada localmente, mas não sincronizou');
+      }
+      
       setValor('');
       setDescricao('');
     } catch (error) {
