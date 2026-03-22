@@ -1,0 +1,8 @@
+{
+  "query": "SELECT u.id, u.name, u.email, u.role, COUNT(l.id) as total_lancamentos FROM users u LEFT JOIN lancamentos l ON u.id = l.usuarioId WHERE u.name LIKE '%Carol%' OR u.email LIKE '%carol%' GROUP BY u.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute SELECT u.id, u.name, u.email, u.role, COUNT(l.id) as total_lancamentos FROM users u LEFT JOIN lancamentos l ON u.id = l.usuarioId WHERE u.name LIKE '%Carol%' OR u.email LIKE '%carol%' GROUP BY u.id;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'l.usuarioid' in 'on clause'"
+  ]
+}

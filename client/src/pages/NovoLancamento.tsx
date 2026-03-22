@@ -108,7 +108,38 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
         return;
       }
 
+      // Registrar lançamento localmente
       await adicionarLancamento(id, tipo, parseFloat(valor), descricao.trim(), obterTimestampBrasilia());
+
+      // Sincronizar com servidor se usuário está logado
+      if (usuarioLogado?.tipo === 'cliente') {
+        try {
+          console.log('📤 Sincronizando lançamento com servidor...');
+          const response = await fetch('/api/lancamentos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clienteId: id,
+              tipo,
+              valor: Math.round(parseFloat(valor) * 100),
+              descricao: descricao.trim(),
+              data: obterTimestampBrasilia(),
+            }),
+          });
+          
+          const resultado = await response.json();
+          if (resultado.success) {
+            console.log('✅ Lançamento sincronizado com servidor');
+            toast.success('✅ Lançamento registrado com sucesso');
+          } else {
+            console.warn('⚠️ Erro ao sincronizar:', resultado.error);
+            toast.warning('⚠️ Lançamento salvo localmente, mas não sincronizou');
+          }
+        } catch (error) {
+          console.error('❌ Erro ao sincronizar lançamento:', error);
+          toast.warning('⚠️ Lançamento salvo localmente, mas não sincronizou');
+        }
+      }
 
       // Calcular consumo total e percentual de aumento
       const cliente = clientes.find((c: any) => c.id === id);

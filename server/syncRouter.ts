@@ -9,6 +9,7 @@
 
 import { Router, Request, Response } from 'express';
 import * as dbHelpers from './db';
+import { nanoid } from 'nanoid';
 
 const router = Router();
 
@@ -364,6 +365,75 @@ router.delete('/users/:id', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Erro ao deletar usuário',
+      message: String(error),
+    });
+  }
+});
+
+/**
+ * POST /api/lancamentos
+ * Cria novo lançamento para usuário logado
+ * 
+ * Body:
+ * - clienteId: number (ID do usuário logado)
+ * - tipo: 'debito' | 'pagamento'
+ * - valor: number (em centavos)
+ * - descricao: string (opcional - descrição do lançamento)
+ * - data: number (timestamp em ms - opcional, usa data atual se não informado)
+ */
+router.post('/lancamentos', async (req: Request, res: Response) => {
+  try {
+    const { clienteId, tipo, valor, descricao, data } = req.body;
+    
+    // Validar campos obrigatórios
+    if (!clienteId || !tipo || !valor) {
+      return res.status(400).json({
+        success: false,
+        error: 'Campos obrigatórios faltando: clienteId, tipo, valor',
+      });
+    }
+    
+    // Validar tipo
+    if (tipo !== 'debito' && tipo !== 'pagamento') {
+      return res.status(400).json({
+        success: false,
+        error: 'Tipo inválido. Deve ser "debito" ou "pagamento"',
+      });
+    }
+    
+    // Validar valor
+    if (typeof valor !== 'number' || valor <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valor deve ser um número positivo',
+      });
+    }
+    
+    console.log(`📝 POST /api/lancamentos - clienteId: ${clienteId}, tipo: ${tipo}, valor: ${valor}`);
+    
+    // Criar lançamento com adminId padrão (1)
+    const novoLancamento = await dbHelpers.createTransaction({
+      id: nanoid(), // Gerar ID único
+      adminId: 1, // ID do admin padrão
+      clienteId: String(clienteId), // Converter para string
+      tipo,
+      valor,
+      descricao: descricao || '',
+      data: new Date(data || Date.now()),
+    });
+    
+    console.log(`✅ Lançamento criado com sucesso: ${novoLancamento.id}`);
+    
+    res.status(201).json({
+      success: true,
+      data: novoLancamento,
+      message: 'Lançamento registrado com sucesso',
+    });
+  } catch (error) {
+    console.error('❌ Erro ao criar lançamento:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao criar lançamento',
       message: String(error),
     });
   }
