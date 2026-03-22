@@ -9,6 +9,7 @@ import { Plus, TrendingUp, AlertCircle, MessageCircle } from 'lucide-react';
 import { useClientes } from '@/hooks/useDB';
 import { useLancamentos } from '@/hooks/useDB';
 import { useSaldos } from '@/hooks/useDB';
+import { useServerTransactions } from '@/hooks/useServerTransactions';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,8 @@ type FiltroType = 'todos' | 'vencidos' | 'pagos' | 'alfabetico';
 
 export default function Dashboard() {
   const { clientes, carregando, recarregar: recarregarClientes } = useClientes();
-  const { lancamentos, recarregar: recarregarLancamentos } = useLancamentos();
+  // Usar hook de servidor para lançamentos em tempo real
+  const { lancamentos, recarregar: recarregarLancamentos } = useServerTransactions();
   const saldos = useSaldos(clientes, lancamentos);
   const { irPara } = useNavigation();
   const { usuarioLogado } = useAuth();
