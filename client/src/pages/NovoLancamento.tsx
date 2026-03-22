@@ -111,8 +111,8 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       // Registrar lançamento localmente
       await adicionarLancamento(id, tipo, parseFloat(valor), descricao.trim(), obterTimestampBrasilia());
 
-      // Sincronizar com servidor se usuário está logado
-      if (usuarioLogado?.tipo === 'cliente') {
+      // Sincronizar com servidor se usuário está logado (cliente)
+      if (usuarioLogado && usuarioLogado.tipo === 'cliente') {
         try {
           console.log('📤 Sincronizando lançamento com servidor...');
           const response = await fetch('/api/lancamentos', {
