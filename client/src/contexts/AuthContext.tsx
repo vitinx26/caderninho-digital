@@ -97,8 +97,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Garantir que admins estão presentes
       await garantirAdminsPresentes();
 
-      // Tentar garantir que usuário existe (recupera dados antigos se necessário)
-      let usuario = await garantirUsuarioExiste(email);
+      // PRIMEIRO: Tentar buscar do servidor
+      let usuario = null;
+      try {
+        const responseServidor = await fetch('/api/users');
+        if (responseServidor.ok) {
+          const data = await responseServidor.json();
+          const usuariosServidor = data.data || [];
+          const usuarioServidor = usuariosServidor.find((u: any) => u.email === email);
+          
+          if (usuarioServidor) {
+            console.log(`✓ Usuário ${email} encontrado no servidor`);
+            usuario = {
+              id: usuarioServidor.id,
+              email: usuarioServidor.email,
+              nome: usuarioServidor.name,
+              tipo: usuarioServidor.role === 'admin' ? 'admin' : 'cliente',
+              telefone: '',
+              senha: senha,
+            };
+          }
+        }
+      } catch (erroServidor) {
+        console.warn('⚠️ Erro ao buscar do servidor, tentando localStorage:', erroServidor);
+      }
+
+      // DEPOIS: Se não encontrou no servidor, tentar localStorage
+      if (!usuario) {
+        usuario = await garantirUsuarioExiste(email);
+      }
+
       if (!usuario) {
         throw new Error('Usuário não encontrado');
       }
@@ -137,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: usuario.id,
         email: usuario.email,
         nome: usuario.nome,
-        tipo: usuario.tipo,
+        tipo: usuario.tipo as TipoUsuario,
         telefone: usuario.telefone,
       };
 
