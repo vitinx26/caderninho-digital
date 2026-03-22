@@ -42,7 +42,16 @@ export default function GerenciarUsuarios() {
         throw new Error('Erro ao carregar usuários');
       }
       const data = await response.json();
-      setUsuarios(data.data || []);
+      // Mapear campos do servidor (name, role) para formato esperado (nome, tipo)
+      const usuariosMapeados = (data.data || []).map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        nome: u.name,
+        tipo: u.role === 'admin' ? 'admin' : 'cliente',
+        telefone: u.telefone || '',
+        ativo: u.ativo,
+      }));
+      setUsuarios(usuariosMapeados);
       toast.success('Usuários sincronizados com sucesso');
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);

@@ -49,6 +49,7 @@ router.get('/users', async (req: Request, res: Response) => {
       name: u.name,
       role: u.role,
       ativo: u.ativo,
+      telefone: u.telefone || '',
       createdAt: u.createdAt,
       updatedAt: u.updatedAt,
     }));
