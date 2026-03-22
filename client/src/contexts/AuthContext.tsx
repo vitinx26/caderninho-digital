@@ -83,12 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     verificarLogin();
 
-    // Monitorar mudanças no storage
-    const cancelarMonitoramento = monitorarMudancasStorage();
+    // Monitorar mudanças no storage DESABILITADO - causava loop infinito
+    // const cancelarMonitoramento = monitorarMudancasStorage();
 
     return () => {
       clearTimeout(timeoutId);
-      cancelarMonitoramento();
+      // cancelarMonitoramento();
     };
   }, []);
 

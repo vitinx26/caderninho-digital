@@ -79,10 +79,7 @@ export default function ContaGeral() {
     };
 
     sincronizarDados();
-    
-    // Polling a cada 10 segundos para sincronizar clientes
-    const interval = setInterval(sincronizarDados, 10000);
-    return () => clearInterval(interval);
+    // Polling desabilitado - carregamento único na montagem
   }, []);
 
   useEffect(() => {

@@ -53,15 +53,8 @@ export default function GerenciarUsuarios() {
     };
 
     carregarUsuarios();
-    
-    // Polling inteligente: sincroniza a cada 3s, MAS para quando está editando
-    const interval = setInterval(() => {
-      if (!editandoId) { // Só sincroniza se não está editando
-        carregarUsuarios();
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [editandoId]);
+    // Polling desabilitado - carregamento único na montagem
+  }, []);
 
   // Verificar se é admin
   if (usuarioLogado?.tipo !== 'admin') {
