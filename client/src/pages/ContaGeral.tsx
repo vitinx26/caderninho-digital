@@ -148,6 +148,28 @@ export default function ContaGeral() {
           console.warn('⚠️ Erro ao carregar clientes do backend:', error);
         }
 
+        // Carregar usuários (clientes) da tabela users
+        try {
+          const response = await fetch('/api/users?tipo=cliente');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && Array.isArray(data.data)) {
+              data.data.forEach((u: any) => {
+                if (!clientesMap.has(u.id)) {
+                  clientesMap.set(u.id, {
+                    id: u.id,
+                    nome: u.name || u.nome,
+                    telefone: u.telefone || ''
+                  });
+                }
+              });
+              console.log('✓ Usuários (clientes) do backend carregados:', data.data.length);
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Erro ao carregar usuários do backend:', error);
+        }
+
         // Converter para array e ordenar
         const clientesOrdenados = Array.from(clientesMap.values()).sort((a, b) => 
           a.nome.localeCompare(b.nome)

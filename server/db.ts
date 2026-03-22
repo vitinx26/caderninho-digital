@@ -6,11 +6,9 @@ import { eq, and } from 'drizzle-orm';
  * Operações de usuários
  */
 export async function createUser(user: typeof users.$inferInsert) {
-  const userData = {
-    ...user,
-  };
-  await db.insert(users).values(userData);
-  return userData;
+  const { openId, ...userData } = user; // Remover openId para usar default do banco
+  const result = await db.insert(users).values(userData as any);
+  return { ...userData, openId: '' };
 }
 
 export async function getUserByEmail(email: string) {
