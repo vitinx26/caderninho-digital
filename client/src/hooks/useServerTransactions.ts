@@ -20,10 +20,12 @@ export function useServerTransactions() {
         throw new Error(`Erro ao carregar transações: ${response.status}`);
       }
 
-      const dados = await response.json();
+      const resposta = await response.json();
       
       // Converter dados do servidor para formato Lancamento
-      const lancamentosFormatados: Lancamento[] = dados.map((t: any) => ({
+      // O endpoint retorna { success, data: [...], count, timestamp }
+      const dados = resposta.data || resposta;
+      const lancamentosFormatados: Lancamento[] = (Array.isArray(dados) ? dados : []).map((t: any) => ({
         id: t.id,
         clienteId: t.clienteId,
         tipo: t.tipo as 'debito' | 'pagamento',
