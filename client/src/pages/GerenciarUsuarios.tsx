@@ -53,10 +53,7 @@ export default function GerenciarUsuarios() {
     };
 
     carregarUsuarios();
-    
-    // Polling a cada 5 segundos para sincronizar com backend
-    const interval = setInterval(carregarUsuarios, 5000);
-    return () => clearInterval(interval);
+    // Polling removido - apenas carregamento inicial
   }, []);
 
   // Verificar se é admin
