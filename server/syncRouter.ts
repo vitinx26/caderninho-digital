@@ -305,12 +305,15 @@ router.post('/users', async (req: Request, res: Response) => {
 router.put('/users/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    console.log(`📝 PUT /users/${id} - Body recebido:`, JSON.stringify(req.body, null, 2));
     const { name, role, ativo } = req.body;
     
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (role !== undefined) updateData.role = role;
     if (ativo !== undefined) updateData.ativo = ativo;
+    console.log(`📝 updateData:`, JSON.stringify(updateData, null, 2));
+    if (Object.keys(updateData).length === 0) { console.warn(`⚠️ Nenhum campo para atualizar`); return res.status(400).json({ success: false, error: 'Nenhum campo para atualizar' }); }
     
     const usuarioAtualizado = await dbHelpers.updateUser(id, updateData as any);
     
