@@ -98,15 +98,16 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
 
       let id = clienteId || clienteIdFixo;
 
-      // Se for novo cliente, criar primeiro via servidor
-      if (mostrarNovoCliente && novoClienteNome.trim()) {
+      // Se for novo cliente (prefixo 'novo:'), criar primeiro via servidor
+      if (id && id.startsWith('novo:')) {
+        const nomeCliente = id.substring(5); // Remove prefixo 'novo:'
         try {
           const response = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              nome: novoClienteNome.trim(),
-              email: `${novoClienteNome.trim().toLowerCase().replace(/\s+/g, '.')}@clientes.local`,
+              nome: nomeCliente.trim(),
+              email: `${nomeCliente.trim().toLowerCase().replace(/\s+/g, '.')}@clientes.local`,
               tipo: 'user',
               telefone: '',
             }),
@@ -114,9 +115,18 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
           if (response.ok) {
             const data = await response.json();
             id = data.id;
+            console.log('Novo cliente criado:', id);
+          } else {
+            console.error('Erro ao criar cliente:', response.status);
+            toast.error('Erro ao criar novo cliente');
+            setCarregando(false);
+            return;
           }
         } catch (error) {
           console.error('Erro ao criar cliente:', error);
+          toast.error('Erro ao criar novo cliente');
+          setCarregando(false);
+          return;
         }
       }
 
@@ -432,6 +442,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
           onItemsSelected={(items, total) => {
             setValor((total / 100).toFixed(2));
             setDescricao(items.map(i => i.name).join(', '));
+            setUsarCardapio(false); // ✅ Voltar para o formulário após confirmar
           }}
           onCancel={() => setUsarCardapio(false)}
         />
