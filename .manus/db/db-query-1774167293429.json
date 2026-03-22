@@ -1,0 +1,20 @@
+{
+  "query": "\n-- Verificar total de usuários\nSELECT COUNT(*) as total_users, \n       SUM(CASE WHEN role='admin' THEN 1 ELSE 0 END) as admins,\n       SUM(CASE WHEN role='user' THEN 1 ELSE 0 END) as clients\nFROM users;\n\n-- Verificar total de transações\nSELECT COUNT(*) as total_transactions FROM transactions;\n\n-- Verificar se cliente órfão existe\nSELECT id, name FROM users WHERE id = 30020;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute \n-- Verificar total de usuários\nSELECT COUNT(*) as total_users, \n       SUM(CASE WHEN role='admin' THEN 1 ELSE 0 END) as admins,\n       SUM(CASE WHEN role='user' THEN 1 ELSE 0 END) as clients\nFROM users;\n\n-- Verificar total de transações\nSELECT COUNT(*) as total_transactions FROM transactions;\n\n-- Verificar se cliente órfão existe\nSELECT id, name FROM users WHERE id = 30020;\n",
+  "rows": [
+    {
+      "total_users": "13",
+      "admins": "3",
+      "clients": "10"
+    }
+  ],
+  "messages": [
+    "total_transactions",
+    "18",
+    "id\tname",
+    "30020\tCliente Órfão (Importado)"
+  ],
+  "stdout": "total_users\tadmins\tclients\n13\t3\t10\ntotal_transactions\n18\nid\tname\n30020\tCliente Órfão (Importado)\n",
+  "stderr": "",
+  "execution_time_ms": 100
+}
