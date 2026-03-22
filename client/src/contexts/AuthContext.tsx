@@ -169,7 +169,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dataCriacao: Date.now(),
       };
 
-      // Salvar no IndexedDB
+      // PRIMEIRO: Enviar para servidor com email correto
+      try {
+        const responseServidor = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email, // Email ORIGINAL, não @example.com
+            nome: nome,
+            tipo: tipo || 'user',
+            telefone: telefone || '',
+            senha: senha,
+          }),
+        });
+
+        if (!responseServidor.ok) {
+          const errorData = await responseServidor.json();
+          throw new Error(errorData.error || 'Erro ao registrar no servidor');
+        }
+
+        console.log('✅ Usuário registrado no servidor com sucesso');
+      } catch (erroServidor) {
+        console.error('Erro ao registrar no servidor:', erroServidor);
+        throw erroServidor;
+      }
+
+      // DEPOIS: Salvar no IndexedDB
       await db.adicionarUsuario(novoUsuario);
 
       // Salvar no localStorage
