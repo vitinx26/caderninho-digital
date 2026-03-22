@@ -124,10 +124,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             telefone: usuario.telefone,
           };
           
-          // Iniciar polling HTTP (5 segundos)
-          const cancelarPolling = iniciarPollingHTTP(usuarioComDados, 5000);
-          (window as any).cancelarPollingHTTP = cancelarPolling;
-          console.log('✅ Polling HTTP iniciado com sucesso');
+          // Polling HTTP desabilitado - usar sincronização manual apenas
+          // const cancelarPolling = iniciarPollingHTTP(usuarioComDados, 5000);
+          // (window as any).cancelarPollingHTTP = cancelarPolling;
+          console.log('✅ Autenticação concluída - sincronização manual habilitada');
         } catch (error) {
           console.error('⚠️ Erro ao iniciar polling HTTP:', error);
         }
