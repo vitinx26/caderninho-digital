@@ -349,3 +349,15 @@
 - [ ] Validar que lançamento aparece no Dashboard em < 5 segundos
 - [ ] Testar com múltiplos admins simultâneos
 - [ ] Publicar aplicativo após validação
+
+
+## Correção de Novo Cliente e Quantidade em Lançamentos (Sprint Atual)
+
+- [x] Adicionar botão "Confirmar" ao criar novo cliente em NovoLancamento
+- [x] Refatorar CardapioSelectorSimples para suportar quantidade
+- [x] Implementar botões + e - para ajustar quantidade
+- [x] Permitir múltiplos itens do mesmo tipo (ex: 2x Eternity, 3x Cerveja)
+- [x] Atualizar total automaticamente com quantidade
+- [ ] Testar fluxo completo (novo cliente + quantidade)
+- [ ] Validar sincronização com servidor
+- [ ] Publicar aplicativo após validação

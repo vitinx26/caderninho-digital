@@ -397,12 +397,30 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
                 onChange={(e) => setNovoClienteNome(e.target.value)}
                 className="w-full"
               />
-              <button
-                onClick={() => setMostrarNovoCliente(false)}
-                className="w-full py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-              >
-                Cancelar
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setMostrarNovoCliente(false);
+                    setNovoClienteNome('');
+                  }}
+                  className="flex-1 py-2 px-3 border border-dashed border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (novoClienteNome.trim()) {
+                      setClienteId('novo:' + novoClienteNome.trim());
+                      setMostrarNovoCliente(false);
+                    } else {
+                      toast.error('Digite o nome do cliente');
+                    }
+                  }}
+                  className="flex-1 py-2 px-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
           )}
         </div>

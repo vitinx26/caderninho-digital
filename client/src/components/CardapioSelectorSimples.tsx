@@ -1,22 +1,27 @@
 /**
  * CardapioSelectorSimples.tsx - Seletor de cardápio simplificado para Conta Geral
- * Interface clean para clientes selecionarem itens de consumo
+ * Interface clean para clientes selecionarem itens de consumo com quantidade
  * Carrega cardápios do servidor via API
  */
 
 import { useState, useEffect } from 'react';
+import { Plus, Minus } from 'lucide-react';
 
 interface MenuItem {
   id: string;
   name: string;
   price: number;
-  selected?: boolean;
+  quantity?: number;
 }
 
 interface MenuCategory {
   id: string;
   name: string;
   items: MenuItem[];
+}
+
+interface SelectedItem extends MenuItem {
+  quantity: number;
 }
 
 interface CardapioSelectorSimplesProps {
@@ -29,7 +34,7 @@ export default function CardapioSelectorSimples({
   onCancel,
 }: CardapioSelectorSimplesProps) {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [selectedItems, setSelectedItems] = useState<MenuItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Map<string, SelectedItem>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,7 +49,6 @@ export default function CardapioSelectorSimples({
 
   useEffect(() => {
     loadActiveMenu();
-    // Polling removido - carregamento único na montagem
   }, []);
 
   const loadActiveMenu = async () => {
@@ -52,7 +56,6 @@ export default function CardapioSelectorSimples({
       setLoading(true);
       setError(null);
 
-      // Sempre carregar do servidor (sem cache para sincronização em tempo real)
       const response = await fetch('/api/menus', {
         method: 'GET',
         headers: {
@@ -67,7 +70,6 @@ export default function CardapioSelectorSimples({
       const data = await response.json();
       
       if (data.menus && data.menus.length > 0) {
-        // Encontrar cardápio ativo
         const activeMenu = data.menus.find((m: any) => m.is_active);
         
         if (activeMenu && activeMenu.categories) {
@@ -95,23 +97,49 @@ export default function CardapioSelectorSimples({
     }
   };
 
-  const handleToggleItem = (item: MenuItem) => {
-    const isSelected = selectedItems.find(i => i.id === item.id);
+  const handleAddItem = (item: MenuItem) => {
+    const newSelectedItems = new Map(selectedItems);
+    const existing = newSelectedItems.get(item.id);
     
-    if (isSelected) {
-      setSelectedItems(selectedItems.filter(i => i.id !== item.id));
+    if (existing) {
+      existing.quantity += 1;
     } else {
-      setSelectedItems([...selectedItems, item]);
+      newSelectedItems.set(item.id, {
+        ...item,
+        quantity: 1,
+      });
     }
+    
+    setSelectedItems(newSelectedItems);
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    const newSelectedItems = new Map(selectedItems);
+    const existing = newSelectedItems.get(itemId);
+    
+    if (existing) {
+      if (existing.quantity > 1) {
+        existing.quantity -= 1;
+      } else {
+        newSelectedItems.delete(itemId);
+      }
+    }
+    
+    setSelectedItems(newSelectedItems);
   };
 
   const calculateTotal = () => {
-    return selectedItems.reduce((sum, item) => sum + item.price, 0);
+    let total = 0;
+    selectedItems.forEach(item => {
+      total += item.price * item.quantity;
+    });
+    return total;
   };
 
   const handleConfirm = () => {
+    const items = Array.from(selectedItems.values());
     const total = calculateTotal();
-    onItemsSelected(selectedItems, total);
+    onItemsSelected(items, total);
   };
 
   if (loading) {
@@ -145,7 +173,7 @@ export default function CardapioSelectorSimples({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-32">
       {/* Campo de Busca */}
       <div className="mb-4">
         <input
@@ -164,66 +192,81 @@ export default function CardapioSelectorSimples({
           
           <div className="space-y-2">
             {category.items.map(item => {
-              const isSelected = selectedItems.find(i => i.id === item.id);
+              const selectedItem = selectedItems.get(item.id);
+              const quantity = selectedItem?.quantity || 0;
+              
               return (
-                <button
+                <div
                   key={item.id}
-                  onClick={() => handleToggleItem(item)}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
-                    isSelected
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-border hover:border-blue-300'
-                  }`}
+                  className="flex items-center justify-between p-3 rounded-lg border-2 border-border hover:border-blue-300 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-gray-300'
-                      }`}
-                    >
-                      {isSelected && (
-                        <span className="text-white text-sm">✓</span>
-                      )}
+                  <div className="flex-1">
+                    <div className="font-medium">{item.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      R$ {(item.price / 100).toFixed(2)}
                     </div>
-                    <span className="font-medium text-left">{item.name}</span>
                   </div>
-                  <span className="text-blue-600 font-bold">
-                    R$ {(item.price / 100).toFixed(2)}
-                  </span>
-                </button>
+                  
+                  {quantity > 0 ? (
+                    <div className="flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg px-2 py-1">
+                      <button
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded"
+                      >
+                        <Minus size={16} className="text-blue-600" />
+                      </button>
+                      <span className="w-8 text-center font-semibold text-blue-600">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => handleAddItem(item)}
+                        className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded"
+                      >
+                        <Plus size={16} className="text-blue-600" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleAddItem(item)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
         </div>
       ))}
 
-      {/* Resumo e Botões */}
-      <div className="sticky bottom-0 p-4 bg-card rounded-lg border border-border space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="font-semibold">Total:</span>
-          <span className="text-2xl font-bold text-blue-600">
-            R$ {(calculateTotal() / 100).toFixed(2)}
-          </span>
-        </div>
+      {/* Resumo e Botões - Sticky */}
+      {selectedItems.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">Total:</span>
+            <span className="text-2xl font-bold text-blue-600">
+              R$ {(calculateTotal() / 100).toFixed(2)}
+            </span>
+          </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-background"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={selectedItems.length === 0}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Confirmar ({selectedItems.length})
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-background"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={selectedItems.size === 0}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+            >
+              Confirmar ({selectedItems.size})
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
