@@ -124,7 +124,7 @@ router.get('/clients', async (req: Request, res: Response) => {
     
     // Filtrar por admin se especificado
     if (adminId) {
-      clientes = clientes.filter((c: any) => c.adminId === adminId);
+      clientes = clientes.filter((c: any) => c.admin_id === adminId);
     }
     
     // Filtrar por status se especificado
@@ -175,7 +175,7 @@ router.get('/transactions', async (req: Request, res: Response) => {
     
     // Filtrar por admin se especificado
     if (adminId) {
-      transacoes = transacoes.filter((t: any) => t.adminId === adminId);
+      transacoes = transacoes.filter((t: any) => t.admin_id === adminId);
     }
     
     // Aplicar filtros
@@ -183,7 +183,7 @@ router.get('/transactions', async (req: Request, res: Response) => {
     
     // Filtrar por cliente
     if (clienteId) {
-      transacoesFiltradas = transacoesFiltradas.filter((t: any) => t.clienteId === clienteId);
+      transacoesFiltradas = transacoesFiltradas.filter((t: any) => t.cliente_id === clienteId);
     }
     
     // Filtrar por tipo

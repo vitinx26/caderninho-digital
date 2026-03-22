@@ -1,0 +1,100 @@
+{
+  "query": "\n-- Verificar últimas transações criadas\nSELECT id, admin_id, cliente_id, tipo, valor, descricao, DATE_FORMAT(FROM_UNIXTIME(data/1000), '%Y-%m-%d %H:%i:%s') as data_formatada\nFROM transactions\nORDER BY data DESC\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute \n-- Verificar últimas transações criadas\nSELECT id, admin_id, cliente_id, tipo, valor, descricao, DATE_FORMAT(FROM_UNIXTIME(data/1000), '%Y-%m-%d %H:%i:%s') as data_formatada\nFROM transactions\nORDER BY data DESC\nLIMIT 10;\n",
+  "rows": [
+    {
+      "id": "test-carol-001",
+      "admin_id": "1",
+      "cliente_id": "30016",
+      "tipo": "debito",
+      "valor": "5000",
+      "descricao": "Teste Carol",
+      "data_formatada": "2612-01-10 11:14:04"
+    },
+    {
+      "id": "jjjF6GwMXH6n3tCozy_pQ",
+      "admin_id": "1",
+      "cliente_id": "30016",
+      "tipo": "debito",
+      "valor": "500000",
+      "descricao": "Teste",
+      "data_formatada": "2026-03-22 05:20:34"
+    },
+    {
+      "id": "BXEiHDiKRhQf0dEiuRqNc",
+      "admin_id": "1",
+      "cliente_id": "30020",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    },
+    {
+      "id": "H73gUVCfCKKtJe-EMC2bB",
+      "admin_id": "1",
+      "cliente_id": "30017",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    },
+    {
+      "id": "9h8tsU9r_TpwC08ETHXDV",
+      "admin_id": "1",
+      "cliente_id": "30014",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    },
+    {
+      "id": "JFh1f_9MR5Cl-268R_aJJ",
+      "admin_id": "1",
+      "cliente_id": "30017",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    },
+    {
+      "id": "770rjAMd1TVJ8BoAoYVDe",
+      "admin_id": "1",
+      "cliente_id": "kfqqs8_5Ytigpz6hi7KGr",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    },
+    {
+      "id": "dVeeeDKQerss7Bnhlr8Cm",
+      "admin_id": "1",
+      "cliente_id": "30017",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    },
+    {
+      "id": "GnZe--Iv8k8KFB0-OAmta",
+      "admin_id": "1",
+      "cliente_id": "kfqqs8_5Ytigpz6hi7KGr",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    },
+    {
+      "id": "G-6YFljwYwkTJQvu0sP2v",
+      "admin_id": "1",
+      "cliente_id": "30020",
+      "tipo": "debito",
+      "valor": "45000",
+      "descricao": "Itaipava",
+      "data_formatada": "2026-03-22 03:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tadmin_id\tcliente_id\ttipo\tvalor\tdescricao\tdata_formatada\ntest-carol-001\t1\t30016\tdebito\t5000\tTeste Carol\t2612-01-10 11:14:04\njjjF6GwMXH6n3tCozy_pQ\t1\t30016\tdebito\t500000\tTeste\t2026-03-22 05:20:34\nBXEiHDiKRhQf0dEiuRqNc\t1\t30020\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\nH73gUVCfCKKtJe-EMC2bB\t1\t30017\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\n9h8tsU9r_TpwC08ETHXDV\t1\t30014\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\nJFh1f_9MR5Cl-268R_aJJ\t1\t30017\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\n770rjAMd1TVJ8BoAoYVDe\t1\tkfqqs8_5Ytigpz6hi7KGr\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\ndVeeeDKQerss7Bnhlr8Cm\t1\t30017\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\nGnZe--Iv8k8KFB0-OAmta\t1\tkfqqs8_5Ytigpz6hi7KGr\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\nG-6YFljwYwkTJQvu0sP2v\t1\t30020\tdebito\t45000\tItaipava\t2026-03-22 03:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

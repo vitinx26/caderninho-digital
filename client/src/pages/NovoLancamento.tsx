@@ -134,8 +134,8 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       console.log('  usuarioLogado?.tipo:', usuarioLogado?.tipo);
       console.log('  Condição (usuarioLogado && usuarioLogado.tipo === "cliente"):', usuarioLogado && usuarioLogado.tipo === 'cliente');
 
-      // Sincronizar com servidor se usuário está logado (cliente)
-      if (usuarioLogado && usuarioLogado.tipo === 'cliente') {
+      // Sincronizar com servidor se usuário está logado (admin ou cliente)
+      if (usuarioLogado && (usuarioLogado.tipo === 'cliente' || usuarioLogado.tipo === 'admin')) {
         try {
           console.log('📤 Sincronizando lançamento com servidor...');
           const response = await fetch('/api/lancamentos', {
@@ -147,6 +147,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
               valor: Math.round(parseFloat(valor) * 100),
               descricao: descricao.trim(),
               data: obterTimestampBrasilia(),
+              adminId: usuarioLogado.id, // ✅ Enviar ID do admin autenticado
             }),
           });
           

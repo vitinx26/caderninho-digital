@@ -331,3 +331,21 @@
 - [ ] Implementar filtro de lançamentos por admin
 - [ ] Testar sincronização entre múltiplos admins
 - [ ] Publicar aplicativo após validação
+
+
+## Correção de Sincronização de Lançamentos (Sprint Crítica - URGENTE)
+
+- [x] Investigar por que lançamentos não aparecem no Dashboard
+- [x] Identificar 3 problemas críticos:
+  - [x] Sincronização condicional (apenas cliente, não admin)
+  - [x] Filtros com case errado (adminId vs admin_id)
+  - [x] Admin ID hardcoded como "1"
+- [x] Criar script de correção (CORRECOES_SCRIPT.md)
+- [x] Aplicar correção 1: NovoLancamento.tsx (sincronizar admin)
+- [x] Aplicar correção 2: syncRouter.ts (filtros snake_case)
+- [x] Criar testes automatizados (syncRouter.test.ts)
+- [x] Validar com 15 testes - TODOS PASSANDO ✅
+- [ ] Testar fluxo completo em produção (admin cria lançamento)
+- [ ] Validar que lançamento aparece no Dashboard em < 5 segundos
+- [ ] Testar com múltiplos admins simultâneos
+- [ ] Publicar aplicativo após validação
