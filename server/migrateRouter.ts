@@ -7,6 +7,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from './db-client';
 import { users, clients, transactions } from '../drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
@@ -33,7 +34,6 @@ router.post('/migrate', async (req: Request, res: Response) => {
     }
     
     const now = Date.now();
-    const usuarioId = usuario.id || uuidv4();
     let resultado = {
       usuariosMigrados: 0,
       clientesMigrados: 0,
@@ -45,23 +45,38 @@ router.post('/migrate', async (req: Request, res: Response) => {
     try {
       console.log(`\n1. Processando usuario: ${usuario.email}`);
       
-      await db.insert(users).values({
-        id: usuarioId,
+      const userData = {
         email: usuario.email,
         name: usuario.nome || usuario.name || 'Usuario Migrado',
         role: usuario.tipo === 'admin' ? 'admin' : 'user',
+        openId: usuario.openId || '',
         ativo: true,
-        createdAt: usuario.dataCriacao ? new Date(usuario.dataCriacao) : new Date(),
-        updatedAt: new Date(),
-      }).onDuplicateKeyUpdate({
-        name: usuario.nome || usuario.name || 'Usuario Migrado',
-        role: usuario.tipo === 'admin' ? 'admin' : 'user',
-        updatedAt: new Date(),
-      });
+      };
+      
+      console.log('   Dados a inserir:', JSON.stringify(userData, null, 2));
+      
+      // Tentar INSERT simples primeiro
+      try {
+        await db.insert(users).values(userData);
+      } catch (dupErr: any) {
+        // Se for erro de duplicata, atualizar
+        if (dupErr?.code === 'ER_DUP_ENTRY') {
+          console.log('   Usuário já existe, atualizando...');
+          await db.update(users)
+            .set({
+              name: userData.name,
+              role: userData.role,
+            })
+            .where(eq(users.email, userData.email));
+        } else {
+          throw dupErr;
+        }
+      }
       
       resultado.usuariosMigrados = 1;
       console.log(`   ✅ Usuario processado: ${usuario.email}`);
     } catch (err) {
+      console.error(`   ❌ Erro completo:`, err);
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`   ❌ Erro: ${msg}`);
       resultado.erros.push(`Usuario: ${msg}`);
@@ -82,7 +97,7 @@ router.post('/migrate', async (req: Request, res: Response) => {
           
           await db.insert(clients).values({
             id: clienteId,
-            adminId: usuarioId,
+            adminId: usuario.id || 1,
             nome: cliente.nome,
             telefone: cliente.telefone || '',
             email: cliente.email || '',
@@ -119,7 +134,7 @@ router.post('/migrate', async (req: Request, res: Response) => {
           
           await db.insert(transactions).values({
             id: lancamentoId,
-            adminId: usuarioId,
+            adminId: usuario.id || 1,
             clienteId: lancamento.clienteId,
             tipo: lancamento.tipo,
             valor: lancamento.valor,
@@ -157,7 +172,6 @@ router.post('/migrate', async (req: Request, res: Response) => {
       success: true,
       message: 'Migracao concluida',
       data: {
-        usuarioId,
         usuarioEmail: usuario.email,
         ...resultado,
         total: resultado.usuariosMigrados + resultado.clientesMigrados + resultado.lancamentosMigrados,

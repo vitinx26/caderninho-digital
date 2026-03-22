@@ -42,13 +42,11 @@ router.get('/users', async (req: Request, res: Response) => {
     const usuariosSeguro = usuariosFiltrados.map((u: any) => ({
       id: u.id,
       email: u.email,
-      nome: u.nome,
-      tipo: u.tipo,
-      telefone: u.telefone,
-      nomeEstabelecimento: u.nomeEstabelecimento,
-      emailNotificacao: u.emailNotificacao,
-      dataCriacao: u.dataCriacao,
-      dataAtualizacao: u.dataAtualizacao,
+      name: u.name,
+      role: u.role,
+      ativo: u.ativo,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
     }));
     
     res.json({
