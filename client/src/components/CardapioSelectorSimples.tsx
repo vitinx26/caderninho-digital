@@ -44,13 +44,7 @@ export default function CardapioSelectorSimples({
 
   useEffect(() => {
     loadActiveMenu();
-    
-    // Polling a cada 5 segundos para sincronização em tempo real
-    const interval = setInterval(() => {
-      loadActiveMenu();
-    }, 5000);
-    
-    return () => clearInterval(interval);
+    // Polling removido - carregamento único na montagem
   }, []);
 
   const loadActiveMenu = async () => {
