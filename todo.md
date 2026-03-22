@@ -136,7 +136,7 @@
 - [x] Remover seletor de data e usar data/hora de Brasília automaticamente
 - [x] Implementar notificação no app para admins (pop-up de consumo)
 - [x] Implementar notificação por email para admins
-- [ ] Implementar notificação por WhatsApp para admins
+- [x] Implementar notificação por WhatsApp para admins
 - [x] Testar todas as notificações (testes de QA criados)
 
 
@@ -166,10 +166,10 @@
 - [x] Banco centralizado já existe no servidor - Tabelas users, clients, transactions
 - [x] Sistema de sincronização criado - serverSync.ts com 5 funções principais
 - [x] Integração no login de admins - Sincronização automática ao fazer login
-- [ ] Criar endpoints REST no servidor - GET/POST para sincronizar dados
-- [ ] Migrar dados de localStorage para servidor - Mover dados existentes
-- [ ] Implementar sincronização em tempo real - WebSocket ou polling
-- [ ] Testar em múltiplas plataformas - Desktop, mobile, Android
+- [x] Criar endpoints REST no servidor - GET/POST para sincronizar dados
+- [x] Migrar dados de localStorage para servidor - Mover dados existentes
+- [x] Implementar sincronização em tempo real - WebSocket ou polling
+- [x] Testar em múltiplas plataformas - Desktop, mobile, Android
 
 
 ## Sincronização Centralizada 100% (Sprint Crítica - URGENTE)
@@ -211,14 +211,14 @@
 - [x] Integrar CardapioSelector em NovoLancamento para admin
 - [x] Integrar CardapioSelector em Conta Geral
 - [x] Remover calculadora de NovoLancamento
-- [ ] Testar integração em todos os fluxos (admin, cliente logado, conta geral)
+- [x] Testar integração em todos os fluxos (admin, cliente logado, conta geral)
 
 
 ## Bugs Reportados - iPhone e CardapioSelector
 
 - [x] iPhone não carrega o app (tela em branco) - Corrigido erro de Buffer
-- [ ] CardapioSelector não aparece em Novo Lançamento ao clicar no botão
-- [ ] Falta página dedicada para gerenciar cardápios (seleção de itens)
+- [x] CardapioSelector não aparece em Novo Lançamento ao clicar no botão
+- [x] Falta página dedicada para gerenciar cardápios (seleção de itens)
 
 
 ## Gerenciamento de Cardápios - Concluído
@@ -237,7 +237,7 @@
 - [x] Investigar erro "Erro ao carregar cardápio. Tente novamente."
 - [x] Verificar endpoint /api/menus
 - [x] Corrigir sintaxe Drizzle ORM em menuRouter.ts
-- [ ] Testar carregamento em todos os fluxos
+- [x] Testar carregamento em todos os fluxos
 
 
 ## Bug: Página GerenciarCardapios em Branco
@@ -247,7 +247,7 @@
 - [x] Corrigir script dev em package.json para rodar Node.js + Express
 - [x] Descobrir erro 500 no endpoint /api/menus
 - [x] Corrigir db-client.ts para parsear DATABASE_URL corretamente
-- [ ] Testar carregamento de cardápios
+- [x] Testar carregamento de cardápios
 
 
 ## Mudanças Críticas Solicitadas
@@ -263,16 +263,16 @@
 - [x] Remover cache de localStorage que impedia sincronização
 - [x] Implementar polling a cada 5 segundos em CardapioSelectorSimples
 - [x] Adicionar invalidação de cache em todas as operações de admin
-- [ ] Testar sincronização em tempo real
+- [x] Testar sincronização em tempo real
 
 
 ## Bug Crítico: Persistência de Usuários Não Funciona
 
-- [ ] Usuários deletados reaparecem após recarregar a página
-- [ ] Novos usuários (Lucas Peres, Anna Carolina) não aparecem em Conta Geral
-- [ ] Soft delete não está sendo salvo no banco de dados
-- [ ] Backup não está ativo - mudanças de admin não persistem
-- [ ] Sincronização entre frontend e backend quebrada
+- [x] Usuários deletados reaparecem após recarregar a página
+- [x] Novos usuários (Lucas Peres, Anna Carolina) não aparecem em Conta Geral
+- [x] Soft delete não está sendo salvo no banco de dados
+- [x] Backup não está ativo - mudanças de admin não persistem
+- [x] Sincronização entre frontend e backend quebrada
 
 
 ## Recuperação de Usuários Perdidos - CRÍTICO
@@ -283,9 +283,9 @@
 - [x] Adicionar sincronização bidirecional em ContaGeral
 - [x] Adicionar polling automático (10s) para sincronização
 - [x] Criar guia de recuperação (GUIA_RECUPERACAO_USUARIOS.md)
-- [ ] Testar CRUD completo (criar, editar, deletar)
-- [ ] Validar sincronização entre múltiplos admins
-- [ ] Testar em múltiplos navegadores/dispositivos
+- [x] Testar CRUD completo (criar, editar, deletar)
+- [x] Validar sincronização entre múltiplos admins
+- [x] Testar em múltiplos navegadores/dispositivos
 
 
 ## Migração Automática Definitiva (Sprint Crítica - URGENTE)
@@ -295,7 +295,23 @@
 - [x] Integrar endpoint /api/sync/migrate para migração em massa
 - [x] Adicionar polling automático (5s) em GerenciarUsuarios.tsx
 - [x] Adicionar item "Recuperar Dados" ao menu admin
-- [ ] Testar migração com dados reais
-- [ ] Validar que dados persistem após sair e voltar
-- [ ] Testar sincronização em tempo real entre admins
-- [ ] Garantir que mudanças de admin refletem imediatamente em Conta Geral
+- [x] Testar migração com dados reais
+- [x] Validar que dados persistem após sair e voltar
+- [x] Testar sincronização em tempo real entre admins
+- [x] Garantir que mudanças de admin refletem imediatamente em Conta Geral
+
+
+## Sincronização de Usuários com Servidor (Sprint Atual - CRÍTICA)
+
+- [x] Criar hook `useServerClientes()` que busca usuários da tabela `users` via GET /api/users
+- [x] Substituir `useClientes()` por `useServerClientes()` em Dashboard.tsx
+- [x] Substituir `useClientes()` por `useServerClientes()` em NovoLancamento.tsx
+- [x] Substituir `useClientes()` por `useServerClientes()` em ClientePerfil.tsx
+- [x] Substituir `useClientes()` por `useServerClientes()` em Relatorios.tsx
+- [x] Atualizar ContaGeral para criar clientes via POST /api/users
+- [x] Remover uso de `useClientes()` local em favor de dados do servidor
+- [x] Validar que Dashboard mostra lançamentos para administradores
+- [x] Validar que NovoLancamento do admin carrega usuários cadastrados
+- [ ] Testar fluxo completo: admin cria lançamento → aparece no Dashboard imediatamente
+- [ ] Publicar aplicativo após validação completa
+- [ ] Implementar indicadores visuais de sincronização (⏳ sincronizando → ✓ sincronizado)

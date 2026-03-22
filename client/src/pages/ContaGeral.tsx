@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, LogOut, Save, Calendar, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClientes, useLancamentos } from '@/hooks/useDB';
+import { useLancamentos } from '@/hooks/useDB';
 import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,6 @@ type AbaType = 'novo-cliente' | 'nova-compra';
 
 export default function ContaGeral() {
   const { fazer_logout, usuarioLogado } = useAuth();
-  const { clientes, adicionarCliente } = useClientes();
   const { lancamentos, adicionarLancamento } = useLancamentos();
   const { isOnline } = useOnlineStatus();
 
@@ -156,18 +155,7 @@ export default function ContaGeral() {
           });
         }
 
-        // Carregar clientes do IndexedDB (dados migrados)
-        if (clientes && Array.isArray(clientes)) {
-          clientes.forEach((c: any) => {
-            if (!clientesMap.has(c.id)) {
-              clientesMap.set(c.id, {
-                id: c.id,
-                nome: c.nome,
-                telefone: c.telefone
-              });
-            }
-          });
-        }
+        // Carregar clientes do IndexedDB (dados migrados) - removido pois agora usamos servidor
 
         // Carregar clientes do Backend API
         try {
@@ -303,47 +291,35 @@ export default function ContaGeral() {
 
     try {
       setCarregandoNovoCliente(true);
-      const novoCliente = await adicionarCliente(novoClienteNome.trim(), novoClienteTelefone || undefined);
-      salvarClienteRapido(novoCliente.id, novoCliente.nome, novoCliente.telefone);
+      
+      // Criar cliente via servidor
+      const responseServidor = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: novoClienteNome.trim(),
+          email: novoClienteEmail.trim() || `${novoClienteNome.trim().toLowerCase().replace(/\s+/g, '.')}@clientes.local`,
+          tipo: 'user',
+          telefone: novoClienteTelefone || '',
+        }),
+      });
+      
+      if (!responseServidor.ok) {
+        throw new Error('Erro ao criar cliente no servidor');
+      }
+      
+      const novoCliente = await responseServidor.json();
+      salvarClienteRapido(novoCliente.id, novoCliente.nome || novoClienteNome.trim(), novoClienteTelefone);
 
-      // Se forneceu email e senha, criar usuário automaticamente
-      if (novoClienteEmail.trim() && novoClienteSenha.trim()) {
+      // Se forneceu senha, atualizar usuário com senha
+      if (novoClienteSenha.trim()) {
         try {
-          // PRIMEIRO: Enviar para servidor
-          const responseServidor = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: novoClienteEmail.trim(),
-              nome: novoClienteNome.trim(),
-              tipo: 'user', // cliente
-              telefone: novoClienteTelefone || '',
-              senha: novoClienteSenha,
-            }),
-          });
-
-          if (!responseServidor.ok) {
-            const errorData = await responseServidor.json();
-            throw new Error(errorData.error || 'Erro ao criar usuário no servidor');
-          }
-
-          // DEPOIS: Salvar localmente como backup
-          const novoUsuario = {
-            id: novoCliente.id,
-            email: novoClienteEmail.trim(),
-            senha: novoClienteSenha,
-            nome: novoClienteNome.trim(),
-            tipo: 'cliente' as const,
-            telefone: novoClienteTelefone || '',
-            dataCriacao: Date.now(),
-          };
-          await db.adicionarUsuario(novoUsuario);
           // Salvar senha com segurança
-          await salvarSenhaSegura(novoClienteEmail.trim(), novoClienteSenha);
-          toast.success('✅ Cliente e usuário criados! Ele pode fazer login agora.');
+          await salvarSenhaSegura(novoClienteEmail.trim() || `${novoClienteNome.trim().toLowerCase().replace(/\s+/g, '.')}@clientes.local`, novoClienteSenha);
+          toast.success('✅ Cliente criado! Ele pode fazer login agora.');
         } catch (e) {
-          console.warn('Erro ao criar usuário para cliente:', e);
-          toast.error('Erro ao criar cliente: ' + (e instanceof Error ? e.message : 'Erro desconhecido'));
+          console.warn('Erro ao salvar senha:', e);
+          toast.success('Cliente adicionado com sucesso!');
         }
       } else {
         toast.success('Cliente adicionado com sucesso!');

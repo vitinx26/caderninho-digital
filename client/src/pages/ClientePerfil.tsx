@@ -8,14 +8,15 @@ import React from 'react';
 import { ArrowLeft, Plus, DollarSign, MessageCircle, Trash2 } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClientes, useLancamentos, useSaldos } from '@/hooks/useDB';
+import { useLancamentos, useSaldos } from '@/hooks/useDB';
+import { useServerClientes } from '@/hooks/useServerClientes';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function ClientePerfil() {
   const { clienteSelecionado, irPara, voltar } = useNavigation();
   const { usuarioLogado } = useAuth();
-  const { clientes } = useClientes();
+  const { clientes } = useServerClientes();
   const { lancamentos, deletarLancamento } = useLancamentos(clienteSelecionado || undefined);
   const saldos = useSaldos(clientes, lancamentos);
   const isAdmin = usuarioLogado?.tipo === 'admin';

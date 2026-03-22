@@ -5,14 +5,15 @@
 
 import React, { useMemo } from 'react';
 import { Download, BarChart3 } from 'lucide-react';
-import { useClientes, useLancamentos, useSaldos } from '@/hooks/useDB';
+import { useLancamentos, useSaldos } from '@/hooks/useDB';
+import { useServerClientes } from '@/hooks/useServerClientes';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import * as db from '@/lib/db';
 
 export default function Relatorios() {
-  const { clientes } = useClientes();
+  const { clientes } = useServerClientes();
   const { lancamentos } = useLancamentos();
   const saldos = useSaldos(clientes, lancamentos);
 

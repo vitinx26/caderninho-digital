@@ -8,7 +8,8 @@ import React, { useState } from 'react';
 import { ArrowLeft, Plus, Minus, MessageCircle } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClientes, useLancamentos } from '@/hooks/useDB';
+import { useLancamentos } from '@/hooks/useDB';
+import { useServerClientes } from '@/hooks/useServerClientes';
 import { useConsumptionPopup } from '@/hooks/useConsumptionPopup';
 import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ interface NovoLancamentoProps {
 export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancamentoProps) {
   const { voltar, clienteSelecionado } = useNavigation();
   const { usuarioLogado } = useAuth();
-  const { clientes, adicionarCliente } = useClientes();
+  const { clientes } = useServerClientes();
   const { adicionarLancamento } = useLancamentos();
   const { isOnline } = useOnlineStatus();
 
@@ -97,10 +98,26 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
 
       let id = clienteId || clienteIdFixo;
 
-      // Se for novo cliente, criar primeiro
+      // Se for novo cliente, criar primeiro via servidor
       if (mostrarNovoCliente && novoClienteNome.trim()) {
-        const novoCliente = await adicionarCliente(novoClienteNome.trim());
-        id = novoCliente.id;
+        try {
+          const response = await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nome: novoClienteNome.trim(),
+              email: `${novoClienteNome.trim().toLowerCase().replace(/\s+/g, '.')}@clientes.local`,
+              tipo: 'user',
+              telefone: '',
+            }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            id = data.id;
+          }
+        } catch (error) {
+          console.error('Erro ao criar cliente:', error);
+        }
       }
 
       if (!id) {
