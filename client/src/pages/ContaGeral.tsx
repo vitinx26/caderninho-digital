@@ -233,7 +233,7 @@ export default function ContaGeral() {
     };
 
     carregarClientes();
-  }, [clientes]);
+  }, []); // Carregamento único na montagem - sem dependências
 
   // Função para sincronizar manualmente
   const handleSincronizar = async () => {
