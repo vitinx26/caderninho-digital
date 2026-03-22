@@ -87,9 +87,12 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
     }
 
     if (!valor || parseFloat(valor) <= 0) {
+      console.error('Validacao falhou:', { valor, parsedValue: parseFloat(valor) });
       toast.error('Digite um valor válido');
       return;
     }
+    
+    console.log('Valor valido:', { valor, parsedValue: parseFloat(valor) });
 
     // Descrição é gerada automaticamente do cardápio ou padrão
 
@@ -442,9 +445,17 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       {usarCardapio ? (
         <CardapioSelectorSimples
           onItemsSelected={(items, total) => {
-            setValor((total / 100).toFixed(2));
-            setDescricao(items.map(i => i.name).join(', '));
-            setUsarCardapio(false); // ✅ Voltar para o formulário após confirmar
+            // Garantir que valor seja atualizado ANTES de sair do cardápio
+            const novoValor = (total / 100).toFixed(2);
+            const novaDescricao = items.map(i => i.name).join(', ');
+            
+            setValor(novoValor);
+            setDescricao(novaDescricao);
+            
+            // Usar setTimeout para garantir que estado foi atualizado
+            setTimeout(() => {
+              setUsarCardapio(false);
+            }, 0);
           }}
           onCancel={() => setUsarCardapio(false)}
         />

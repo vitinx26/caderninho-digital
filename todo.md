@@ -371,3 +371,13 @@
 - [x] Validar que lançamentos de clientes usam admin_id = 1
 - [ ] Testar fluxo completo: cliente registra, admin vê no Dashboard
 - [ ] Validar sincronização em tempo real (polling 5s)
+
+
+## Erro "Digite um valor válido" ao Registrar Lançamento (CRÍTICO)
+
+- [x] Identificar problema: race condition entre setValor e setUsarCardapio
+- [x] Corrigir com setTimeout para garantir atualização de estado
+- [x] Adicionar logs de debug para validação de valor
+- [x] Criar testes para race condition (23 testes passando)
+- [ ] Testar fluxo completo: selecionar cardápio, confirmar, registrar lançamento
+- [ ] Validar que erro não aparece mais

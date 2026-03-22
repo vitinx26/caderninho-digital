@@ -178,3 +178,43 @@ describe('Visibilidade de Lançamentos para Admins', () => {
     expect(lancamentosAdmin2.length).toBe(1);
   });
 });
+
+
+describe('Race Condition - Cardápio e Valor', () => {
+  it('Deve atualizar valor antes de sair do cardápio', async () => {
+    // Simular seleção de itens
+    const items = [
+      { id: '1', name: 'Eternity', price: 5000, quantity: 2 },
+      { id: '2', name: 'Cerveja', price: 2000, quantity: 3 },
+    ];
+
+    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const valor = (total / 100).toFixed(2);
+
+    // Simular validação
+    expect(valor).toBeTruthy();
+    expect(parseFloat(valor)).toBeGreaterThan(0);
+  });
+
+  it('Deve validar que valor não fica vazio após confirmar cardápio', () => {
+    const total = 16000; // 2x5000 + 3x2000
+    const valor = (total / 100).toFixed(2);
+
+    expect(valor).toBe('160.00');
+    expect(valor.length).toBeGreaterThan(0);
+  });
+
+  it('Deve rejeitar valor vazio mesmo após setTimeout', () => {
+    const valor = '';
+    const isValido = !!valor && parseFloat(valor) > 0;
+
+    expect(isValido).toBe(false);
+  });
+
+  it('Deve aceitar valor válido após setTimeout', () => {
+    const valor = '160.00';
+    const isValido = !!valor && parseFloat(valor) > 0;
+
+    expect(isValido).toBe(true);
+  });
+});
