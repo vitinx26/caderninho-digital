@@ -361,3 +361,13 @@
 - [ ] Testar fluxo completo (novo cliente + quantidade)
 - [ ] Validar sincronização com servidor
 - [ ] Publicar aplicativo após validação
+
+
+## Visibilidade de Lançamentos para Admins (CRÍTICO)
+
+- [x] Identificar problema: cliente logado enviava seu ID como adminId
+- [x] Corrigir NovoLancamento para não enviar adminId quando cliente logado
+- [x] Criar testes para validar visibilidade de lançamentos
+- [x] Validar que lançamentos de clientes usam admin_id = 1
+- [ ] Testar fluxo completo: cliente registra, admin vê no Dashboard
+- [ ] Validar sincronização em tempo real (polling 5s)

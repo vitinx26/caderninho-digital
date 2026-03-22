@@ -157,7 +157,9 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
               valor: Math.round(parseFloat(valor) * 100),
               descricao: descricao.trim(),
               data: obterTimestampBrasilia(),
-              adminId: usuarioLogado.id, // ✅ Enviar ID do admin autenticado
+              // Se cliente logado, nao enviar adminId (usa padrao 1)
+              // Se admin, enviar seu ID
+              adminId: usuarioLogado.tipo === 'admin' ? usuarioLogado.id : undefined,
             }),
           });
           

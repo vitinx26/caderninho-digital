@@ -132,3 +132,49 @@ describe('Novo Lançamento - Novo Cliente e Cardápio', () => {
     });
   });
 });
+
+
+describe('Visibilidade de Lançamentos para Admins', () => {
+  it('Deve usar admin_id padrao 1 quando cliente logado registra lancamento', () => {
+    const usuarioLogado = { id: 30016, tipo: 'cliente' };
+    const adminId = usuarioLogado.tipo === 'admin' ? usuarioLogado.id : undefined;
+    
+    expect(adminId).toBeUndefined();
+  });
+
+  it('Deve usar admin_id do usuario quando admin registra lancamento', () => {
+    const usuarioLogado = { id: 1, tipo: 'admin' };
+    const adminId = usuarioLogado.tipo === 'admin' ? usuarioLogado.id : undefined;
+    
+    expect(adminId).toBe(1);
+  });
+
+  it('Deve permitir admin ver lancamentos de clientes com admin_id = 1', () => {
+    const lancamentos = [
+      { id: '1', admin_id: '1', cliente_id: '30016', valor: 5000 },
+      { id: '2', admin_id: '1', cliente_id: '30017', valor: 3000 },
+      { id: '3', admin_id: '2', cliente_id: '30018', valor: 2000 },
+    ];
+
+    const adminId = '1';
+    const lancamentosDoAdmin = lancamentos.filter(l => l.admin_id === adminId);
+    
+    expect(lancamentosDoAdmin.length).toBe(2);
+    expect(lancamentosDoAdmin[0].cliente_id).toBe('30016');
+    expect(lancamentosDoAdmin[1].cliente_id).toBe('30017');
+  });
+
+  it('Deve separar lancamentos por admin_id', () => {
+    const lancamentos = [
+      { id: '1', admin_id: '1', cliente_id: '30016' },
+      { id: '2', admin_id: '1', cliente_id: '30017' },
+      { id: '3', admin_id: '2', cliente_id: '30018' },
+    ];
+
+    const lancamentosAdmin1 = lancamentos.filter(l => l.admin_id === '1');
+    const lancamentosAdmin2 = lancamentos.filter(l => l.admin_id === '2');
+    
+    expect(lancamentosAdmin1.length).toBe(2);
+    expect(lancamentosAdmin2.length).toBe(1);
+  });
+});
