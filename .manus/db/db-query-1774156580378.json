@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, admin_id, cliente_id, tipo, valor, descricao, data_criacao FROM transactions ORDER BY data_criacao DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 6G4J6icMmx5rEXy.0667aace6315 --database dyVJYfPkMaKo6dqqnRNgqj --execute SELECT id, admin_id, cliente_id, tipo, valor, descricao, data_criacao FROM transactions ORDER BY data_criacao DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "test-carol-001",
+      "admin_id": "1",
+      "cliente_id": "30016",
+      "tipo": "debito",
+      "valor": "5000",
+      "descricao": "Teste Carol",
+      "data_criacao": "20260322044934"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tadmin_id\tcliente_id\ttipo\tvalor\tdescricao\tdata_criacao\ntest-carol-001\t1\t30016\tdebito\t5000\tTeste Carol\t20260322044934\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}

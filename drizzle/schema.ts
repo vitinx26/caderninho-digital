@@ -60,14 +60,12 @@ export const transactions = mysqlTable(
     tipo: varchar('tipo', { length: 20 }).notNull(), // 'debito' ou 'pagamento'
     valor: int('valor').notNull(), // Valor em centavos
     descricao: text('descricao').notNull(),
-    data: timestamp('data').notNull().defaultNow(),
-    dataCriacao: timestamp('data_criacao').notNull().defaultNow(),
-    dataAtualizacao: timestamp('data_atualizacao').notNull().defaultNow().onUpdateNow(),
+    data: bigint('data', { mode: 'number' }).notNull(), // Timestamp em milissegundos
+    dataCriacao: bigint('data_criacao', { mode: 'number' }).notNull(), // Timestamp em milissegundos
+    dataAtualizacao: bigint('data_atualizacao', { mode: 'number' }).notNull(), // Timestamp em milissegundos
   },
   (table) => ({
-    adminIdIdx: index('admin_id_idx').on(table.adminId),
     clienteIdIdx: index('cliente_id_idx').on(table.clienteId),
-    dataIdx: index('data_idx').on(table.data),
   })
 );
 

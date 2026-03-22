@@ -78,8 +78,8 @@ export async function createTransaction(transaction: typeof transactions.$inferI
   const now = Date.now();
   const txData = {
     ...transaction,
-    dataCriacao: transaction.dataCriacao ? new Date(transaction.dataCriacao) : new Date(),
-    dataAtualizacao: new Date(),
+    dataCriacao: typeof transaction.dataCriacao === 'number' ? transaction.dataCriacao : Date.now(),
+    dataAtualizacao: Date.now(),
   };
   await db.insert(transactions).values(txData);
   return txData;

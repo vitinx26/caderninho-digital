@@ -158,9 +158,9 @@ export const appRouter = router({
                 tipo: transaction.tipo as 'debito' | 'pagamento',
                 valor: Math.round(transaction.valor * 100), // Converter para centavos
                 descricao: transaction.descricao,
-                data: new Date(transaction.data),
-                dataCriacao: new Date(transaction.dataCriacao),
-                dataAtualizacao: new Date(),
+                data: typeof transaction.data === 'number' ? transaction.data : Date.now(),
+                dataCriacao: typeof transaction.dataCriacao === 'number' ? transaction.dataCriacao : Date.now(),
+                dataAtualizacao: Date.now(),
               });
               results.push({ id: transaction.id, status: 'created' });
             } catch (error) {

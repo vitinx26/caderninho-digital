@@ -417,13 +417,15 @@ router.post('/lancamentos', async (req: Request, res: Response) => {
     // Converter valor para centavos (valor em reais * 100)
     const valorEmCentavos = Math.round(valor * 100);
     const novoLancamento = await dbHelpers.createTransaction({
-      id: nanoid(), // Gerar ID único
-      adminId: 1, // ID do admin padrão
-      clienteId: String(clienteId), // Converter para string
+      id: nanoid(),
+      adminId: 1,
+      clienteId: String(clienteId),
       tipo,
       valor: valorEmCentavos,
       descricao: descricao || '',
-      data: new Date(data || Date.now()),
+      data: data || Date.now(),
+      dataCriacao: Date.now(),
+      dataAtualizacao: Date.now(),
     });
     
     console.log(`✅ Lançamento criado com sucesso: ${novoLancamento.id}`);
