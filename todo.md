@@ -381,3 +381,12 @@
 - [x] Criar testes para race condition (23 testes passando)
 - [ ] Testar fluxo completo: selecionar cardápio, confirmar, registrar lançamento
 - [ ] Validar que erro não aparece mais
+
+
+## Erro Persistente "Digite um valor válido" (CRÍTICO)
+
+- [x] Identificar problema: clienteId estava usando clienteSelecionado vazio
+- [x] Corrigir para usar 'id' (que foi atualizado com novo cliente criado)
+- [x] Adicionar testes para sincronização com clienteId correto (27 testes passando)
+- [ ] Testar fluxo completo: novo cliente + cardápio + sincronização
+- [ ] Validar que lançamento aparece no Dashboard do admin

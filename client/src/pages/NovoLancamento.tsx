@@ -155,13 +155,11 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              clienteId: clienteIdFixo || clienteSelecionado,
+              clienteId: id,
               tipo,
               valor: Math.round(parseFloat(valor) * 100),
               descricao: descricao.trim(),
               data: obterTimestampBrasilia(),
-              // Se cliente logado, nao enviar adminId (usa padrao 1)
-              // Se admin, enviar seu ID
               adminId: usuarioLogado.tipo === 'admin' ? usuarioLogado.id : undefined,
             }),
           });

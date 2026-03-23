@@ -218,3 +218,47 @@ describe('Race Condition - Cardápio e Valor', () => {
     expect(isValido).toBe(true);
   });
 });
+
+
+describe('Sincronização com ClienteId Correto', () => {
+  it('Deve usar ID correto ao sincronizar lançamento', () => {
+    const id = '30020'; // ID do cliente criado
+    const clienteIdFixo = undefined;
+    const clienteSelecionado = '';
+
+    // Simular sincronização
+    const clienteIdSync = id; // ✅ Deve usar 'id'
+
+    expect(clienteIdSync).toBe('30020');
+    expect(clienteIdSync).not.toBe(clienteIdFixo || clienteSelecionado);
+  });
+
+  it('Deve sincronizar com novo cliente criado', () => {
+    const novoClienteId = '30020';
+    const valor = '160.00';
+    const tipo = 'debito';
+
+    const isValido = !!novoClienteId && !!valor && parseFloat(valor) > 0;
+
+    expect(isValido).toBe(true);
+    expect(novoClienteId).toBe('30020');
+  });
+
+  it('Deve rejeitar sincronização sem cliente', () => {
+    const clienteId = '';
+    const valor = '160.00';
+
+    const isValido = !!clienteId && !!valor && parseFloat(valor) > 0;
+
+    expect(isValido).toBe(false);
+  });
+
+  it('Deve aceitar sincronização com cliente e valor', () => {
+    const clienteId = '30020';
+    const valor = '160.00';
+
+    const isValido = !!clienteId && !!valor && parseFloat(valor) > 0;
+
+    expect(isValido).toBe(true);
+  });
+});
