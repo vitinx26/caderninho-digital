@@ -7,6 +7,8 @@ import * as db from './db';
 
 /**
  * Dados dos admins que devem estar sempre presentes
+ * NOTA: Apenas victorhgs26@gmail.com deve ser restaurado automaticamente
+ * Outros admins deletados não devem ser restaurados
  */
 const ADMINS_OBRIGATORIOS = [
   {
@@ -16,15 +18,6 @@ const ADMINS_OBRIGATORIOS = [
     nome: 'Victor',
     tipo: 'admin' as const,
     telefone: '11999999999',
-    dataCriacao: Date.now(),
-  },
-  {
-    id: 'admin-trc290382',
-    email: 'trc290382@gmail.com',
-    senha: 'Trc@123456',
-    nome: 'TRC',
-    tipo: 'admin' as const,
-    telefone: '11988888888',
     dataCriacao: Date.now(),
   },
 ];
@@ -113,6 +106,8 @@ export async function restaurarAdmins(): Promise<{
 
 /**
  * Sincronizar admins entre localStorage e IndexedDB
+ * NOTA: Apenas sincroniza admins que estão em ADMINS_OBRIGATORIOS
+ * Impede restauração de admins deletados
  */
 export async function sincronizarAdminsLocal(): Promise<boolean> {
   try {
@@ -126,12 +121,19 @@ export async function sincronizarAdminsLocal(): Promise<boolean> {
     }
 
     const usuarios = JSON.parse(usuariosLocal);
-    const admins = usuarios.filter((u: any) => u.tipo === 'admin');
+    const adminsLocal = usuarios.filter((u: any) => u.tipo === 'admin');
 
-    console.log(`Encontrados ${admins.length} admins no localStorage`);
+    console.log(`Encontrados ${adminsLocal.length} admins no localStorage`);
 
-    // Adicionar cada admin ao IndexedDB
-    for (const admin of admins) {
+    // Adicionar apenas admins que estão em ADMINS_OBRIGATORIOS
+    for (const admin of adminsLocal) {
+      // Verificar se este admin está na lista de obrigatórios
+      const adminObrigatorio = ADMINS_OBRIGATORIOS.find(a => a.email === admin.email);
+      if (!adminObrigatorio) {
+        console.log(`⚠️ Admin ${admin.email} não está em ADMINS_OBRIGATORIOS, pulando...`);
+        continue;
+      }
+
       try {
         const usuarioExistente = await db.obterUsuarioPorEmail(admin.email);
         if (!usuarioExistente) {

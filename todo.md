@@ -390,3 +390,26 @@
 - [x] Adicionar testes para sincronização com clienteId correto (27 testes passando)
 - [ ] Testar fluxo completo: novo cliente + cardápio + sincronização
 - [ ] Validar que lançamento aparece no Dashboard do admin
+
+
+## Limpeza de Usuários "Fantasma" (CRÍTICO)
+
+- [ ] Investigar onde usuário deletado trc290382@gmail.com continua armazenado
+- [ ] Verificar localStorage, sessionStorage, cookies
+- [ ] Verificar cache do navegador
+- [ ] Verificar se há backup ou sincronização que restaura usuários
+- [ ] Limpar todos os usuários exceto admin victorhgs26@gmail.com
+- [ ] Remover dados órfãos (transações, lançamentos) de usuários deletados
+- [ ] Testar que usuário deletado não consegue mais fazer login
+
+
+## Limpeza de Usuários "Fantasma" (CRÍTICO) - CONCLUÍDO
+
+- [x] Investigar onde usuário deletado trc290382@gmail.com continua armazenado
+- [x] Identificar 3 culpados: debugAdmins.ts, autoRecovery.ts, migrate.ts
+- [x] Remover trc290382@gmail.com de ADMINS_OBRIGATORIOS
+- [x] Desabilitar recuperação automática de dados
+- [x] Adicionar validação de usuário no servidor antes de fazer login
+- [x] Limpar localStorage se usuário foi deletado
+- [x] Criar 8 testes para validar limpeza de usuários deletados
+- [x] Todos os testes passando

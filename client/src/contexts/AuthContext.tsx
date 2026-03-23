@@ -36,27 +36,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const verificarLogin = async () => {
       try {
-        // Garantir que admins obrigatórios estão presentes
+        // Garantir que admins obrigatorios estao presentes
         console.log('🔍 Garantindo presença de admins obrigatórios...');
         await garantirAdminsPresentes();
 
-        // Recuperar dados antigos automaticamente
-        console.log('🔄 Iniciando recuperação automática de dados...');
-        const resultado = await recuperarDadosAutomaticamente();
-        console.log('✓ Recuperação concluída:', resultado);
+        // DESABILITADO: Recuperação automática pode restaurar usuários deletados
+        // console.log('🔄 Iniciando recuperação automática de dados...');
+        // const resultado = await recuperarDadosAutomaticamente();
+        // console.log('✓ Recuperação concluída:', resultado);
 
-        // Sincronizar senhas após recuperação de dados
-        console.log('🔄 Sincronizando senhas...');
-        await sincronizarSenhaComIndexedDB();
+        // DESABILITADO: Sincronização de senhas pode restaurar usuários deletados
+        // console.log('🔄 Sincronizando senhas...');
+        // await sincronizarSenhaComIndexedDB();
         
-        // Validar integridade de senhas
-        const validacao = await validarIntegridadeSenhas();
-        console.log('✓ Validação de senhas:', validacao);
+        // DESABILITADO: Validação de senhas pode restaurar usuários deletados
+        // const validacao = await validarIntegridadeSenhas();
+        // console.log('✓ Validação de senhas:', validacao);
 
+        // Verificar se usuário deletado está no localStorage
         const sessionData = localStorage.getItem('caderninho_session');
         if (sessionData) {
           const usuario = JSON.parse(sessionData) as UsuarioLogado;
-          setUsuarioLogado(usuario);
+          
+          // Verificar se usuário ainda existe no banco (servidor)
+          try {
+            const response = await fetch('/api/users');
+            const usuarios = await response.json();
+            const usuarioExiste = usuarios.some((u: any) => u.email === usuario.email);
+            
+            if (usuarioExiste) {
+              setUsuarioLogado(usuario);
+              console.log(`✓ Usuário ${usuario.email} encontrado no servidor`);
+            } else {
+              console.warn(`⚠️ Usuário ${usuario.email} foi deletado, limpando localStorage`);
+              localStorage.removeItem('caderninho_session');
+              setUsuarioLogado(null);
+            }
+          } catch (error) {
+            console.error('Erro ao verificar usuário no servidor:', error);
+            // Se não conseguir verificar, manter o usuário em cache
+            setUsuarioLogado(usuario);
+          }
         }
         
         // Não restaurar Conta Geral automaticamente - sempre começar em Login/Home
