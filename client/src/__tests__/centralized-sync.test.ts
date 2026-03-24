@@ -22,7 +22,7 @@ describe('Sincronização Centralizada', () => {
       // Simular resposta do servidor
       const mockClientes = [
         { id: '1', nome: 'Anna Carolina', adminId: 'admin1', ativo: true },
-        { id: '2', nome: 'Thiago Rodrigues', adminId: 'admin2', ativo: true },
+        { id: '2', nome: 'Cliente 2', adminId: 'admin2', ativo: true },
         { id: '3', nome: 'Vitinho', adminId: 'admin1', ativo: true },
         { id: '4', nome: 'Lucas Peres', adminId: 'admin2', ativo: true },
       ];
@@ -38,7 +38,7 @@ describe('Sincronização Centralizada', () => {
         success: true,
         data: [
           { id: '1', nome: 'Anna Carolina', adminId: 'admin1' },
-          { id: '2', nome: 'Thiago Rodrigues', adminId: 'admin2' },
+          { id: '2', nome: 'Cliente 2', adminId: 'admin2' },
           { id: '3', nome: 'Vitinho', adminId: 'admin1' },
           { id: '4', nome: 'Lucas Peres', adminId: 'admin2' },
         ],
@@ -55,7 +55,7 @@ describe('Sincronização Centralizada', () => {
       // Simular resposta do servidor
       const mockUsuarios = [
         { id: 'admin1', email: 'victorhgs26@gmail.com', tipo: 'admin' },
-        { id: 'admin2', email: 'trc290382@gmail.com', tipo: 'admin' },
+        { id: 'admin2', email: 'admin2@example.com', tipo: 'admin' },
       ];
 
       expect(mockUsuarios.length).toBe(2);
@@ -68,7 +68,7 @@ describe('Sincronização Centralizada', () => {
       // Simular dados em localStorage
       const clientesLocal = [
         { id: '1', nome: 'Anna Carolina' },
-        { id: '2', nome: 'Thiago Rodrigues' },
+        { id: '2', nome: 'Cliente 2' },
       ];
       localStorage.setItem('caderninho_clientes', JSON.stringify(clientesLocal));
 
@@ -95,7 +95,7 @@ describe('Sincronização Centralizada', () => {
       const clientes = JSON.parse(dados!);
       expect(clientes.length).toBe(4);
       expect(clientes.map((c: any) => c.nome)).toContain('Anna Carolina');
-      expect(clientes.map((c: any) => c.nome)).toContain('Thiago Rodrigues');
+      expect(clientes.map((c: any) => c.nome)).toContain('Cliente 2');
       expect(clientes.map((c: any) => c.nome)).toContain('Vitinho');
       expect(clientes.map((c: any) => c.nome)).toContain('Lucas Peres');
     });
@@ -119,14 +119,14 @@ describe('Sincronização Centralizada', () => {
       // Simular dados sincronizados
       const clientesAdmin1 = [
         { id: '1', nome: 'Anna Carolina', adminId: 'admin1' },
-        { id: '2', nome: 'Thiago Rodrigues', adminId: 'admin1' },
+        { id: '2', nome: 'Cliente 2', adminId: 'admin1' },
         { id: '3', nome: 'Vitinho', adminId: 'admin1' },
         { id: '4', nome: 'Lucas Peres', adminId: 'admin1' },
       ];
 
       const clientesAdmin2 = [
         { id: '1', nome: 'Anna Carolina', adminId: 'admin1' },
-        { id: '2', nome: 'Thiago Rodrigues', adminId: 'admin1' },
+        { id: '2', nome: 'Cliente 2', adminId: 'admin1' },
         { id: '3', nome: 'Vitinho', adminId: 'admin1' },
         { id: '4', nome: 'Lucas Peres', adminId: 'admin1' },
       ];
@@ -184,7 +184,7 @@ describe('Sincronização Centralizada', () => {
 
       expect(todosClientes.length).toBe(4);
       expect(todosClientes.map(c => c.nome)).toContain('Anna Carolina');
-      expect(todosClientes.map(c => c.nome)).toContain('Thiago Rodrigues');
+      expect(todosClientes.map(c => c.nome)).toContain('Cliente 2');
       expect(todosClientes.map(c => c.nome)).toContain('Vitinho');
       expect(todosClientes.map(c => c.nome)).toContain('Lucas Peres');
     });
@@ -204,7 +204,7 @@ describe('Sincronização Centralizada', () => {
       // Simular lista inicial
       let clientes = [
         { id: '1', nome: 'Anna Carolina' },
-        { id: '2', nome: 'Thiago Rodrigues' },
+        { id: '2', nome: 'Cliente 2' },
       ];
 
       expect(clientes.length).toBe(2);

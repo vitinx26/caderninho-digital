@@ -187,7 +187,7 @@ describe('Sincronização em Tempo Real com WebSocket', () => {
       // Simular sincronização
       let clientes = [
         { id: '1', nome: 'Anna Carolina' },
-        { id: '2', nome: 'Thiago Rodrigues' },
+        { id: '2', nome: 'Cliente Teste' },
       ];
 
       // Simular recebimento de novo cliente
@@ -273,13 +273,13 @@ describe('Sincronização em Tempo Real com WebSocket', () => {
       // Simular lista de clientes sincronizada
       const clientesAdmin1 = [
         { id: '1', nome: 'Anna Carolina' },
-        { id: '2', nome: 'Thiago Rodrigues' },
+        { id: '2', nome: 'Cliente Teste' },
         { id: '3', nome: 'Vitinho' },
       ];
 
       const clientesAdmin2 = [
         { id: '1', nome: 'Anna Carolina' },
-        { id: '2', nome: 'Thiago Rodrigues' },
+        { id: '2', nome: 'Cliente Teste' },
         { id: '3', nome: 'Vitinho' },
       ];
 

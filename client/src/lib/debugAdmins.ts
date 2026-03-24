@@ -1,6 +1,7 @@
 /**
  * Script de Debug para Restaurar Admins
- * Garante que victorhgs26@gmail.com e trc290382@gmail.com estejam salvos
+ * Garante que victorhgs26@gmail.com esteja salvo
+ * NOTA: Usuários deletados NÃO devem ser restaurados automaticamente
  */
 
 import * as db from './db';
