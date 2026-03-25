@@ -217,20 +217,14 @@ router.get('/transactions', async (req: Request, res: Response) => {
   }
 })
 
-/**
- * GET /api/all-clients
- * Retorna TODOS os clientes de TODOS os admins
- * Útel para Conta Geral sincronizar com todos os clientes
- */
+// DESABILITADO: Rota conflitante com dataEndpoints.ts
+// Usar GET /api/all-clients de dataEndpoints.ts em vez disso
+/*
 router.get('/all-clients', async (req: Request, res: Response) => {
   try {
     console.log(`📫 GET /api/all-clients - Retornando TODOS os clientes`);
-    
-    // Buscar TODOS os clientes
     const clientes = await dbHelpers.getAllClients();
-    
     console.log(`✅ Retornando ${clientes.length} clientes (TODOS os admins)`);
-    
     res.json({
       success: true,
       data: clientes,
@@ -247,6 +241,7 @@ router.get('/all-clients', async (req: Request, res: Response) => {
     });
   }
 });
+*/
 
 /**
  * POST /api/users
