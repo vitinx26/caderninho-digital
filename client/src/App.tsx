@@ -21,14 +21,14 @@ import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
-import Backups from "./pages/Backups";
+// import Backups from "./pages/Backups"; // Removido - armazenamento centralizado
 import GerenciarCardapios from "./pages/GerenciarCardapios";
 
 import { ClienteLayout } from "./components/ClienteLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import UpdateNotification from "./components/UpdateNotification";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
-import * as backup from "./lib/backup";
+// import * as backup from "./lib/backup"; // Removido - armazenamento centralizado
 
 function RouterContent() {
   const { usuarioLogado, carregando, usuarioGeral } = useAuth();
@@ -37,20 +37,7 @@ function RouterContent() {
 
   // Nota: Migração já é feita no AuthProvider, não duplicar aqui
 
-  // Agendar backup automático a cada 60 minutos
-  useEffect(() => {
-    const cancelarBackup = backup.agendarBackupAutomatico(60);
-    return () => cancelarBackup();
-  }, []);
-
-  // Sincronizar entre abas do navegador
-  useEffect(() => {
-    const cancelarSincronizacao = backup.sincronizarEntreAbas(() => {
-      // Recarregar dados quando outra aba faz backup
-      window.location.reload();
-    });
-    return () => cancelarSincronizacao();
-  }, []);
+  // Backup automático removido - armazenamento centralizado no servidor
 
   if (carregando) {
     return (
@@ -80,7 +67,7 @@ function RouterContent() {
         {paginaAtual === 'relatorios' && <Relatorios />}
         {paginaAtual === 'configuracoes' && <Configuracoes />}
         {paginaAtual === 'gerenciar-usuarios' && <GerenciarUsuarios />}
-        {paginaAtual === 'backups' && <Backups />}
+        {/* Removido - armazenamento centralizado */}
         {paginaAtual === 'gerenciar-cardapios' && <GerenciarCardapios />}
 
       </Layout>

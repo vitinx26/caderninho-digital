@@ -37,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
     { id: 'relatorios', label: 'Relatórios', icon: FileText },
     { id: 'gerenciar-cardapios', label: 'Cardápios', icon: Wine },
     { id: 'gerenciar-usuarios', label: 'Usuários', icon: Users },
-    { id: 'backups', label: 'Backups', icon: Cloud },
+    // { id: 'backups', label: 'Backups', icon: Cloud }, // Removido - armazenamento centralizado
     { id: 'configuracoes', label: 'Configurações', icon: Settings },
   ];
 

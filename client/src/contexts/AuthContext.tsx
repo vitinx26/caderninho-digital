@@ -7,11 +7,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UsuarioLogado, TipoUsuario } from '@/types';
 import * as db from '@/lib/db';
-import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancasStorage } from '@/lib/autoRecovery';
-import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
-import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
+// Importações de armazenamento local removidas - aplicativo usa APENAS servidor
+// import { garantirUsuarioExiste, recuperarDadosAutomaticamente, monitorarMudancasStorage } from '@/lib/autoRecovery';
+// import { salvarSenhaSegura, sincronizarSenhaComIndexedDB, validarIntegridadeSenhas } from '@/lib/passwordPersistence';
+// import { sincronizarDadosDoLocalStorage, salvarDadosSync, monitorarMudancasLocalStorage } from '@/lib/dataSync';
 import { garantirAdminsPresentes } from '@/lib/debugAdmins';
-import { iniciarPollingHTTP, pararPolling } from '@/lib/httpPolling';
 // import { sincronizarBidirecional, iniciarSincronizacaoPeriodica, monitorarConexao } from '@/lib/serverSync';
 // import { migrarDadosParaServidor, sincronizarDoServidor } from '@/lib/migrationToServer';
 
@@ -142,9 +142,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('⚠️ Erro ao buscar do servidor, tentando localStorage:', erroServidor);
       }
 
-      // DEPOIS: Se não encontrou no servidor, tentar localStorage
+      // DEPOIS: Se não encontrou no servidor, erro (sem fallback local)
       if (!usuario) {
-        usuario = await garantirUsuarioExiste(email);
+        throw new Error('Usuário não encontrado no servidor');
       }
 
       if (!usuario) {
@@ -156,9 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Senha incorreta');
       }
 
-      // Salvar senha com segurança para recuperação após atualização
-      console.log('💾 Salvando senha com segurança...');
-      await salvarSenhaSegura(email, senha);
+      // Armazenamento local de senha desabilitado
 
       // Se é admin, iniciar polling HTTP para sincronização
       if (usuario.tipo === 'admin') {
@@ -200,11 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fazer_registro = async (email: string, senha: string, nome: string, tipo: TipoUsuario, telefone?: string) => {
     try {
-      // Verificar se usuário já existe
-      const usuarioExistente = await garantirUsuarioExiste(email);
-      if (usuarioExistente) {
-        throw new Error('Usuário já existe');
-      }
+      // Verificação de existência será feita pelo servidor
 
       // Criar novo usuário
       const novoUsuario = {
@@ -242,17 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw erroServidor;
       }
 
-      // DEPOIS: Salvar no IndexedDB
-      await db.adicionarUsuario(novoUsuario);
-
-      // Salvar no localStorage
-      const usuariosStorage = localStorage.getItem('caderninho_usuarios');
-      const usuarios = usuariosStorage ? JSON.parse(usuariosStorage) : [];
-      usuarios.push(novoUsuario);
-      localStorage.setItem('caderninho_usuarios', JSON.stringify(usuarios));
-
-      // Salvar senha com segurança
-      await salvarSenhaSegura(email, senha);
+      // Armazenamento local desabilitado - dados estão apenas no servidor
 
       console.log('✅ Usuário registrado com sucesso');
     } catch (error) {
@@ -262,25 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fazer_logout = () => {
-    // Cancelar polling HTTP
-    const cancelarPolling = (window as any).cancelarPollingHTTP;
-    if (cancelarPolling) {
-      cancelarPolling();
-      pararPolling();
-    }
-
-    // Cancelar sincronização periódica
-    const cancelarSync = (window as any).cancelarSyncPeriodica;
-    if (cancelarSync) {
-      cancelarSync();
-    }
-
-    // Cancelar monitoramento de conexão
-    const cancelarMonitor = (window as any).cancelarMonitorConexao;
-    if (cancelarMonitor) {
-      cancelarMonitor();
-    }
-
+    // Limpar apenas a sessão (cookies são gerenciados pelo servidor)
     setUsuarioLogado(null);
     setUsuarioGeral(false);
     localStorage.removeItem('caderninho_session');
