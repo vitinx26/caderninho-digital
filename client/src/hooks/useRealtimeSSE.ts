@@ -1,0 +1,331 @@
+/**
+ * useRealtimeSSE.ts - Hook para sincronização em tempo real via SSE + Polling
+ * 
+ * Combina:
+ * - SSE para notificações em tempo real (push)
+ * - Polling inteligente como fallback (pull)
+ * - Cache em memória apenas
+ */
+
+import { useEffect, useCallback, useRef, useState } from 'react';
+
+export interface RealtimeSSEState {
+  usuarios: any[];
+  clientes: any[];
+  lancamentos: any[];
+  configuracoes: any;
+  ultimaSincronizacao: number;
+  statusConexao: 'conectado' | 'desconectado' | 'sincronizando';
+  isConnected: boolean;
+}
+
+class RealtimeSSEManager {
+  private state: RealtimeSSEState = {
+    usuarios: [],
+    clientes: [],
+    lancamentos: [],
+    configuracoes: {},
+    ultimaSincronizacao: 0,
+    statusConexao: 'desconectado',
+    isConnected: false,
+  };
+
+  private listeners: Set<(state: RealtimeSSEState) => void> = new Set();
+  private eventSource: EventSource | null = null;
+  private pollingInterval: NodeJS.Timeout | null = null;
+  private pollingDelay = 5000; // 5 segundos
+  private lastPollTime = 0;
+
+  /**
+   * Conectar ao SSE
+   */
+  connect() {
+    if (this.eventSource) {
+      console.warn('⚠️ SSE já está conectado');
+      return;
+    }
+
+    try {
+      console.log('🔌 Conectando ao SSE...');
+      this.updateStatus('sincronizando');
+
+      this.eventSource = new EventSource('/api/events/subscribe');
+
+      this.eventSource.onopen = () => {
+        console.log('✅ SSE conectado com sucesso');
+        this.updateStatus('conectado');
+        this.requestFullSync();
+      };
+
+      this.eventSource.addEventListener('data:updated', (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log(`📥 Atualização recebida: ${data.entityType}`);
+          this.handleDataUpdate(data);
+        } catch (error) {
+          console.error('Erro ao processar evento SSE:', error);
+        }
+      });
+
+      this.eventSource.onerror = () => {
+        console.error('❌ Erro SSE');
+        this.updateStatus('desconectado');
+        this.eventSource?.close();
+        this.eventSource = null;
+        this.attemptReconnect();
+      };
+    } catch (error) {
+      console.error('Erro ao conectar SSE:', error);
+      this.updateStatus('desconectado');
+      this.attemptReconnect();
+    }
+  }
+
+  /**
+   * Desconectar do SSE
+   */
+  disconnect() {
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+      console.log('🔌 SSE desconectado');
+    }
+
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
+
+    this.updateStatus('desconectado');
+  }
+
+  /**
+   * Tentar reconectar
+   */
+  private attemptReconnect() {
+    console.log('🔄 Tentando reconectar em 3 segundos...');
+    setTimeout(() => {
+      this.connect();
+    }, 3000);
+  }
+
+  /**
+   * Solicitar sincronização completa
+   */
+  private async requestFullSync() {
+    try {
+      console.log('🔄 Solicitando sincronização completa...');
+      this.updateStatus('sincronizando');
+
+      // Carregar dados do servidor
+      const [usuarios, clientes, lancamentos] = await Promise.all([
+        fetch('/api/users').then(r => r.json()),
+        fetch('/api/all-clients').then(r => r.json()),
+        fetch('/api/lancamentos').then(r => r.json()),
+      ]);
+
+      this.state.usuarios = Array.isArray(usuarios) ? usuarios : [];
+      this.state.clientes = Array.isArray(clientes) ? clientes : [];
+      this.state.lancamentos = Array.isArray(lancamentos) ? lancamentos : [];
+      this.state.ultimaSincronizacao = Date.now();
+
+      console.log(`✅ Sincronização completa: ${this.state.usuarios.length} usuários, ${this.state.clientes.length} clientes, ${this.state.lancamentos.length} lançamentos`);
+
+      this.updateStatus('conectado');
+      this.notifyListeners();
+
+      // Iniciar polling como fallback
+      this.startPolling();
+    } catch (error) {
+      console.error('Erro ao sincronizar:', error);
+      this.updateStatus('desconectado');
+    }
+  }
+
+  /**
+   * Iniciar polling inteligente
+   */
+  private startPolling() {
+    if (this.pollingInterval) {
+      return; // Já está rodando
+    }
+
+    console.log('📊 Iniciando polling inteligente (5s)');
+
+    this.pollingInterval = setInterval(async () => {
+      try {
+        const now = Date.now();
+        const timeSinceLastPoll = now - this.lastPollTime;
+
+        // Fazer polling a cada 5 segundos
+        if (timeSinceLastPoll >= this.pollingDelay) {
+          this.lastPollTime = now;
+
+          // Carregar dados do servidor
+          const [usuarios, clientes, lancamentos] = await Promise.all([
+            fetch('/api/users').then(r => r.json()),
+            fetch('/api/all-clients').then(r => r.json()),
+            fetch('/api/lancamentos').then(r => r.json()),
+          ]);
+
+          const usuariosArray = Array.isArray(usuarios) ? usuarios : [];
+          const clientesArray = Array.isArray(clientes) ? clientes : [];
+          const lancamentosArray = Array.isArray(lancamentos) ? lancamentos : [];
+
+          // Detectar mudanças
+          const usuariosChanged = JSON.stringify(this.state.usuarios) !== JSON.stringify(usuariosArray);
+          const clientesChanged = JSON.stringify(this.state.clientes) !== JSON.stringify(clientesArray);
+          const lancamentosChanged = JSON.stringify(this.state.lancamentos) !== JSON.stringify(lancamentosArray);
+
+          if (usuariosChanged || clientesChanged || lancamentosChanged) {
+            console.log('🔄 Mudanças detectadas no polling');
+
+            if (usuariosChanged) this.state.usuarios = usuariosArray;
+            if (clientesChanged) this.state.clientes = clientesArray;
+            if (lancamentosChanged) this.state.lancamentos = lancamentosArray;
+
+            this.state.ultimaSincronizacao = now;
+            this.notifyListeners();
+          }
+        }
+      } catch (error) {
+        console.error('Erro no polling:', error);
+      }
+    }, 1000); // Verificar a cada 1 segundo se é hora de fazer polling
+  }
+
+  /**
+   * Processar atualização de dados
+   */
+  private handleDataUpdate(data: any) {
+    const { entityType, data: payload } = data;
+
+    switch (entityType) {
+      case 'usuarios':
+        this.state.usuarios = payload;
+        break;
+      case 'clientes':
+        this.state.clientes = payload;
+        break;
+      case 'lancamentos':
+        this.state.lancamentos = payload;
+        break;
+      default:
+        console.warn(`Tipo de entidade desconhecido: ${entityType}`);
+    }
+
+    this.state.ultimaSincronizacao = Date.now();
+    this.notifyListeners();
+  }
+
+  /**
+   * Atualizar status
+   */
+  private updateStatus(status: 'conectado' | 'desconectado' | 'sincronizando') {
+    this.state.statusConexao = status;
+    this.state.isConnected = status === 'conectado';
+    this.notifyListeners();
+  }
+
+  /**
+   * Notificar listeners
+   */
+  private notifyListeners() {
+    this.listeners.forEach(listener => {
+      try {
+        listener(this.state);
+      } catch (error) {
+        console.error('Erro ao notificar listener:', error);
+      }
+    });
+  }
+
+  /**
+   * Adicionar listener
+   */
+  subscribe(listener: (state: RealtimeSSEState) => void): () => void {
+    this.listeners.add(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  /**
+   * Obter estado atual
+   */
+  getState(): RealtimeSSEState {
+    return { ...this.state };
+  }
+}
+
+// Instância global
+const sseManager = new RealtimeSSEManager();
+
+/**
+ * Hook para usar dados em tempo real
+ */
+export function useRealtimeSSE() {
+  const [state, setState] = useState<RealtimeSSEState>(sseManager.getState());
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    // Conectar ao SSE
+    sseManager.connect();
+
+    // Inscrever para atualizações
+    unsubscribeRef.current = sseManager.subscribe(setState);
+
+    // Cleanup
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
+  }, []);
+
+  return state;
+}
+
+/**
+ * Hook para dados de clientes
+ */
+export function useClientesSSE() {
+  const { clientes, isConnected } = useRealtimeSSE();
+
+  return {
+    clientes,
+    isConnected,
+  };
+}
+
+/**
+ * Hook para dados de lançamentos
+ */
+export function useLancamentosSSE(clienteId?: string) {
+  const { lancamentos, isConnected } = useRealtimeSSE();
+
+  const lancamentosDoCliente = clienteId
+    ? lancamentos.filter((l: any) => l.clienteId === clienteId)
+    : lancamentos;
+
+  return {
+    lancamentos: lancamentosDoCliente,
+    isConnected,
+  };
+}
+
+/**
+ * Hook para status de conexão
+ */
+export function useConnectionStatusSSE() {
+  const { statusConexao, isConnected, ultimaSincronizacao } = useRealtimeSSE();
+
+  return {
+    statusConexao,
+    isConnected,
+    ultimaSincronizacao,
+  };
+}
+
+export { sseManager };

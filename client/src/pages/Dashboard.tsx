@@ -24,8 +24,16 @@ export default function Dashboard() {
   // ✅ NOVO: Usar CentralizedStoreContext para sincronização em tempo real
   const { clientes, isConnected } = useClientes();
   const { lancamentos } = useLancamentos();
-  const { saldosPorCliente, saldoTotal } = useSaldos();
+  const { clientes: clientesSaldos, calcularSaldoCliente, calcularSaldoTotal } = useSaldos();
   const { statusConexao } = useConnectionStatus();
+
+  // Calcular saldos por cliente
+  const saldosPorCliente = clientesSaldos.map((cliente: any) => ({
+    clienteId: cliente.id,
+    clienteNome: cliente.nome,
+    saldo: calcularSaldoCliente(cliente.id),
+  }));
+  const saldoTotal = calcularSaldoTotal();
 
   const { irPara } = useNavigation();
   const { usuarioLogado } = useAuth();
@@ -57,7 +65,7 @@ export default function Dashboard() {
   // Agora a sincronização é em tempo real via WebSocket
 
   // Filtrar e ordenar devedores
-  const devedoresFiltrados = saldosPorCliente.filter((saldo) => {
+  const devedoresFiltrados = saldosPorCliente.filter((saldo: any) => {
     // Sempre filtrar para mostrar apenas clientes com saldo > 0
     if (saldo.saldo === 0) return false;
     // TODO: Adicionar status de vencimento quando implementado
@@ -65,14 +73,14 @@ export default function Dashboard() {
   });
 
   if (filtro === 'alfabetico') {
-    devedoresFiltrados.sort((a, b) => a.clienteNome.localeCompare(b.clienteNome));
+    devedoresFiltrados.sort((a: any, b: any) => a.clienteNome.localeCompare(b.clienteNome));
   } else {
     // Ordenar por saldo (maior primeiro)
-    devedoresFiltrados.sort((a, b) => b.saldo - a.saldo);
+    devedoresFiltrados.sort((a: any, b: any) => b.saldo - a.saldo);
   }
 
   // Filtrar devedores com saldo > 0 para exibição
-  const devedoresComSaldo = devedoresFiltrados.filter((s) => s.saldo > 0);
+  const devedoresComSaldo = devedoresFiltrados.filter((s: any) => s.saldo > 0);
 
   const statusBadgeClass = (status: string) => {
     switch (status) {
@@ -202,7 +210,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-2">
-            {devedoresComSaldo.map((saldo) => {
+            {devedoresComSaldo.map((saldo: any) => {
               const lancamentosCliente = lancamentos.filter(
                 (l) => l.clienteId === saldo.clienteId && l.tipo === 'debito'
               );

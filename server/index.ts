@@ -13,6 +13,7 @@ import multiUserRouter from "./multiUserRouter";
 import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
 import { initializeRealtimeWebSocket } from "./realtimeEndpoint";
+import { sseRouter } from "./sseEndpoint";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,13 +22,10 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Inicializar WebSocket
-  const io = initializeWebSocket(server);
-  console.log('🔌 WebSocket inicializado com CORS correto');
-
-  // Inicializar WebSocket Realtime para sincronização
-  initializeRealtimeWebSocket(server);
-  console.log('🔌 WebSocket Realtime inicializado em /api/realtime');
+  // DESABILITADO: WebSocket causando problemas de conexão
+  // Usar SSE + Polling em vez disso
+  // const io = initializeWebSocket(server);
+  // initializeRealtimeWebSocket(server);
 
   // Inicializar serviço de email
   initializeEmailService();
@@ -55,6 +53,10 @@ async function startServer() {
   
   // Rotas de sistema multi-usuário
   app.use('/api/multiuser', multiUserRouter);
+
+  // Rotas de SSE para sincronização em tempo real
+  app.use(sseRouter);
+  console.log('📱 SSE endpoint inicializado em /api/events/subscribe');
 
   // Em desenvolvimento, Vite roda em porta 5173
   // O cliente acessa via http://localhost:3000 e Express faz proxy das APIs

@@ -2,7 +2,7 @@
  * CentralizedStoreContext.tsx - Contexto centralizado de estado global
  * 
  * Características:
- * - Estado global sincronizado via WebSocket
+ * - Estado global sincronizado via SSE + Polling
  * - Cache em memória apenas (sem localStorage/IndexedDB)
  * - Compartilhado entre todas as páginas
  * - Atualização automática quando dados mudam
@@ -10,7 +10,7 @@
  */
 
 import React, { createContext, useContext, useCallback } from 'react';
-import { useRealtimeData, useRealtimeClientes, useRealtimeLancamentos } from '@/hooks/useRealtimeData';
+import { useRealtimeSSE } from '@/hooks/useRealtimeSSE';
 
 interface CentralizedStoreContextType {
   // Estado
@@ -54,19 +54,95 @@ export function CentralizedStoreProvider({ children }: { children: React.ReactNo
     ultimaSincronizacao,
     statusConexao,
     isConnected,
-    send,
-  } = useRealtimeData();
+  } = useRealtimeSSE();
 
-  const {
-    adicionarCliente,
-    atualizarCliente,
-    deletarCliente,
-  } = useRealtimeClientes();
+  // Operações de clientes
+  const adicionarCliente = useCallback(
+    async (nome: string, telefone?: string, email?: string) => {
+      try {
+        const response = await fetch('/api/clientes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, telefone, email }),
+        });
+        if (!response.ok) throw new Error('Erro ao adicionar cliente');
+        console.log('✅ Cliente adicionado com sucesso');
+      } catch (error) {
+        console.error('Erro ao adicionar cliente:', error);
+        throw error;
+      }
+    },
+    []
+  );
 
-  const {
-    adicionarLancamento,
-    deletarLancamento,
-  } = useRealtimeLancamentos();
+  const atualizarCliente = useCallback(
+    async (id: string, dados: any) => {
+      try {
+        const response = await fetch(`/api/clientes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dados),
+        });
+        if (!response.ok) throw new Error('Erro ao atualizar cliente');
+        console.log('✅ Cliente atualizado com sucesso');
+      } catch (error) {
+        console.error('Erro ao atualizar cliente:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
+  const deletarCliente = useCallback(
+    async (id: string) => {
+      try {
+        const response = await fetch(`/api/clientes/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Erro ao deletar cliente');
+        console.log('✅ Cliente deletado com sucesso');
+      } catch (error) {
+        console.error('Erro ao deletar cliente:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
+  // Operações de transações
+  const adicionarLancamento = useCallback(
+    async (clienteId: string, tipo: 'debito' | 'pagamento', valor: number, descricao: string) => {
+      try {
+        const response = await fetch('/api/lancamentos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clienteId, tipo, valor, descricao }),
+        });
+        if (!response.ok) throw new Error('Erro ao adicionar lançamento');
+        console.log('✅ Lançamento adicionado com sucesso');
+      } catch (error) {
+        console.error('Erro ao adicionar lançamento:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
+  const deletarLancamento = useCallback(
+    async (id: string) => {
+      try {
+        const response = await fetch(`/api/lancamentos/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Erro ao deletar lançamento');
+        console.log('✅ Lançamento deletado com sucesso');
+      } catch (error) {
+        console.error('Erro ao deletar lançamento:', error);
+        throw error;
+      }
+    },
+    []
+  );
 
   // Utilitários
   const obterClientePorId = useCallback(
@@ -199,16 +275,9 @@ export function useConnectionStatus() {
 export function useSaldos() {
   const { clientes, calcularSaldoCliente, calcularSaldoTotal } = useCentralizedStore();
 
-  const saldosPorCliente = clientes.map((cliente) => ({
-    clienteId: cliente.id,
-    clienteNome: cliente.nome,
-    saldo: calcularSaldoCliente(cliente.id),
-  }));
-
-  const saldoTotal = calcularSaldoTotal();
-
   return {
-    saldosPorCliente,
-    saldoTotal,
+    clientes,
+    calcularSaldoCliente,
+    calcularSaldoTotal,
   };
 }
