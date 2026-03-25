@@ -113,9 +113,17 @@ export async function getAllAdmins() {
 
 /**
  * Obter TODOS os clientes (de todos os admins)
+ * Clientes são usuários com role='user'
  */
 export async function getAllClients() {
-  return db.query.clients.findMany();
+  try {
+    return db.query.users.findMany({
+      where: eq(users.role, 'user'),
+    });
+  } catch (error) {
+    console.error('Erro ao buscar clientes:', error);
+    return [];
+  }
 }
 
 /**
