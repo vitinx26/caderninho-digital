@@ -14,6 +14,7 @@ import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
 import { initializeRealtimeWebSocket } from "./realtimeEndpoint";
 import { sseRouter } from "./sseEndpoint";
+import dataRouter from "./dataEndpoints";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,6 +54,10 @@ async function startServer() {
   
   // Rotas de sistema multi-usuário
   app.use('/api/multiuser', multiUserRouter);
+
+  // Rotas de dados para sincronização
+  app.use('/api', dataRouter);
+  console.log('📱 Endpoints de dados inicializados');
 
   // Rotas de SSE para sincronização em tempo real
   app.use(sseRouter);
