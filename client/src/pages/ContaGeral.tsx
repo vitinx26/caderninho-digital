@@ -1,26 +1,36 @@
 /**
  * ContaGeral - Registro rápido de compras sem login
  * Design: Minimalismo Funcional com Tipografia Forte
+ * 
+ * ✅ MIGRADO PARA: CentralizedStoreContext
+ * - Sincronização em tempo real via WebSocket
+ * - Novos lançamentos aparecem no Dashboard instantaneamente
+ * - Clientes sincronizados de todos os administradores
+ * - Sem localStorage (apenas servidor)
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, LogOut, Save, Calendar, RefreshCw } from 'lucide-react';
+import { Plus, LogOut, Save, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLancamentos } from '@/hooks/useDB';
-import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
+import { useClientes, useLancamentos, useConnectionStatus } from '@/contexts/CentralizedStoreContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-// Imports de armazenamento local removidos - aplicativo usa APENAS servidor
-import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
+import { obterTimestampBrasilia } from '@/lib/brasiliaTime';
 import OnlineStatusIndicator from '@/components/OnlineStatusIndicator';
 import CardapioSelectorSimples from '@/components/CardapioSelectorSimples';
 
 type AbaType = 'novo-cliente' | 'nova-compra';
 
 export default function ContaGeral() {
-  const { fazer_logout, usuarioLogado } = useAuth();
+  const { fazer_logout } = useAuth();
+  
+  // ✅ NOVO: Usar CentralizedStoreContext para sincronização em tempo real
+  const { clientes, isConnected: isConnectedStore } = useClientes();
   const { lancamentos, adicionarLancamento } = useLancamentos();
+  const { statusConexao } = useConnectionStatus();
+  
   const { isOnline } = useOnlineStatus();
 
   const [aba, setAba] = useState<AbaType>('nova-compra');
@@ -37,583 +47,418 @@ export default function ContaGeral() {
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
   const [carregandoCompra, setCarregandoCompra] = useState(false);
-  const [dataBrasilia] = useState(() => formatarDataBrasilia(new Date()));
   const [usarCardapio, setUsarCardapio] = useState(false);
 
-  // Clientes salvos (para seleção rápida)
-  const [clientesSalvos, setClientesSalvos] = useState<Array<{ id: string; nome: string; telefone?: string }>>([]);
-  const [sincronizando, setSincronizando] = useState(false);
+  // Busca de cliente
   const [buscaCliente, setBuscaCliente] = useState('');
-  
-  // Filtrar clientes por busca e remover teste1
-  const clientesFiltrados = clientesSalvos.filter(c => 
-    c.nome.toLowerCase().includes(buscaCliente.toLowerCase()) &&
-    c.nome.toLowerCase() !== 'teste1'
+
+  // Filtrar clientes por busca
+  const clientesFiltrados = clientes.filter((c) =>
+    c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
   );
 
-  // Sincronizar dados ao abrir Conta Geral - AGORA TAMBÉM BUSCA DO BACKEND
-  useEffect(() => {
-    const sincronizarDados = async () => {
-      try {
-        console.log('🔄 Sincronizando dados em Conta Geral...');
-        
-        // Carregar clientes do servidor
-        try {
-          const response = await fetch('/api/all-clients');
-          if (response.ok) {
-            const data = await response.json();
-            console.log('✓ Clientes do servidor carregados:', data.count);
-          }
-        } catch (error) {
-          console.warn('⚠️ Erro ao carregar clientes do servidor:', error);
-        }
-      } catch (error) {
-        console.error('Erro ao sincronizar:', error);
-      }
-    };
+  // ✅ REMOVIDO: Polling e sincronização manual
+  // Agora a sincronização é automática via WebSocket
 
-    sincronizarDados();
-    // Polling desabilitado - carregamento único na montagem
-  }, []);
-
-  useEffect(() => {
-    // Carregar clientes de múltiplas fontes (Backend API PRIMEIRO, depois localStorage como fallback)
-    const carregarClientes = async () => {
-      try {
-        const clientesMap = new Map<string, any>();
-        
-        // PRIORIDADE 1: Carregar do Backend API (dados mais atualizados)
-        // Carregar usuários (clientes) da tabela users
-        try {
-          const response = await fetch('/api/users?tipo=cliente');
-          if (response.ok) {
-            const data = await response.json();
-            if (data.data && Array.isArray(data.data)) {
-              data.data.forEach((u: any) => {
-                clientesMap.set(u.id, {
-                  id: u.id,
-                  nome: u.name || u.nome,
-                  telefone: u.telefone || ''
-                });
-              });
-              console.log('✓ Usuários (clientes) do backend carregados:', data.data.length);
-            }
-          }
-        } catch (error) {
-          console.warn('⚠️ Erro ao carregar usuários do backend:', error);
-        }
-        
-        // PRIORIDADE 2: Carregar clientes do /api/all-clients
-        try {
-          const response = await fetch('/api/all-clients');
-          if (response.ok) {
-            const data = await response.json();
-            if (data.data && Array.isArray(data.data)) {
-              data.data.forEach((c: any) => {
-                if (!clientesMap.has(c.id)) {
-                  clientesMap.set(c.id, {
-                    id: c.id,
-                    nome: c.nome,
-                    telefone: c.telefone
-                  });
-                }
-              });
-              console.log('✓ Clientes do backend carregados:', data.count);
-            }
-          }
-        } catch (error) {
-          console.warn('⚠️ Erro ao carregar clientes do backend:', error);
-        }
-        
-        // PRIORIDADE 3: Carregar clientes salvos do localStorage (apenas como fallback)
-        const salvos = localStorage.getItem('caderninho_clientes_salvos');
-        if (salvos) {
-          JSON.parse(salvos).forEach((c: any) => {
-            if (!clientesMap.has(c.id)) {
-              clientesMap.set(c.id, c);
-            }
-          });
-        }
-
-        // PRIORIDADE 4: Carregar clientes principais do localStorage
-        const principais = localStorage.getItem('caderninho_clientes');
-        if (principais) {
-          JSON.parse(principais).forEach((c: any) => {
-            if (!clientesMap.has(c.id)) {
-              clientesMap.set(c.id, {
-                id: c.id,
-                nome: c.nome,
-                telefone: c.telefone
-              });
-            }
-          });
-        }
-
-        // Carregar clientes do IndexedDB (dados migrados) - removido pois agora usamos servidor
-
-        // Carregar clientes do Backend API
-        try {
-          const response = await fetch('/api/all-clients');
-          if (response.ok) {
-            const data = await response.json();
-            if (data.data && Array.isArray(data.data)) {
-              data.data.forEach((c: any) => {
-                if (!clientesMap.has(c.id)) {
-                  clientesMap.set(c.id, {
-                    id: c.id,
-                    nome: c.nome,
-                    telefone: c.telefone
-                  });
-                }
-              });
-              console.log('✓ Clientes do backend carregados:', data.count);
-            }
-          }
-        } catch (error) {
-          console.warn('⚠️ Erro ao carregar clientes do backend:', error);
-        }
-
-        // Carregar usuários (clientes) da tabela users
-        try {
-          const response = await fetch('/api/users?tipo=cliente');
-          if (response.ok) {
-            const data = await response.json();
-            if (data.data && Array.isArray(data.data)) {
-              data.data.forEach((u: any) => {
-                if (!clientesMap.has(u.id)) {
-                  clientesMap.set(u.id, {
-                    id: u.id,
-                    nome: u.name || u.nome,
-                    telefone: u.telefone || ''
-                  });
-                }
-              });
-              console.log('✓ Usuários (clientes) do backend carregados:', data.data.length);
-            }
-          }
-        } catch (error) {
-          console.warn('⚠️ Erro ao carregar usuários do backend:', error);
-        }
-
-        // Converter para array e ordenar
-        const clientesOrdenados = Array.from(clientesMap.values()).sort((a, b) => 
-          a.nome.localeCompare(b.nome)
-        );
-        
-        setClientesSalvos(clientesOrdenados);
-        console.log('Clientes carregados (localStorage + IndexedDB + Backend):', clientesOrdenados);
-        
-        // Se não houver clientes, tentar sincronizar novamente
-        if (clientesOrdenados.length === 0) {
-          console.warn('⚠️ Nenhum cliente encontrado, tentando sincronizar...');
-          // Sincronização com servidor
-          fetch('/api/all-clients').then(() => {
-            carregarClientes();
-          });
-        }
-      } catch (error) {
-        console.error('Erro ao carregar clientes:', error);
-      }
-    };
-
-    carregarClientes();
-  }, []); // Carregamento único na montagem - sem dependências
-
-  // Função para sincronizar manualmente
-  const handleSincronizar = async () => {
-    try {
-      setSincronizando(true);
-      console.log('🔄 Sincronizando dados manualmente...');
-      // Dados sincronizados com servidor
-      console.log('✓ Sincronização com servidor iniciada');
-      
-      // Carregar clientes do servidor
-      const response = await fetch('/api/all-clients');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✓ Clientes do servidor sincronizados:', data.count);
-        toast.success(`✓ Dados sincronizados! ${data.count} clientes encontrados.`);
-      } else {
-        toast.error('Erro ao sincronizar dados');
-      }
-      
-      // Recarregar clientes
-      window.location.reload();
-    } catch (error) {
-      console.error('Erro ao sincronizar:', error);
-      toast.error('Erro ao sincronizar dados');
-    } finally {
-      setSincronizando(false);
-    }
-  };
-
-  const salvarClienteRapido = (id: string, nome: string, telefone?: string) => {
-    const novosSalvos = clientesSalvos.filter((c) => c.id !== id);
-    novosSalvos.push({ id, nome, telefone });
-    setClientesSalvos(novosSalvos);
-    localStorage.setItem('caderninho_clientes_salvos', JSON.stringify(novosSalvos));
-  };
-
-  const handleNovoCliente = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Criar novo cliente
+  const handleCriarCliente = async () => {
     if (!novoClienteNome.trim()) {
-      toast.error('Digite o nome do cliente');
+      toast.error('Nome do cliente é obrigatório');
       return;
     }
 
-    // Validar email e senha se fornecidos
-    if (novoClienteEmail.trim() && !novoClienteSenha.trim()) {
-      toast.error('Se informar email, também deve informar senha');
+    if (!isOnline) {
+      toast.error('Sem conexão com o servidor. Chama o proprietário.');
       return;
     }
 
-    if (!novoClienteEmail.trim() && novoClienteSenha.trim()) {
-      toast.error('Se informar senha, também deve informar email');
-      return;
-    }
-
-    // Validar formato de email
-    if (novoClienteEmail.trim() && !novoClienteEmail.includes('@')) {
-      toast.error('Email inválido');
-      return;
-    }
-
-    // Validar comprimento de senha
-    if (novoClienteSenha.trim() && novoClienteSenha.length < 6) {
-      toast.error('Senha deve ter no mínimo 6 caracteres');
-      return;
-    }
-
+    setCarregandoNovoCliente(true);
     try {
-      setCarregandoNovoCliente(true);
-      
-      // Criar cliente via servidor
-      const responseServidor = await fetch('/api/users', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: novoClienteNome.trim(),
-          email: novoClienteEmail.trim() || `${novoClienteNome.trim().toLowerCase().replace(/\s+/g, '.')}@clientes.local`,
-          tipo: 'user',
-          telefone: novoClienteTelefone || '',
+          name: novoClienteNome,
+          email: novoClienteEmail || `${novoClienteNome.toLowerCase().replace(/\s+/g, '')}@caderninho.local`,
+          telefone: novoClienteTelefone,
+          password: novoClienteSenha || 'senha123',
+          tipo: 'cliente',
         }),
       });
-      
-      if (!responseServidor.ok) {
-        throw new Error('Erro ao criar cliente no servidor');
-      }
-      
-      const novoCliente = await responseServidor.json();
-      salvarClienteRapido(novoCliente.id, novoCliente.nome || novoClienteNome.trim(), novoClienteTelefone);
 
-      // Se forneceu senha, atualizar usuário com senha
-      if (novoClienteSenha.trim()) {
-        try {
-          // Salvar senha com segurança
-          // Senha armazenada no servidor (não localmente)
-          toast.success('✅ Cliente criado! Ele pode fazer login agora.');
-        } catch (e) {
-          console.warn('Erro ao salvar senha:', e);
-          toast.success('Cliente adicionado com sucesso!');
-        }
+      if (response.ok) {
+        const novoCliente = await response.json();
+        toast.success(`✓ Cliente "${novoClienteNome}" criado com sucesso!`);
+        
+        // ✅ Novo cliente aparece automaticamente no Dashboard via WebSocket
+        
+        // Limpar formulário
+        setNovoClienteNome('');
+        setNovoClienteTelefone('');
+        setNovoClienteEmail('');
+        setNovoClienteSenha('');
+        setAba('nova-compra');
       } else {
-        toast.success('Cliente adicionado com sucesso!');
+        const erro = await response.json();
+        toast.error(`Erro: ${erro.message || 'Falha ao criar cliente'}`);
       }
-
-      setNovoClienteNome('');
-      setNovoClienteTelefone('');
-      setNovoClienteEmail('');
-      setNovoClienteSenha('');
-      
-      // Recarregar lista de clientes para mostrar novo cliente
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-      
-      setAba('nova-compra');
     } catch (error) {
-      toast.error('Erro ao adicionar cliente');
+      console.error('Erro ao criar cliente:', error);
+      toast.error('Erro ao criar cliente');
     } finally {
       setCarregandoNovoCliente(false);
     }
   };
 
-  const handleNovaCompra = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validar conectividade
-    if (!isOnline) {
-      toast.error(getOfflineMessage());
-      return;
-    }
-
+  // Adicionar nova compra
+  const handleAdicionarCompra = async () => {
     if (!clienteSelecionado) {
       toast.error('Selecione um cliente');
       return;
     }
 
     if (!valor || parseFloat(valor) <= 0) {
-      toast.error('Digite um valor válido');
+      toast.error('Valor deve ser maior que 0');
       return;
     }
 
-    if (!descricao.trim()) {
-      toast.error('Digite uma descrição');
+    if (!isOnline) {
+      toast.error('Sem conexão com o servidor. Chama o proprietário.');
       return;
     }
 
+    setCarregandoCompra(true);
     try {
-      setCarregandoCompra(true);
       const timestamp = obterTimestampBrasilia();
       
-      // Salvar localmente primeiro
-      await adicionarLancamento(clienteSelecionado, 'debito', parseFloat(valor), descricao.trim(), timestamp);
-      
-      // Sincronizar com servidor
-      try {
-        const response = await fetch('/api/lancamentos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            clienteId: clienteSelecionado,
-            tipo: 'debito',
-            valor: Math.round(parseFloat(valor) * 100), // Converter para centavos
-            descricao: descricao.trim(),
-            data: timestamp,
-          }),
-        });
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clienteId: clienteSelecionado,
+          tipo: 'debito',
+          valor: parseFloat(valor),
+          descricao: descricao || 'Compra',
+          timestamp,
+        }),
+      });
 
-        if (response.ok) {
-          toast.success('✓ Compra registrada e sincronizada!');
-        } else {
-          toast.warning('⚠️ Compra registrada localmente, mas não sincronizou');
-        }
-      } catch (syncError) {
-        console.error('Erro ao sincronizar:', syncError);
-        toast.warning('⚠️ Compra registrada localmente, mas não sincronizou');
+      if (response.ok) {
+        toast.success(`✓ Compra de R$ ${parseFloat(valor).toFixed(2).replace('.', ',')} registrada!`);
+        
+        // ✅ Nova compra aparece automaticamente no Dashboard via WebSocket
+        
+        // Limpar formulário
+        setClienteSelecionado('');
+        setValor('');
+        setDescricao('');
+        setBuscaCliente('');
+      } else {
+        const erro = await response.json();
+        toast.error(`Erro: ${erro.message || 'Falha ao registrar compra'}`);
       }
-      
-      setValor('');
-      setDescricao('');
     } catch (error) {
+      console.error('Erro ao adicionar compra:', error);
       toast.error('Erro ao registrar compra');
     } finally {
       setCarregandoCompra(false);
     }
   };
 
-  const handleAdicionarNumero = (num: string) => {
-    setValor((prev) => {
-      const novoValor = prev + num;
-      if (novoValor.includes('.')) {
-        const [inteira, decimal] = novoValor.split('.');
-        if (decimal.length > 2) return prev;
-      }
-      return novoValor;
-    });
-  };
-
-  const handleBackspace = () => {
-    setValor((prev) => prev.slice(0, -1));
-  };
-
-  const handleDecimal = () => {
-    if (!valor.includes('.')) {
-      setValor((prev) => (prev ? prev + '.' : '0.'));
-    }
-  };
+  // Status de conexão
+  const isConnected = isOnline && isConnectedStore;
+  const statusConexaoClass = isConnected
+    ? 'text-green-600 dark:text-green-400'
+    : 'text-red-600 dark:text-red-400';
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
+        {/* Header com Status de Conexão */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Conta Geral - Compras Rápidas</h1>
-            <p className="text-muted-foreground mt-1">Registre compras e gerenciar clientes</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {clientesSalvos.length} cliente(s) disponível(is)
-            </p>
+            <h1 className="text-3xl font-bold text-foreground">Conta Geral</h1>
+            <p className="text-muted-foreground mt-1">Registre compras rápidas sem login</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            {/* Status de Conexão */}
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                isConnected ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
+              }`}
+            >
+              {isConnected ? (
+                <Wifi size={18} className={statusConexaoClass} />
+              ) : (
+                <WifiOff size={18} className={statusConexaoClass} />
+              )}
+              <span className={`text-sm font-medium ${statusConexaoClass}`}>
+                {isConnected ? 'Conectado' : 'Desconectado'}
+              </span>
+            </div>
+
             <Button
-              onClick={handleSincronizar}
-              disabled={sincronizando}
+              onClick={() => fazer_logout()}
               variant="outline"
               className="flex items-center gap-2"
             >
-              <RefreshCw size={20} className={sincronizando ? 'animate-spin' : ''} />
-              {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
-            </Button>
-            <Button
-              onClick={fazer_logout}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <LogOut size={20} />
+              <LogOut size={18} />
               Sair
             </Button>
           </div>
         </div>
 
+        {/* Aviso de Desconexão */}
+        {!isConnected && (
+          <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 p-4 rounded-lg">
+            <p className="text-red-800 dark:text-red-200 font-medium">
+              ⚠️ Sem conexão com o servidor. Chama o proprietário.
+            </p>
+          </div>
+        )}
+
         {/* Abas */}
         <div className="flex gap-2">
-          <button
-            onClick={() => setAba('nova-compra')}
-            className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-              aba === 'nova-compra'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-muted'
-            }`}
-          >
-            Nova Compra
-          </button>
-          <button
-            onClick={() => setAba('novo-cliente')}
-            className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-              aba === 'novo-cliente'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-muted'
-            }`}
-          >
-            Novo Cliente
-          </button>
+          {[
+            { id: 'nova-compra', label: 'Nova Compra' },
+            { id: 'novo-cliente', label: 'Novo Cliente' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setAba(tab.id as AbaType)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                aba === tab.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground hover:bg-muted'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Nova Compra */}
-        {aba === 'nova-compra' && (
-          <form onSubmit={handleNovaCompra} className="space-y-4">            {/* Seleção de Cliente */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Cliente ({clientesSalvos.length})
-              </label>
-              {clientesSalvos.length === 0 ? (
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-300 font-medium">⚠️ Nenhum cliente encontrado</p>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">Clique em "Sincronizar" para carregar clientes salvos</p>
-                </div>
-              ) : (
-                <>
-                  <Input
-                    type="text"
-                    placeholder="Buscar cliente..."
-                    value={buscaCliente}
-                    onChange={(e) => setBuscaCliente(e.target.value)}
-                    className="w-full mb-2"
-                  />
-                  
-                  <select
-                    value={clienteSelecionado}
-                    onChange={(e) => setClienteSelecionado(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="">Selecione um cliente...</option>
+        {/* Conteúdo das Abas */}
+        <div className="card-minimal p-6 space-y-4">
+          {aba === 'nova-compra' ? (
+            <>
+              <h2 className="text-xl font-semibold text-foreground">Registrar Compra</h2>
+
+              {/* Seleção de Cliente */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Cliente</label>
+                <Input
+                  type="text"
+                  placeholder="Buscar cliente..."
+                  value={buscaCliente}
+                  onChange={(e) => setBuscaCliente(e.target.value)}
+                  className="bg-background border-border"
+                />
+
+                {buscaCliente && clientesFiltrados.length > 0 ? (
+                  <div className="border border-border rounded-lg max-h-48 overflow-y-auto">
                     {clientesFiltrados.map((cliente) => (
-                      <option key={cliente.id} value={cliente.id}>
-                        {cliente.nome}
-                      </option>
+                      <button
+                        key={cliente.id}
+                        onClick={() => {
+                          setClienteSelecionado(cliente.id);
+                          setBuscaCliente('');
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-muted transition-colors border-b border-border last:border-b-0"
+                      >
+                        <p className="font-medium text-foreground">{cliente.nome}</p>
+                        {cliente.telefone && (
+                          <p className="text-xs text-muted-foreground">{cliente.telefone}</p>
+                        )}
+                      </button>
                     ))}
-                  </select>
-                </>
+                  </div>
+                ) : buscaCliente ? (
+                  <p className="text-sm text-muted-foreground">Nenhum cliente encontrado</p>
+                ) : null}
+
+                {clienteSelecionado && (
+                  <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                      ✓ Cliente selecionado: {clientes.find((c) => c.id === clienteSelecionado)?.nome}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Valor */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Valor (R$)</label>
+                <Input
+                  type="number"
+                  placeholder="0,00"
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                  step="0.01"
+                  min="0"
+                  className="bg-background border-border"
+                />
+              </div>
+
+              {/* Descrição */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Descrição (opcional)</label>
+                <Input
+                  type="text"
+                  placeholder="Ex: Bebidas, Comida..."
+                  value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                  className="bg-background border-border"
+                />
+              </div>
+
+              {/* Cardápio */}
+              {usarCardapio && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Selecionar do Cardápio</label>
+                  <CardapioSelectorSimples
+                    onItemsSelected={(items, total) => {
+                      if (items.length > 0) {
+                        const descricoes = items.map((i) => i.name).join(', ');
+                        setDescricao(descricoes);
+                        setValor(total.toString());
+                      }
+                    }}
+                    onCancel={() => setUsarCardapio(false)}
+                  />
+                </div>
               )}
-            </div>
 
-            {/* Cardápio obrigatório */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="usar-cardapio"
+                  checked={usarCardapio}
+                  onChange={(e) => setUsarCardapio(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <label htmlFor="usar-cardapio" className="text-sm text-foreground cursor-pointer">
+                  Usar cardápio
+                </label>
+              </div>
 
-            {/* Data Fixa */}
-            {/* Data de Registro - Ocultada mas gravada automaticamente com fuso Brasília */}
-            {/* A data é gravada automaticamente ao registrar a compra */}
-            {/* Não é exibida para não poluir o visual do formulário */}
+              {/* Botão Salvar */}
+              <Button
+                onClick={handleAdicionarCompra}
+                disabled={carregandoCompra || !isOnline || !clienteSelecionado}
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <Save size={20} />
+                {carregandoCompra ? 'Salvando...' : 'Salvar Compra'}
+              </Button>
 
-            {/* Cardápio */}
-            <CardapioSelectorSimples
-              onItemsSelected={(items, total) => {
-                setValor((total / 100).toFixed(2));
-                setDescricao(items.map(i => i.name).join(', '));
-              }}
-              onCancel={() => {}}
-            />
+              {/* Info de Sincronização */}
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                {isConnected
+                  ? '✅ Sincronizando em tempo real'
+                  : '⏸️ Aguardando conexão...'}
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold text-foreground">Criar Novo Cliente</h2>
 
-            <Button
-              type="submit"
-              disabled={carregandoCompra}
-              className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2"
-            >
-              <Save size={20} />
-              {carregandoCompra ? 'Salvando...' : 'Registrar Compra'}
-            </Button>
-          </form>
-        )}
+              {/* Nome */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Nome *</label>
+                <Input
+                  type="text"
+                  placeholder="Nome do cliente"
+                  value={novoClienteNome}
+                  onChange={(e) => setNovoClienteNome(e.target.value)}
+                  className="bg-background border-border"
+                />
+              </div>
 
-        {/* Novo Cliente */}
-        {aba === 'novo-cliente' && (
-          <form onSubmit={handleNovoCliente} className="card-minimal p-6 space-y-4">
-            <h2 className="text-xl font-bold text-foreground">Adicionar Novo Cliente</h2>
+              {/* Telefone */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Telefone (opcional)</label>
+                <Input
+                  type="tel"
+                  placeholder="(11) 99999-9999"
+                  value={novoClienteTelefone}
+                  onChange={(e) => setNovoClienteTelefone(e.target.value)}
+                  className="bg-background border-border"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Nome *</label>
-              <Input
-                type="text"
-                value={novoClienteNome}
-                onChange={(e) => setNovoClienteNome(e.target.value)}
-                placeholder="Nome do cliente"
-                className="w-full"
-              />
-            </div>
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Email (opcional)</label>
+                <Input
+                  type="email"
+                  placeholder="cliente@email.com"
+                  value={novoClienteEmail}
+                  onChange={(e) => setNovoClienteEmail(e.target.value)}
+                  className="bg-background border-border"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Telefone (Opcional)</label>
-              <Input
-                type="tel"
-                value={novoClienteTelefone}
-                onChange={(e) => setNovoClienteTelefone(e.target.value)}
-                placeholder="(11) 99999-9999"
-                className="w-full"
-              />
-            </div>
+              {/* Senha */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Senha (opcional)</label>
+                <Input
+                  type="password"
+                  placeholder="Deixe em branco para gerar automaticamente"
+                  value={novoClienteSenha}
+                  onChange={(e) => setNovoClienteSenha(e.target.value)}
+                  className="bg-background border-border"
+                />
+              </div>
 
-            <div className="border-t border-border pt-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                💡 Para permitir que o cliente faça login e acompanhe seus gastos pelo app, preencha email e senha:
+              {/* Botão Criar */}
+              <Button
+                onClick={handleCriarCliente}
+                disabled={carregandoNovoCliente || !isOnline}
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <Plus size={20} />
+                {carregandoNovoCliente ? 'Criando...' : 'Criar Cliente'}
+              </Button>
+
+              {/* Info de Sincronização */}
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                {isConnected
+                  ? '✅ Novo cliente aparecerá no Dashboard instantaneamente'
+                  : '⏸️ Aguardando conexão...'}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Clientes Disponíveis */}
+        {aba === 'nova-compra' && !buscaCliente && (
+          <div className="card-minimal p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">Clientes Disponíveis</h2>
+            {clientesFiltrados.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {clientesFiltrados.slice(0, 10).map((cliente) => (
+                  <button
+                    key={cliente.id}
+                    onClick={() => {
+                      setClienteSelecionado(cliente.id);
+                      setBuscaCliente('');
+                    }}
+                    className="p-3 rounded-lg border border-border hover:bg-muted transition-colors text-left"
+                  >
+                    <p className="font-medium text-foreground">{cliente.nome}</p>
+                    {cliente.telefone && (
+                      <p className="text-xs text-muted-foreground">{cliente.telefone}</p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">
+                Nenhum cliente disponível. Crie um novo cliente na aba "Novo Cliente".
               </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Email (Opcional)</label>
-              <Input
-                type="email"
-                value={novoClienteEmail}
-                onChange={(e) => setNovoClienteEmail(e.target.value)}
-                placeholder="cliente@email.com"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Necessário para criar login</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Senha (Opcional)</label>
-              <Input
-                type="password"
-                value={novoClienteSenha}
-                onChange={(e) => setNovoClienteSenha(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Necessária para criar login</p>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={carregandoNovoCliente}
-              className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2"
-            >
-              <Plus size={20} />
-              {carregandoNovoCliente ? 'Adicionando...' : 'Adicionar Cliente'}
-            </Button>
-          </form>
+            )}
+          </div>
         )}
-
-
       </div>
     </div>
   );
