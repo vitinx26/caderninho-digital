@@ -35,18 +35,24 @@ class RealtimeSSEManager {
   private pollingInterval: NodeJS.Timeout | null = null;
   private pollingDelay = 5000; // 5 segundos
   private lastPollTime = 0;
+  private isConnecting = false; // Flag para evitar múltiplas conexões
+  private connectionAttempts = 0; // Contador de tentativas
 
   /**
    * Conectar ao SSE
    */
   connect() {
-    if (this.eventSource) {
-      console.warn('⚠️ SSE já está conectado');
+    // Evitar múltiplas tentativas simultâneas
+    if (this.eventSource || this.isConnecting) {
+      console.warn('⚠️ SSE já está conectado ou conectando');
       return;
     }
 
+    this.isConnecting = true;
+    this.connectionAttempts++;
+
     try {
-      console.log('🔌 Conectando ao SSE...');
+      console.log(`🔌 Conectando ao SSE (tentativa ${this.connectionAttempts})...`);
       this.updateStatus('sincronizando');
 
       this.eventSource = new EventSource('/api/events/subscribe');
@@ -72,11 +78,13 @@ class RealtimeSSEManager {
         this.updateStatus('desconectado');
         this.eventSource?.close();
         this.eventSource = null;
+        this.isConnecting = false;
         this.attemptReconnect();
       };
     } catch (error) {
       console.error('Erro ao conectar SSE:', error);
       this.updateStatus('desconectado');
+      this.isConnecting = false;
       this.attemptReconnect();
     }
   }
@@ -103,10 +111,18 @@ class RealtimeSSEManager {
    * Tentar reconectar
    */
   private attemptReconnect() {
-    console.log('🔄 Tentando reconectar em 3 segundos...');
+    // Limitar tentativas de reconexão
+    if (this.connectionAttempts > 5) {
+      console.error('❌ Muitas tentativas de reconexão, desistindo');
+      return;
+    }
+
+    const delayMs = Math.min(3000 * this.connectionAttempts, 30000); // Backoff exponencial
+    console.log(`🔄 Tentando reconectar em ${delayMs}ms (tentativa ${this.connectionAttempts})...`);
     setTimeout(() => {
+      this.isConnecting = false;
       this.connect();
-    }, 3000);
+    }, delayMs);
   }
 
   /**
@@ -116,6 +132,7 @@ class RealtimeSSEManager {
     try {
       console.log('🔄 Solicitando sincronização completa...');
       this.updateStatus('sincronizando');
+      this.isConnecting = false; // Marcar como conectado
 
       // Carregar dados do servidor
       console.log('🔄 Sincronizando: GET /api/users, /api/all-clients, /api/lancamentos');
@@ -152,12 +169,14 @@ class RealtimeSSEManager {
 
       this.updateStatus('conectado');
       this.notifyListeners();
+      this.connectionAttempts = 0; // Resetar contador
 
       // Iniciar polling como fallback
       this.startPolling();
     } catch (error) {
       console.error('Erro ao sincronizar:', error);
       this.updateStatus('desconectado');
+      this.isConnecting = false;
     }
   }
 
