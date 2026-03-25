@@ -13,7 +13,7 @@ import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import * as db from '@/lib/db';
+// Import de armazenamento local removido - aplicativo usa APENAS servidor
 
 type FiltroType = 'todos' | 'vencidos' | 'pagos' | 'alfabetico';
 
@@ -26,14 +26,19 @@ export default function Dashboard() {
   const { usuarioLogado } = useAuth();
   const [filtro, setFiltro] = useState<FiltroType>('todos');
   const [numeroWhatsAppAdmin, setNumeroWhatsAppAdmin] = useState('');
+  // Carregamento de configurações do servidor
 
   // Carregar número WhatsApp do admin
   useEffect(() => {
     const carregarConfig = async () => {
       try {
-        const config = await db.obterConfiguracao();
-        if (config?.numeroWhatsAppAdmin) {
-          setNumeroWhatsAppAdmin(config.numeroWhatsAppAdmin);
+        // Configuração carregada do servidor
+        const response = await fetch('/api/users/config');
+        if (response.ok) {
+          const config = await response.json();
+          if (config?.numeroWhatsAppAdmin) {
+            setNumeroWhatsAppAdmin(config.numeroWhatsAppAdmin);
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar configuração:', error);

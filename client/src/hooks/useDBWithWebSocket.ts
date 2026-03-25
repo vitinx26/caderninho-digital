@@ -3,13 +3,13 @@
  * 
  * Emite eventos WebSocket quando clientes/lançamentos são criados/atualizados
  * Sincroniza dados em tempo real entre múltiplos admins
+ * NOTA: Armazenamento local desabilitado - usa apenas servidor
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWebSocket } from './useWebSocket';
 import { useClientes, useLancamentos } from './useDB';
-import * as db from '@/lib/db';
 
 export function useDBWithWebSocket() {
   const { usuarioLogado } = useAuth();
@@ -88,22 +88,17 @@ export function useDBWithWebSocket() {
       try {
         await deactivateClienteDB(id);
 
-        const cliente = clientes.find(c => c.id === id);
-        if (cliente) {
-          emitClientUpdated({
-            id: cliente.id,
-            nome: cliente.nome,
-            telefone: cliente.telefone,
-            email: cliente.email,
-            ativo: false,
-          });
-        }
+        // Emitir evento WebSocket
+        emitClientUpdated({
+          id,
+          ativo: false,
+        });
       } catch (error) {
         console.error('Erro ao desativar cliente:', error);
         throw error;
       }
     },
-    [deactivateClienteDB, emitClientUpdated, clientes]
+    [deactivateClienteDB, emitClientUpdated]
   );
 
   /**
@@ -128,7 +123,6 @@ export function useDBWithWebSocket() {
           valor: novoLancamento.valor,
           descricao: novoLancamento.descricao,
           data: novoLancamento.data,
-          dataCriacao: novoLancamento.dataCriacao,
         });
 
         return novoLancamento;
@@ -140,44 +134,6 @@ export function useDBWithWebSocket() {
     [addLancamentoDB, emitTransactionCreated]
   );
 
-  /**
-   * Sincronizar dados quando eventos WebSocket são recebidos
-   */
-  useEffect(() => {
-    const handleClientCreated = (event: CustomEvent) => {
-      console.log('📥 Sincronizando cliente criado:', event.detail);
-      recarregarClientes();
-    };
-
-    const handleClientUpdated = (event: CustomEvent) => {
-      console.log('📥 Sincronizando cliente atualizado:', event.detail);
-      recarregarClientes();
-    };
-
-    const handleTransactionCreated = (event: CustomEvent) => {
-      console.log('📥 Sincronizando lançamento criado:', event.detail);
-      recarregarLancamentos();
-    };
-
-    const handleSyncQueue = (event: CustomEvent) => {
-      console.log('📥 Sincronizando fila de eventos:', event.detail);
-      recarregarClientes();
-      recarregarLancamentos();
-    };
-
-    window.addEventListener('websocket:client-created', handleClientCreated as EventListener);
-    window.addEventListener('websocket:client-updated', handleClientUpdated as EventListener);
-    window.addEventListener('websocket:transaction-created', handleTransactionCreated as EventListener);
-    window.addEventListener('websocket:sync-queue', handleSyncQueue as EventListener);
-
-    return () => {
-      window.removeEventListener('websocket:client-created', handleClientCreated as EventListener);
-      window.removeEventListener('websocket:client-updated', handleClientUpdated as EventListener);
-      window.removeEventListener('websocket:transaction-created', handleTransactionCreated as EventListener);
-      window.removeEventListener('websocket:sync-queue', handleSyncQueue as EventListener);
-    };
-  }, [recarregarClientes, recarregarLancamentos]);
-
   return {
     clientes,
     lancamentos,
@@ -185,5 +141,7 @@ export function useDBWithWebSocket() {
     atualizarCliente,
     desativarCliente,
     adicionarLancamento,
+    recarregarClientes,
+    recarregarLancamentos,
   };
 }

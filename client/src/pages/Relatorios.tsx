@@ -10,7 +10,7 @@ import { useServerClientes } from '@/hooks/useServerClientes';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
-import * as db from '@/lib/db';
+// Import de armazenamento local removido - aplicativo usa APENAS servidor
 
 export default function Relatorios() {
   const { clientes } = useServerClientes();
@@ -69,10 +69,14 @@ export default function Relatorios() {
     };
   }, [saldos, clientes]);
 
-  const handleExportarPDF = async () => {
+  const handleExportarJSON = async () => {
     try {
-      const dados = await db.exportarDados();
-      const blob = new Blob([dados], { type: 'application/json' });
+      // Exportar dados do servidor
+      const response = await fetch('/api/export');
+      if (!response.ok) {
+        throw new Error('Erro ao exportar dados');
+      }
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -90,8 +94,15 @@ export default function Relatorios() {
     if (!file) return;
 
     try {
-      const conteudo = await file.text();
-      await db.importarDados(conteudo);
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/import', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error('Erro ao importar dados');
+      }
       toast.success('Dados importados com sucesso!');
       window.location.reload();
     } catch (error) {
@@ -233,7 +244,7 @@ export default function Relatorios() {
         <h2 className="text-xl font-semibold text-foreground mb-4">Backup e Dados</h2>
         <div className="flex gap-3 flex-wrap">
           <Button
-            onClick={handleExportarPDF}
+            onClick={handleExportarJSON}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Download size={20} />

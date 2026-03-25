@@ -1,11 +1,11 @@
 /**
- * Hook customizado para gerenciar dados com IndexedDB
+ * Hook customizado para gerenciar dados do servidor
  * Fornece interface reativa para CRUD de clientes e lançamentos
+ * NOTA: Armazenamento local desabilitado - usa apenas servidor
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { Cliente, Lancamento, Saldo } from '@/types';
-import * as db from '@/lib/db';
 import { nanoid } from 'nanoid';
 
 export function useClientes() {
@@ -16,10 +16,16 @@ export function useClientes() {
   const carregar = useCallback(async () => {
     try {
       setCarregando(true);
-      const dados = await db.obterClientes();
+      const response = await fetch('/api/clients');
+      if (!response.ok) {
+        throw new Error('Erro ao buscar clientes do servidor');
+      }
+      const data = await response.json();
+      const dados = data.data || [];
+      
       // Filtrar apenas clientes ativos e ordenar por nome
-      const clientesAtivos = dados.filter((c) => c.ativo !== false);
-      clientesAtivos.sort((a, b) => a.nome.localeCompare(b.nome));
+      const clientesAtivos = dados.filter((c: any) => c.ativo !== false);
+      clientesAtivos.sort((a: any, b: any) => a.nome.localeCompare(b.nome));
       setClientes(clientesAtivos);
       setErro(null);
     } catch (e) {
@@ -35,17 +41,24 @@ export function useClientes() {
 
   const adicionarCliente = useCallback(async (nome: string, telefone?: string, email?: string) => {
     try {
-      const novoCliente: Cliente = {
-        id: nanoid(),
-        nome,
-        telefone,
-        email,
-        dataCriacao: Date.now(),
-        ativo: true, // Sempre garantir que ativo seja true
-      };
-      const clienteSalvo = await db.adicionarCliente(novoCliente);
-      setClientes((prev) => [...prev, clienteSalvo].sort((a, b) => a.nome.localeCompare(b.nome)));
-      return clienteSalvo;
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome,
+          telefone,
+          email,
+          ativo: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao adicionar cliente no servidor');
+      }
+
+      const novoCliente = await response.json();
+      setClientes((prev) => [...prev, novoCliente].sort((a, b) => a.nome.localeCompare(b.nome)));
+      return novoCliente;
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao adicionar cliente');
       throw e;
@@ -55,7 +68,16 @@ export function useClientes() {
   const atualizarCliente = useCallback(async (cliente: Cliente) => {
     try {
       const clienteAtualizado = { ...cliente, ativo: cliente.ativo ?? true };
-      await db.atualizarCliente(clienteAtualizado);
+      const response = await fetch(`/api/clients/${cliente.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clienteAtualizado),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar cliente no servidor');
+      }
+
       setClientes((prev) =>
         prev
           .map((c) => (c.id === cliente.id ? clienteAtualizado : c))
@@ -99,14 +121,21 @@ export function useLancamentos(clienteId?: string) {
   const carregar = useCallback(async () => {
     try {
       setCarregando(true);
-      let dados: Lancamento[];
+      let url = '/api/transactions';
       if (clienteId) {
-        dados = await db.obterLancamentosDoCliente(clienteId);
-      } else {
-        dados = await db.obterTodosLancamentos();
+        url += `?client_id=${clienteId}`;
       }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Erro ao buscar lançamentos do servidor');
+      }
+
+      const data = await response.json();
+      let dados = data.data || [];
+
       // Ordenar por data (mais recente primeiro)
-      dados.sort((a, b) => b.data - a.data);
+      dados.sort((a: any, b: any) => b.data - a.data);
       setLancamentos(dados);
       setErro(null);
     } catch (e) {
@@ -129,16 +158,23 @@ export function useLancamentos(clienteId?: string) {
       data: number = Date.now()
     ) => {
       try {
-        const novoLancamento: Lancamento = {
-          id: nanoid(),
-          clienteId,
-          tipo,
-          valor,
-          descricao,
-          data,
-          dataCriacao: Date.now(),
-        };
-        await db.adicionarLancamento(novoLancamento);
+        const response = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clienteId,
+            tipo,
+            valor,
+            descricao,
+            data,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao adicionar lançamento no servidor');
+        }
+
+        const novoLancamento = await response.json();
         setLancamentos((prev) => [novoLancamento, ...prev]);
         // Forçar recarregamento para sincronizar com outros hooks
         setVersao((prev) => prev + 1);
@@ -153,7 +189,14 @@ export function useLancamentos(clienteId?: string) {
 
   const deletarLancamento = useCallback(async (id: string) => {
     try {
-      await db.deletarLancamento(id);
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao deletar lançamento no servidor');
+      }
+
       setLancamentos((prev) => prev.filter((l) => l.id !== id));
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro ao deletar lançamento');

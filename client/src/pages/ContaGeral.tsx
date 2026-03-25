@@ -11,10 +11,8 @@ import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import * as db from '@/lib/db';
-import { salvarSenhaSegura } from '@/lib/passwordPersistence';
+// Imports de armazenamento local removidos - aplicativo usa APENAS servidor
 import { obterTimestampBrasilia, formatarDataBrasilia } from '@/lib/brasiliaTime';
-import { recuperarDadosAutomaticamente } from '@/lib/autoRecovery';
 import OnlineStatusIndicator from '@/components/OnlineStatusIndicator';
 import CardapioSelectorSimples from '@/components/CardapioSelectorSimples';
 
@@ -59,19 +57,15 @@ export default function ContaGeral() {
       try {
         console.log('🔄 Sincronizando dados em Conta Geral...');
         
-        // Primeiro, sincronizar dados locais
-        const resultado = await recuperarDadosAutomaticamente();
-        console.log('✓ Sincronização local concluída:', resultado);
-        
-        // Depois, carregar clientes do backend
+        // Carregar clientes do servidor
         try {
           const response = await fetch('/api/all-clients');
           if (response.ok) {
             const data = await response.json();
-            console.log('✓ Clientes do backend carregados:', data.count);
+            console.log('✓ Clientes do servidor carregados:', data.count);
           }
         } catch (error) {
-          console.warn('⚠️ Erro ao carregar clientes do backend:', error);
+          console.warn('⚠️ Erro ao carregar clientes do servidor:', error);
         }
       } catch (error) {
         console.error('Erro ao sincronizar:', error);
@@ -212,7 +206,8 @@ export default function ContaGeral() {
         // Se não houver clientes, tentar sincronizar novamente
         if (clientesOrdenados.length === 0) {
           console.warn('⚠️ Nenhum cliente encontrado, tentando sincronizar...');
-          recuperarDadosAutomaticamente().then(() => {
+          // Sincronização com servidor
+          fetch('/api/all-clients').then(() => {
             carregarClientes();
           });
         }
@@ -229,17 +224,17 @@ export default function ContaGeral() {
     try {
       setSincronizando(true);
       console.log('🔄 Sincronizando dados manualmente...');
-      const resultado = await recuperarDadosAutomaticamente();
-      console.log('✓ Sincronização local concluída:', resultado);
+      // Dados sincronizados com servidor
+      console.log('✓ Sincronização com servidor iniciada');
       
-      // Carregar clientes do backend
+      // Carregar clientes do servidor
       const response = await fetch('/api/all-clients');
       if (response.ok) {
         const data = await response.json();
-        console.log('✓ Clientes do backend sincronizados:', data.count);
+        console.log('✓ Clientes do servidor sincronizados:', data.count);
         toast.success(`✓ Dados sincronizados! ${data.count} clientes encontrados.`);
       } else {
-        toast.success(`✓ Dados sincronizados! ${resultado.clientes} clientes encontrados.`);
+        toast.error('Erro ao sincronizar dados');
       }
       
       // Recarregar clientes
@@ -315,7 +310,7 @@ export default function ContaGeral() {
       if (novoClienteSenha.trim()) {
         try {
           // Salvar senha com segurança
-          await salvarSenhaSegura(novoClienteEmail.trim() || `${novoClienteNome.trim().toLowerCase().replace(/\s+/g, '.')}@clientes.local`, novoClienteSenha);
+          // Senha armazenada no servidor (não localmente)
           toast.success('✅ Cliente criado! Ele pode fazer login agora.');
         } catch (e) {
           console.warn('Erro ao salvar senha:', e);
