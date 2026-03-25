@@ -39,8 +39,8 @@ export async function verificarAdmins(): Promise<{
       return { encontrados, faltando };
     }
 
-    const data = await response.json();
-    const usuariosServidor = data.data || [];
+    const usuariosServidor = await response.json();
+    // Endpoints agora retornam array direto, não wrapper
 
     for (const admin of ADMINS_OBRIGATORIOS) {
       const usuarioExistente = usuariosServidor.find((u: any) => u.email === admin.email);
@@ -77,8 +77,8 @@ export async function restaurarAdmins(): Promise<{
       return { restaurados, erros };
     }
 
-    const data = await response.json();
-    const usuariosServidor = data.data || [];
+    const usuariosServidor = await response.json();
+    // Endpoints agora retornam array direto, não wrapper
 
     for (const admin of ADMINS_OBRIGATORIOS) {
       try {
@@ -107,9 +107,14 @@ export async function restaurarAdmins(): Promise<{
           restaurados.push(admin.email);
           console.log(`✓ Admin ${admin.email} restaurado no servidor com sucesso`);
         } else {
-          const errorData = await createResponse.json();
-          erros.push(admin.email);
-          console.error(`❌ Erro ao restaurar ${admin.email}:`, errorData.error);
+          try {
+            const errorData = await createResponse.json();
+            erros.push(admin.email);
+            console.error(`❌ Erro ao restaurar ${admin.email}:`, errorData.error);
+          } catch (parseError) {
+            erros.push(admin.email);
+            console.error(`❌ Erro ao restaurar ${admin.email}: HTTP ${createResponse.status}`);
+          }
         }
       } catch (error) {
         erros.push(admin.email);

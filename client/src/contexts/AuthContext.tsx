@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const response = await fetch('/api/users');
             const usuarios = await response.json();
-            // Validar que usuarios é um array antes de usar .some()
+            // Endpoints agora retornam array direto
             const usuarioExiste = Array.isArray(usuarios) && usuarios.some((u: any) => u.email === usuario.email);
             
             if (usuarioExiste) {
@@ -123,8 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const responseServidor = await fetch('/api/users');
         if (responseServidor.ok) {
-          const data = await responseServidor.json();
-          const usuariosServidor = data.data || [];
+          const usuariosServidor = await responseServidor.json();
+          // Endpoints agora retornam array direto
           const usuarioServidor = usuariosServidor.find((u: any) => u.email === email);
           
           if (usuarioServidor) {

@@ -13,6 +13,41 @@ import * as dbHelpers from './db';
 const dataRouter = Router();
 
 /**
+ * POST /api/users - Criar novo usuário (admin ou cliente)
+ */
+dataRouter.post('/users', async (req: Request, res: Response) => {
+  try {
+    const { email, nome, tipo, telefone, senha } = req.body;
+
+    if (!email || !nome) {
+      return res.status(400).json({ error: 'Email e nome são obrigatórios' });
+    }
+
+    console.log(`📝 POST /api/users - Criando novo usuário: ${email}`);
+    
+    // Criar novo usuário
+    const novoUsuario = await dbHelpers.createUser({
+      name: nome,
+      email: email,
+      telefone: telefone,
+      role: tipo || 'user',
+      ativo: true,
+    } as any);
+
+    console.log(`✅ Usuário criado com sucesso: ${email}`);
+    
+    res.status(201).json({
+      success: true,
+      data: novoUsuario,
+      timestamp: Date.now(),
+    });
+  } catch (error) {
+    console.error('❌ Erro ao criar usuário:', error);
+    res.status(500).json({ error: 'Erro ao criar usuário', message: String(error) });
+  }
+});
+
+/**
  * GET /api/users - Retornar lista de usuários
  */
 dataRouter.get('/users', async (req: Request, res: Response) => {
