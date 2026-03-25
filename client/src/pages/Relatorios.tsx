@@ -5,34 +5,33 @@
 
 import React, { useMemo } from 'react';
 import { Download, BarChart3 } from 'lucide-react';
-import { useLancamentos, useSaldos } from '@/hooks/useDB';
-import { useServerClientes } from '@/hooks/useServerClientes';
+import { useCentralizedStore } from '@/contexts/CentralizedStoreContext';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 // Import de armazenamento local removido - aplicativo usa APENAS servidor
 
 export default function Relatorios() {
-  const { clientes } = useServerClientes();
-  const { lancamentos } = useLancamentos();
-  const saldos = useSaldos(clientes, lancamentos);
+  const { clientes, lancamentos, calcularSaldoTotal, calcularSaldoCliente } = useCentralizedStore();
 
   // Calcular dados do gráfico
   const dadosGrafico = useMemo(() => {
     const meses: Record<string, { recebido: number; pendente: number; vencido: number }> = {};
 
     for (const lancamento of lancamentos) {
-      const data = new Date(lancamento.data);
+      const ts = typeof lancamento.data === 'string' ? parseInt(lancamento.data) : lancamento.data;
+      const data = new Date(ts);
       const chave = `${data.getMonth() + 1}/${data.getFullYear()}`;
 
       if (!meses[chave]) {
         meses[chave] = { recebido: 0, pendente: 0, vencido: 0 };
       }
 
+      const valor = typeof lancamento.valor === 'string' ? parseFloat(lancamento.valor) : lancamento.valor;
       if (lancamento.tipo === 'pagamento') {
-        meses[chave].recebido += lancamento.valor;
+        meses[chave].recebido += valor;
       } else {
-        meses[chave].pendente += lancamento.valor;
+        meses[chave].pendente += valor;
       }
     }
 
@@ -48,35 +47,30 @@ export default function Relatorios() {
   const resumo = useMemo(() => {
     let totalRecebido = 0;
     let totalPendente = 0;
-    let totalVencido = 0;
 
-    for (const saldo of Array.from(saldos.values())) {
-      if (saldo.status === 'pago') {
-        totalRecebido += saldo.saldoTotal;
-      } else if (saldo.status === 'vencido') {
-        totalVencido += saldo.saldoTotal;
-      } else {
-        totalPendente += saldo.saldoTotal;
+    for (const cliente of clientes) {
+      const saldo = calcularSaldoCliente(cliente.id);
+      if (saldo === 0) {
+        totalRecebido += 0;
+      } else if (saldo > 0) {
+        totalPendente += saldo;
       }
     }
 
     return {
       totalRecebido,
       totalPendente,
-      totalVencido,
-      totalGeral: totalRecebido + totalPendente + totalVencido,
+      totalVencido: 0,
+      totalGeral: totalRecebido + totalPendente,
       clientesAtivos: clientes.filter((c) => c.ativo).length,
     };
-  }, [saldos, clientes]);
+  }, [clientes, calcularSaldoCliente, lancamentos]);
 
   const handleExportarJSON = async () => {
     try {
-      // Exportar dados do servidor
-      const response = await fetch('/api/export');
-      if (!response.ok) {
-        throw new Error('Erro ao exportar dados');
-      }
-      const blob = await response.blob();
+      // Exportar dados locais
+      const dataStr = JSON.stringify({ clientes, lancamentos }, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -90,24 +84,8 @@ export default function Relatorios() {
   };
 
   const handleImportar = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch('/api/import', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error('Erro ao importar dados');
-      }
-      toast.success('Dados importados com sucesso!');
-      window.location.reload();
-    } catch (error) {
-      toast.error('Erro ao importar dados');
-    }
+    toast.info('Importação não suportada - dados apenas no servidor');
+    return;
   };
 
   return (
@@ -191,26 +169,26 @@ export default function Relatorios() {
       <div className="card-minimal p-6">
         <h2 className="text-xl font-semibold text-foreground mb-4">Detalhamento por Cliente</h2>
         <div className="space-y-2">
-          {Array.from(saldos.values()).map((saldo) => {
-            const cliente = clientes.find((c) => c.id === saldo.clienteId);
-            const lancamentosCliente = lancamentos.filter((l) => l.clienteId === saldo.clienteId);
+          {clientes.map((cliente) => {
+            const saldo = calcularSaldoCliente(cliente.id);
+            const lancamentosCliente = lancamentos.filter((l) => (l.cliente_id === cliente.id || l.clienteId === cliente.id));
             return (
-              <div key={saldo.clienteId} className="p-4 border border-border rounded-lg">
+              <div key={cliente.id} className="p-4 border border-border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="font-semibold text-foreground">{saldo.nomeCliente}</p>
-                    {cliente?.telefone && <p className="text-sm text-muted-foreground">{cliente.telefone}</p>}
+                    <p className="font-semibold text-foreground">{cliente.name || cliente.nome}</p>
+                    {cliente.telefone && <p className="text-sm text-muted-foreground">{cliente.telefone}</p>}
                   </div>
-                  <p className="font-bold text-lg currency">R$ {saldo.saldoTotal.toFixed(2).replace('.', ',')}</p>
+                  <p className="font-bold text-lg currency">R$ {saldo.toFixed(2).replace('.', ',')}</p>
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p>Compras: {lancamentosCliente.filter((l) => l.tipo === 'debito').length}</p>
                   <p>Pagamentos: {lancamentosCliente.filter((l) => l.tipo === 'pagamento').length}</p>
                   <p>Status: <span className={`inline-block px-2 py-1 rounded ${
-                    saldo.status === 'pago' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' :
-                    saldo.status === 'pendente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' :
+                    saldo === 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' :
+                    saldo > 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' :
                     'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                  }`}>{saldo.status === 'pago' ? 'Pago' : saldo.status === 'pendente' ? 'Pendente' : 'Vencido'}</span></p>
+                  }`}>{saldo === 0 ? 'Pago' : saldo > 0 ? 'Pendente' : 'Vencido'}</span></p>
                 </div>
                 {/* Detalhes de compras */}
                 {lancamentosCliente.length > 0 && (

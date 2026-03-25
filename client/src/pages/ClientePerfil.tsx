@@ -8,23 +8,20 @@ import React from 'react';
 import { ArrowLeft, Plus, DollarSign, MessageCircle, Trash2 } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLancamentos, useSaldos } from '@/hooks/useDB';
-import { useServerClientes } from '@/hooks/useServerClientes';
+import { useCentralizedStore } from '@/contexts/CentralizedStoreContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function ClientePerfil() {
   const { clienteSelecionado, irPara, voltar } = useNavigation();
   const { usuarioLogado } = useAuth();
-  const { clientes } = useServerClientes();
-  const { lancamentos, deletarLancamento } = useLancamentos(clienteSelecionado || undefined);
-  const saldos = useSaldos(clientes, lancamentos);
+  const { clientes, lancamentos, deletarLancamento, calcularSaldoCliente } = useCentralizedStore();
   const isAdmin = usuarioLogado?.tipo === 'admin';
 
   const cliente = clientes.find((c) => c.id === clienteSelecionado);
-  const saldo = saldos.get(clienteSelecionado || '');
+  const saldo = calcularSaldoCliente(clienteSelecionado || '');
 
-  if (!cliente || !saldo) {
+  if (!cliente) {
     return (
       <div className="p-6">
         <p className="text-muted-foreground">Cliente não encontrado</p>
@@ -32,14 +29,14 @@ export default function ClientePerfil() {
     );
   }
 
-  const lancamentosCliente = lancamentos.filter((l) => l.clienteId === cliente.id);
+  const lancamentosCliente = lancamentos.filter((l) => l.cliente_id === cliente.id || l.clienteId === cliente.id);
 
   const handleWhatsApp = () => {
     if (!cliente.telefone) {
       toast.error('Cliente sem telefone cadastrado');
       return;
     }
-    const mensagem = `Olá, ${cliente.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')} no meu caderno.`;
+    const mensagem = `Olá, ${cliente.name || cliente.nome}! Passando para lembrar do seu saldo de R$ ${saldo.toFixed(2).replace('.', ',')} no meu caderno.`;
     const telefone = cliente.telefone.replace(/\D/g, '');
     const whatsappUrl = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
     window.open(whatsappUrl, '_blank');
@@ -87,15 +84,13 @@ export default function ClientePerfil() {
         <div className="card-minimal p-6 md:col-span-2">
           <p className="text-muted-foreground text-sm font-medium">Saldo Atual</p>
           <p className="text-4xl font-bold text-foreground mt-2 currency">
-            R$ {saldo.saldoTotal.toFixed(2).replace('.', ',')}
+            R$ {saldo.toFixed(2).replace('.', ',')}
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             Status: <span className={`badge-status ${
-              saldo.status === 'pago' ? 'badge-paid' :
-              saldo.status === 'pendente' ? 'badge-pending' :
-              'badge-overdue'
+              saldo > 0 ? 'badge-pending' : 'badge-paid'
             }`}>
-              {saldo.status === 'pago' ? 'Pago' : saldo.status === 'pendente' ? 'Pendente' : 'Vencido'}
+              {saldo > 0 ? 'Pendente' : 'Pago'}
             </span>
           </p>
         </div>

@@ -8,8 +8,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Plus, Minus, MessageCircle } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLancamentos } from '@/hooks/useDB';
-import { useServerClientes } from '@/hooks/useServerClientes';
+import { useCentralizedStore } from '@/contexts/CentralizedStoreContext';
 import { useConsumptionPopup } from '@/hooks/useConsumptionPopup';
 import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
@@ -28,8 +27,7 @@ interface NovoLancamentoProps {
 export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancamentoProps) {
   const { voltar, clienteSelecionado } = useNavigation();
   const { usuarioLogado } = useAuth();
-  const { clientes } = useServerClientes();
-  const { adicionarLancamento } = useLancamentos();
+  const { clientes, adicionarLancamento, adicionarCliente } = useCentralizedStore();
   const { isOnline } = useOnlineStatus();
 
   // Se for cliente logado, usar seu próprio ID
@@ -139,7 +137,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
       }
 
       // Registrar lançamento localmente
-      await adicionarLancamento(id, tipo, parseFloat(valor), descricao.trim(), obterTimestampBrasilia());
+      await adicionarLancamento(clienteId || id, tipo, parseFloat(valor), descricao.trim());
 
       // DEBUG: Logs detalhados
       console.log('🔍 DEBUG - Verificando sincronização:');

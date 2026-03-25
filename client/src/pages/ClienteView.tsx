@@ -8,7 +8,7 @@ import React from 'react';
 import { LogOut, TrendingDown, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
-import { useLancamentos } from '@/hooks/useDB';
+import { useCentralizedStore } from '@/contexts/CentralizedStoreContext';
 import { Button } from '@/components/ui/button';
 
 interface ClienteViewProps {
@@ -18,7 +18,7 @@ interface ClienteViewProps {
 export default function ClienteView({ onNovoLancamento }: ClienteViewProps) {
   const { usuarioLogado, fazer_logout } = useAuth();
   const { irPara } = useNavigation();
-  const { lancamentos } = useLancamentos();
+  const { lancamentos, calcularSaldoCliente } = useCentralizedStore();
 
   const handleNovoLancamento = () => {
     if (onNovoLancamento) {
@@ -28,21 +28,15 @@ export default function ClienteView({ onNovoLancamento }: ClienteViewProps) {
     }
   };
 
-  // Filtrar lançamentos do cliente logado
-  const lancamentosCliente = lancamentos.filter((l) => l.clienteId === usuarioLogado?.id);
+  // Filtrar lancamentos do cliente logado
+  const lancamentosCliente = lancamentos.filter((l) => (l.cliente_id === String(usuarioLogado?.id) || l.clienteId === usuarioLogado?.id));
 
   // Calcular saldo
-  let saldoTotal = 0;
-  for (const lancamento of lancamentosCliente) {
-    if (lancamento.tipo === 'debito') {
-      saldoTotal += lancamento.valor;
-    } else {
-      saldoTotal -= lancamento.valor;
-    }
-  }
+  const saldoTotal = calcularSaldoCliente(String(usuarioLogado?.id || ''));
 
-  const formatarData = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('pt-BR');
+  const formatarData = (timestamp: number | string) => {
+    const ts = typeof timestamp === 'string' ? parseInt(timestamp) : timestamp;
+    return new Date(ts).toLocaleDateString('pt-BR');
   };
 
   return (

@@ -21,11 +21,7 @@ dataRouter.get('/users', async (req: Request, res: Response) => {
     const usuarios = await dbHelpers.getAllUsers();
     console.log(`✅ Retornando ${usuarios.length} usuários`);
     
-    res.json({
-      data: usuarios,
-      count: usuarios.length,
-      timestamp: Date.now(),
-    });
+    res.json(usuarios);
   } catch (error) {
     console.error('❌ Erro ao buscar usuários:', error);
     res.status(500).json({ error: 'Erro ao buscar usuários', message: String(error) });
@@ -41,11 +37,7 @@ dataRouter.get('/all-clients', async (req: Request, res: Response) => {
     const clientes = await dbHelpers.getAllClients();
     console.log(`✅ Retornando ${clientes.length} clientes`);
     
-    res.json({
-      data: clientes,
-      count: clientes.length,
-      timestamp: Date.now(),
-    });
+    res.json(clientes);
   } catch (error) {
     console.error('❌ Erro ao buscar clientes:', error);
     res.status(500).json({ error: 'Erro ao buscar clientes', message: String(error) });
@@ -61,11 +53,7 @@ dataRouter.get('/lancamentos', async (req: Request, res: Response) => {
     const lancamentos = await dbHelpers.getAllTransactions();
     console.log(`✅ Retornando ${lancamentos.length} lançamentos`);
     
-    res.json({
-      data: lancamentos,
-      count: lancamentos.length,
-      timestamp: Date.now(),
-    });
+    res.json(lancamentos);
   } catch (error) {
     console.error('❌ Erro ao buscar lançamentos:', error);
     res.status(500).json({ error: 'Erro ao buscar lançamentos', message: String(error) });

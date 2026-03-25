@@ -118,10 +118,29 @@ class RealtimeSSEManager {
       this.updateStatus('sincronizando');
 
       // Carregar dados do servidor
+      console.log('🔄 Sincronizando: GET /api/users, /api/all-clients, /api/lancamentos');
       const [usuarios, clientes, lancamentos] = await Promise.all([
-        fetch('/api/users').then(r => r.json()),
-        fetch('/api/all-clients').then(r => r.json()),
-        fetch('/api/lancamentos').then(r => r.json()),
+        fetch('/api/users').then(r => {
+          console.log(`  ✅ GET /api/users: ${r.status} ${r.statusText}`);
+          return r.json();
+        }).catch(e => {
+          console.error(`  ❌ GET /api/users: ${e.message}`);
+          throw e;
+        }),
+        fetch('/api/all-clients').then(r => {
+          console.log(`  ✅ GET /api/all-clients: ${r.status} ${r.statusText}`);
+          return r.json();
+        }).catch(e => {
+          console.error(`  ❌ GET /api/all-clients: ${e.message}`);
+          throw e;
+        }),
+        fetch('/api/lancamentos').then(r => {
+          console.log(`  ✅ GET /api/lancamentos: ${r.status} ${r.statusText}`);
+          return r.json();
+        }).catch(e => {
+          console.error(`  ❌ GET /api/lancamentos: ${e.message}`);
+          throw e;
+        }),
       ]);
 
       this.state.usuarios = Array.isArray(usuarios) ? usuarios : [];
@@ -163,9 +182,27 @@ class RealtimeSSEManager {
 
           // Carregar dados do servidor
           const [usuarios, clientes, lancamentos] = await Promise.all([
-            fetch('/api/users').then(r => r.json()),
-            fetch('/api/all-clients').then(r => r.json()),
-            fetch('/api/lancamentos').then(r => r.json()),
+            fetch('/api/users').then(r => {
+              if (!r.ok) console.warn(`  ⚠️ GET /api/users: ${r.status}`);
+              return r.json();
+            }).catch(e => {
+              console.error(`  ❌ GET /api/users: ${e.message}`);
+              return [];
+            }),
+            fetch('/api/all-clients').then(r => {
+              if (!r.ok) console.warn(`  ⚠️ GET /api/all-clients: ${r.status}`);
+              return r.json();
+            }).catch(e => {
+              console.error(`  ❌ GET /api/all-clients: ${e.message}`);
+              return [];
+            }),
+            fetch('/api/lancamentos').then(r => {
+              if (!r.ok) console.warn(`  ⚠️ GET /api/lancamentos: ${r.status}`);
+              return r.json();
+            }).catch(e => {
+              console.error(`  ❌ GET /api/lancamentos: ${e.message}`);
+              return [];
+            }),
           ]);
 
           const usuariosArray = Array.isArray(usuarios) ? usuarios : [];
