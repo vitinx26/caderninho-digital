@@ -12,6 +12,7 @@ import backupRouter from "./backupRouter";
 import multiUserRouter from "./multiUserRouter";
 import { initializeEmailService } from "./emailService";
 import { initializeWebSocket } from "./websocket";
+import { initializeRealtimeWebSocket } from "./realtimeEndpoint";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,9 +21,13 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Inicializar WebSocket (desabilitado temporariamente)
-  // const io = initializeWebSocket(server);
-  // console.log('🔌 WebSocket inicializado com CORS correto');
+  // Inicializar WebSocket
+  const io = initializeWebSocket(server);
+  console.log('🔌 WebSocket inicializado com CORS correto');
+
+  // Inicializar WebSocket Realtime para sincronização
+  initializeRealtimeWebSocket(server);
+  console.log('🔌 WebSocket Realtime inicializado em /api/realtime');
 
   // Inicializar serviço de email
   initializeEmailService();
