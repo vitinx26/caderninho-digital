@@ -3,16 +3,18 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import notificationRouter from "./notificationRouter";
-import syncRouter from "./syncRouter";
-import migrateRouter from "./migrateRouter";
-import migrateUsersRouter from "./migrateUsersRouter";
+// DESABILITADO: Routers legados que causam conflitos
+// import syncRouter from "./syncRouter";
+// import migrateRouter from "./migrateRouter";
+// import migrateUsersRouter from "./migrateUsersRouter";
+// import syncPollingRouter from "./syncPollingRouter";
+// import backupRouter from "./backupRouter";
+// import multiUserRouter from "./multiUserRouter";
 import menuRouter from "./menuRouter";
-import syncPollingRouter from "./syncPollingRouter";
-import backupRouter from "./backupRouter";
-import multiUserRouter from "./multiUserRouter";
 import { initializeEmailService } from "./emailService";
-import { initializeWebSocket } from "./websocket";
-import { initializeRealtimeWebSocket } from "./realtimeEndpoint";
+// DESABILITADO: WebSocket causando problemas
+// import { initializeWebSocket } from "./websocket";
+// import { initializeRealtimeWebSocket } from "./realtimeEndpoint";
 import { sseRouter } from "./sseEndpoint";
 import dataRouter from "./dataEndpoints";
 
@@ -38,30 +40,25 @@ async function startServer() {
   // Rotas de notificação
   app.use('/api/notificacoes', notificationRouter);
   
-  // Rotas de migração
-  app.use('/api', migrateRouter);
-  app.use('/api', migrateUsersRouter);
-  
-  // Rotas de sincronização
-  app.use('/api', syncRouter);
-  app.use('/api/sync', syncPollingRouter);
+  // DESABILITADO: Routers legados que causam conflitos
+  // Usar apenas dataRouter + sseRouter para sincronização
+  // app.use('/api', migrateRouter);
+  // app.use('/api', migrateUsersRouter);
+  // app.use('/api', syncRouter);
+  // app.use('/api/sync', syncPollingRouter);
+  // app.use('/api/backup', backupRouter);
+  // app.use('/api/multiuser', multiUserRouter);
   
   // Rotas de cardápios
   app.use(menuRouter);
-  
-  // Rotas de backup
-  app.use('/api/backup', backupRouter);
-  
-  // Rotas de sistema multi-usuário
-  app.use('/api/multiuser', multiUserRouter);
 
-  // Rotas de dados para sincronização
+  // Rotas de dados para sincronização (ÚNICA fonte de dados)
   app.use('/api', dataRouter);
-  console.log('📱 Endpoints de dados inicializados');
+  console.log('✅ Endpoints de dados inicializados (dataRouter)');
 
-  // Rotas de SSE para sincronização em tempo real
+  // Rotas de SSE para sincronização em tempo real (com polling inteligente)
   app.use(sseRouter);
-  console.log('📱 SSE endpoint inicializado em /api/events/subscribe');
+  console.log('✅ SSE endpoint inicializado em /api/events/subscribe');
 
   // Em desenvolvimento, Vite roda em porta 5173
   // O cliente acessa via http://localhost:3000 e Express faz proxy das APIs
@@ -81,6 +78,11 @@ async function startServer() {
   });
 
   const port = process.env.PORT || 3000;
+  console.log('\n=== SERVIDOR CONFIGURADO ===');
+  console.log('✅ Routers legados desabilitados');
+  console.log('✅ Usando apenas: dataRouter + sseRouter');
+  console.log('✅ Sincronização: SSE + Polling inteligente');
+  console.log('============================\n');
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
