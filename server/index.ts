@@ -211,7 +211,7 @@ app.get('/api/events/subscribe', (req, res) => {
 // SERVIR FRONTEND
 // ============================================================================
 
-const staticPath = path.resolve(__dirname, '..', 'dist');
+const staticPath = path.resolve(__dirname, '..', 'dist', 'public');
 app.use(express.static(staticPath));
 
 app.get('*', (req, res) => {
