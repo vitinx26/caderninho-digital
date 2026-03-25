@@ -55,7 +55,10 @@ class RealtimeSSEManager {
       console.log(`🔌 Conectando ao SSE (tentativa ${this.connectionAttempts})...`);
       this.updateStatus('sincronizando');
 
-      this.eventSource = new EventSource('/api/events/subscribe');
+      // Usar URL absoluta em produção, relativa em dev
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const sseUrl = `${baseUrl}/api/events/subscribe`;
+      this.eventSource = new EventSource(sseUrl);
 
       this.eventSource.onopen = () => {
         console.log('✅ SSE conectado com sucesso');
@@ -136,24 +139,28 @@ class RealtimeSSEManager {
       this.updateStatus('sincronizando');
       this.isConnecting = false; // Marcar como conectado
 
+      // Usar URL absoluta em produção, relativa em dev
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const apiUrl = (path: string) => `${baseUrl}${path}`;
+
       // Carregar dados do servidor
       console.log('🔄 Sincronizando: GET /api/users, /api/all-clients, /api/lancamentos');
       const [usuarios, clientes, lancamentos] = await Promise.all([
-        fetch('/api/users').then(r => {
+        fetch(apiUrl('/api/users')).then(r => {
           console.log(`  ✅ GET /api/users: ${r.status} ${r.statusText}`);
           return r.json();
         }).catch(e => {
           console.error(`  ❌ GET /api/users: ${e.message}`);
           throw e;
         }),
-        fetch('/api/all-clients').then(r => {
+        fetch(apiUrl('/api/all-clients')).then(r => {
           console.log(`  ✅ GET /api/all-clients: ${r.status} ${r.statusText}`);
           return r.json();
         }).catch(e => {
           console.error(`  ❌ GET /api/all-clients: ${e.message}`);
           throw e;
         }),
-        fetch('/api/lancamentos').then(r => {
+        fetch(apiUrl('/api/lancamentos')).then(r => {
           console.log(`  ✅ GET /api/lancamentos: ${r.status} ${r.statusText}`);
           return r.json();
         }).catch(e => {
@@ -204,23 +211,27 @@ class RealtimeSSEManager {
         if (timeSinceLastPoll >= this.pollingDelay) {
           this.lastPollTime = now;
 
+          // Usar URL absoluta em produção, relativa em dev
+          const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+          const apiUrl = (path: string) => `${baseUrl}${path}`;
+
           // Carregar dados do servidor
           const [usuarios, clientes, lancamentos] = await Promise.all([
-            fetch('/api/users').then(r => {
+            fetch(apiUrl('/api/users')).then(r => {
               if (!r.ok) console.warn(`  ⚠️ GET /api/users: ${r.status}`);
               return r.json();
             }).catch(e => {
               console.error(`  ❌ GET /api/users: ${e.message}`);
               return [];
             }),
-            fetch('/api/all-clients').then(r => {
+            fetch(apiUrl('/api/all-clients')).then(r => {
               if (!r.ok) console.warn(`  ⚠️ GET /api/all-clients: ${r.status}`);
               return r.json();
             }).catch(e => {
               console.error(`  ❌ GET /api/all-clients: ${e.message}`);
               return [];
             }),
-            fetch('/api/lancamentos').then(r => {
+            fetch(apiUrl('/api/lancamentos')).then(r => {
               if (!r.ok) console.warn(`  ⚠️ GET /api/lancamentos: ${r.status}`);
               return r.json();
             }).catch(e => {

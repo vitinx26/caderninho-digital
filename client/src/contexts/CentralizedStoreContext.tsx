@@ -56,11 +56,17 @@ export function CentralizedStoreProvider({ children }: { children: React.ReactNo
     isConnected,
   } = useRealtimeSSE();
 
+  // Usar URL absoluta em produção, relativa em dev
+  const getApiUrl = (path: string) => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${baseUrl}${path}`;
+  };
+
   // Operações de clientes
   const adicionarCliente = useCallback(
     async (nome: string, telefone?: string, email?: string) => {
       try {
-        const response = await fetch('/api/clientes', {
+        const response = await fetch(getApiUrl('/api/clientes'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nome, telefone, email }),
@@ -78,7 +84,7 @@ export function CentralizedStoreProvider({ children }: { children: React.ReactNo
   const atualizarCliente = useCallback(
     async (id: string, dados: any) => {
       try {
-        const response = await fetch(`/api/clientes/${id}`, {
+        const response = await fetch(getApiUrl(`/api/clientes/${id}`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados),
@@ -96,7 +102,7 @@ export function CentralizedStoreProvider({ children }: { children: React.ReactNo
   const deletarCliente = useCallback(
     async (id: string) => {
       try {
-        const response = await fetch(`/api/clientes/${id}`, {
+        const response = await fetch(getApiUrl(`/api/clientes/${id}`), {
           method: 'DELETE',
         });
         if (!response.ok) throw new Error('Erro ao deletar cliente');
@@ -113,7 +119,7 @@ export function CentralizedStoreProvider({ children }: { children: React.ReactNo
   const adicionarLancamento = useCallback(
     async (clienteId: string, tipo: 'debito' | 'pagamento', valor: number, descricao: string) => {
       try {
-        const response = await fetch('/api/lancamentos', {
+        const response = await fetch(getApiUrl('/api/lancamentos'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clienteId, tipo, valor, descricao }),
