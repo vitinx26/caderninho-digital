@@ -2,37 +2,41 @@
  * Dashboard - Tela inicial do Caderninho Digital
  * Mostra resumo de saldo e lista de devedores
  * Design: Minimalismo Funcional com Tipografia Forte
+ * 
+ * ✅ MIGRADO PARA: CentralizedStoreContext
+ * - Sincronização em tempo real via WebSocket
+ * - Sem polling (eliminado intervalo de 5 segundos)
+ * - Atualização automática quando outro admin faz mudanças
+ * - Atualização automática quando cliente faz cadastro na página inicial
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, TrendingUp, AlertCircle, MessageCircle } from 'lucide-react';
-import { useSaldos } from '@/hooks/useDB';
-import { useServerTransactions } from '@/hooks/useServerTransactions';
-import { useServerClientes } from '@/hooks/useServerClientes';
+import { Plus, TrendingUp, AlertCircle, MessageCircle, Wifi, WifiOff } from 'lucide-react';
+import { useCentralizedStore, useClientes, useLancamentos, useSaldos, useConnectionStatus } from '@/contexts/CentralizedStoreContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-// Import de armazenamento local removido - aplicativo usa APENAS servidor
 
 type FiltroType = 'todos' | 'vencidos' | 'pagos' | 'alfabetico';
 
 export default function Dashboard() {
-  const { clientes, carregando, recarregar: recarregarClientes } = useServerClientes();
-  // Usar hook de servidor para lançamentos em tempo real
-  const { lancamentos, recarregar: recarregarLancamentos } = useServerTransactions();
-  const saldos = useSaldos(clientes, lancamentos);
+  // ✅ NOVO: Usar CentralizedStoreContext para sincronização em tempo real
+  const { clientes, isConnected } = useClientes();
+  const { lancamentos } = useLancamentos();
+  const { saldosPorCliente, saldoTotal } = useSaldos();
+  const { statusConexao } = useConnectionStatus();
+
   const { irPara } = useNavigation();
   const { usuarioLogado } = useAuth();
   const [filtro, setFiltro] = useState<FiltroType>('todos');
   const [numeroWhatsAppAdmin, setNumeroWhatsAppAdmin] = useState('');
-  // Carregamento de configurações do servidor
+  const [carregando, setCarregando] = useState(true);
 
   // Carregar número WhatsApp do admin
   useEffect(() => {
     const carregarConfig = async () => {
       try {
-        // Configuração carregada do servidor
         const response = await fetch('/api/users/config');
         if (response.ok) {
           const config = await response.json();
@@ -42,42 +46,33 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error('Erro ao carregar configuração:', error);
+      } finally {
+        setCarregando(false);
       }
     };
     carregarConfig();
   }, []);
 
-  // Recarregar dados a cada 5 segundos para sincronizar com Conta Geral
-  useEffect(() => {
-    const intervalo = setInterval(() => {
-      recarregarClientes();
-      recarregarLancamentos();
-    }, 5000);
-
-    return () => clearInterval(intervalo);
-  }, [recarregarClientes, recarregarLancamentos]);
-
-  // Calcular total a receber (filtrando apenas clientes com saldo > 0)
-  const totalReceber = Array.from(saldos.values()).reduce((acc, s) => acc + s.saldoTotal, 0);
+  // ✅ REMOVIDO: Intervalo de polling (5 segundos)
+  // Agora a sincronização é em tempo real via WebSocket
 
   // Filtrar e ordenar devedores
-  const devedoresFiltrados = Array.from(saldos.values()).filter((saldo) => {
+  const devedoresFiltrados = saldosPorCliente.filter((saldo) => {
     // Sempre filtrar para mostrar apenas clientes com saldo > 0
-    if (saldo.saldoTotal === 0) return false;
-    if (filtro === 'vencidos') return saldo.status === 'vencido';
-    if (filtro === 'pagos') return saldo.status === 'pago';
+    if (saldo.saldo === 0) return false;
+    // TODO: Adicionar status de vencimento quando implementado
     return true;
   });
 
   if (filtro === 'alfabetico') {
-    devedoresFiltrados.sort((a, b) => a.nomeCliente.localeCompare(b.nomeCliente));
+    devedoresFiltrados.sort((a, b) => a.clienteNome.localeCompare(b.clienteNome));
   } else {
     // Ordenar por saldo (maior primeiro)
-    devedoresFiltrados.sort((a, b) => b.saldoTotal - a.saldoTotal);
+    devedoresFiltrados.sort((a, b) => b.saldo - a.saldo);
   }
 
   // Filtrar devedores com saldo > 0 para exibição
-  const devedoresComSaldo = devedoresFiltrados.filter((s) => s.saldoTotal > 0);
+  const devedoresComSaldo = devedoresFiltrados.filter((s) => s.saldo > 0);
 
   const statusBadgeClass = (status: string) => {
     switch (status) {
@@ -105,9 +100,16 @@ export default function Dashboard() {
     }
   };
 
+  // Indicador de status de conexão
+  const statusConexaoClass = isConnected
+    ? 'text-green-600 dark:text-green-400'
+    : 'text-red-600 dark:text-red-400';
+
+  const statusConexaoLabel = isConnected ? 'Conectado' : 'Desconectado';
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* Header com Status de Conexão */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{usuarioLogado?.nome || 'Caderninho Digital'}</h1>
@@ -115,13 +117,27 @@ export default function Dashboard() {
             {usuarioLogado?.tipo === 'admin' ? 'Resumo do seu caderninho' : 'Acompanhe seus gastos'}
           </p>
         </div>
-        <Button
-          onClick={() => irPara('novo-lancamento')}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          <Plus size={20} />
-          Novo Lançamento
-        </Button>
+        <div className="flex items-center gap-4">
+          {/* Status de Conexão */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isConnected ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
+            {isConnected ? (
+              <Wifi size={18} className={statusConexaoClass} />
+            ) : (
+              <WifiOff size={18} className={statusConexaoClass} />
+            )}
+            <span className={`text-sm font-medium ${statusConexaoClass}`}>
+              {statusConexaoLabel}
+            </span>
+          </div>
+
+          <Button
+            onClick={() => irPara('novo-lancamento')}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Plus size={20} />
+            Novo Lançamento
+          </Button>
+        </div>
       </div>
 
       {/* Card de Saldo Total */}
@@ -130,7 +146,10 @@ export default function Dashboard() {
           <div>
             <p className="text-muted-foreground text-sm font-medium">Valor Total a Receber</p>
             <p className="text-4xl font-bold text-foreground mt-2 currency">
-              R$ {totalReceber.toFixed(2).replace('.', ',')}
+              R$ {saldoTotal.toFixed(2).replace('.', ',')}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              ✅ Sincronizado em tempo real
             </p>
           </div>
           <div className="bg-green-100 dark:bg-green-900 p-4 rounded-lg">
@@ -161,6 +180,15 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Aviso de Desconexão */}
+      {!isConnected && (
+        <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 p-4 rounded-lg">
+          <p className="text-red-800 dark:text-red-200 font-medium">
+            ⚠️ Sem conexão com o servidor. Os dados podem estar desatualizados.
+          </p>
+        </div>
+      )}
+
       {/* Lista de Devedores */}
       <div className="space-y-3">
         <h2 className="text-xl font-semibold text-foreground">Devedores</h2>
@@ -174,50 +202,65 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-2">
-            {devedoresComSaldo.map((saldo) => (
-              <button
-                key={saldo.clienteId}
-                onClick={() => irPara('cliente', saldo.clienteId)}
-                className="w-full card-minimal p-4 flex items-center justify-between hover:bg-muted transition-colors text-left"
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{saldo.nomeCliente}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {saldo.saldoTotal > 0 ? `Deve R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')}` : 'Sem débitos'}
-                  </p>
-                  {/* Últimas compras */}
-                  {lancamentos.filter((l) => l.clienteId === saldo.clienteId && l.tipo === 'debito').slice(-2).map((l) => (
-                    <p key={l.id} className="text-xs text-muted-foreground mt-1">
-                      • {l.descricao || 'Sem descrição'} - R$ {l.valor.toFixed(2).replace('.', ',')}
+            {devedoresComSaldo.map((saldo) => {
+              const lancamentosCliente = lancamentos.filter(
+                (l) => l.clienteId === saldo.clienteId && l.tipo === 'debito'
+              );
+
+              return (
+                <button
+                  key={saldo.clienteId}
+                  onClick={() => irPara('cliente', saldo.clienteId)}
+                  className="w-full card-minimal p-4 flex items-center justify-between hover:bg-muted transition-colors text-left"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{saldo.clienteNome}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {saldo.saldo > 0 ? `Deve R$ ${saldo.saldo.toFixed(2).replace('.', ',')}` : 'Sem débitos'}
                     </p>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`badge-status ${statusBadgeClass(saldo.status)}`}>
-                    {statusLabel(saldo.status)}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const cliente = clientes.find((c) => c.id === saldo.clienteId);
-                      if (numeroWhatsAppAdmin) {
-                        const mensagem = `Olá, ${cliente?.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldoTotal.toFixed(2).replace('.', ',')} no meu caderno.`;
-                        const url = `https://wa.me/${numeroWhatsAppAdmin}?text=${encodeURIComponent(mensagem)}`;
-                        window.open(url, '_blank');
-                      } else {
-                        toast.error('Configure seu número de WhatsApp nas Configurações');
-                      }
-                    }}
-                    className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors"
-                    title="Enviar mensagem WhatsApp"
-                  >
-                    <MessageCircle size={18} className="text-green-600 dark:text-green-400" />
-                  </button>
-                </div>
-              </button>
-            ))}
+                    {/* Últimas compras */}
+                    {lancamentosCliente.slice(-2).map((l) => (
+                      <p key={l.id} className="text-xs text-muted-foreground mt-1">
+                        • {l.descricao || 'Sem descrição'} - R$ {l.valor.toFixed(2).replace('.', ',')}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge-status ${statusBadgeClass('pendente')}`}>
+                      {statusLabel('pendente')}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const cliente = clientes.find((c) => c.id === saldo.clienteId);
+                        if (numeroWhatsAppAdmin) {
+                          const mensagem = `Olá, ${cliente?.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldo.toFixed(2).replace('.', ',')} no meu caderno.`;
+                          const url = `https://wa.me/${numeroWhatsAppAdmin}?text=${encodeURIComponent(mensagem)}`;
+                          window.open(url, '_blank');
+                        } else {
+                          toast.error('Configure seu número de WhatsApp nas Configurações');
+                        }
+                      }}
+                      className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors"
+                      title="Enviar mensagem WhatsApp"
+                    >
+                      <MessageCircle size={18} className="text-green-600 dark:text-green-400" />
+                    </button>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
+      </div>
+
+      {/* Informações de Sincronização */}
+      <div className="text-xs text-muted-foreground text-center pt-4 border-t border-border">
+        <p>
+          {isConnected
+            ? '✅ Sincronização em tempo real ativa'
+            : '⏸️ Aguardando reconexão...'}
+        </p>
       </div>
     </div>
   );
