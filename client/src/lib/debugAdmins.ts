@@ -1,10 +1,8 @@
 /**
- * Script de Debug para Restaurar Admins
- * Garante que victorhgs26@gmail.com esteja salvo
- * NOTA: Usuários deletados NÃO devem ser restaurados automaticamente
+ * Script de Debug para Restaurar Admins - ADAPTADO PARA SERVIDOR
+ * Garante que victorhgs26@gmail.com esteja salvo no servidor
+ * NOTA: Armazenamento local está desabilitado - usa apenas servidor
  */
-
-import * as db from './db';
 
 /**
  * Dados dos admins que devem estar sempre presentes
@@ -24,7 +22,7 @@ const ADMINS_OBRIGATORIOS = [
 ];
 
 /**
- * Verificar se admins estão salvos
+ * Verificar se admins estão salvos no servidor
  */
 export async function verificarAdmins(): Promise<{
   encontrados: string[];
@@ -33,27 +31,36 @@ export async function verificarAdmins(): Promise<{
   const encontrados: string[] = [];
   const faltando: string[] = [];
 
-  for (const admin of ADMINS_OBRIGATORIOS) {
-    try {
-      const usuarioExistente = await db.obterUsuarioPorEmail(admin.email);
+  try {
+    // Buscar usuários do servidor
+    const response = await fetch('/api/users');
+    if (!response.ok) {
+      console.warn('⚠️ Erro ao buscar usuários do servidor');
+      return { encontrados, faltando };
+    }
+
+    const data = await response.json();
+    const usuariosServidor = data.data || [];
+
+    for (const admin of ADMINS_OBRIGATORIOS) {
+      const usuarioExistente = usuariosServidor.find((u: any) => u.email === admin.email);
       if (usuarioExistente) {
         encontrados.push(admin.email);
-        console.log(`✓ Admin ${admin.email} encontrado`);
+        console.log(`✓ Admin ${admin.email} encontrado no servidor`);
       } else {
         faltando.push(admin.email);
-        console.log(`❌ Admin ${admin.email} NÃO encontrado`);
+        console.log(`❌ Admin ${admin.email} NÃO encontrado no servidor`);
       }
-    } catch (error) {
-      faltando.push(admin.email);
-      console.error(`Erro ao verificar ${admin.email}:`, error);
     }
+  } catch (error) {
+    console.error('Erro ao verificar admins no servidor:', error);
   }
 
   return { encontrados, faltando };
 }
 
 /**
- * Restaurar admins que estão faltando
+ * Restaurar admins que estão faltando no servidor
  */
 export async function restaurarAdmins(): Promise<{
   restaurados: string[];
@@ -62,121 +69,86 @@ export async function restaurarAdmins(): Promise<{
   const restaurados: string[] = [];
   const erros: string[] = [];
 
-  for (const admin of ADMINS_OBRIGATORIOS) {
-    try {
-      // Verificar se já existe
-      const usuarioExistente = await db.obterUsuarioPorEmail(admin.email);
-      
-      if (usuarioExistente) {
-        console.log(`✓ Admin ${admin.email} já existe, pulando...`);
-        continue;
-      }
-
-      // Adicionar novo admin
-      await db.adicionarUsuario(admin);
-      restaurados.push(admin.email);
-      console.log(`✓ Admin ${admin.email} restaurado com sucesso`);
-
-      // Salvar também no localStorage para persistência
-      const usuariosLocal = localStorage.getItem('caderninho_usuarios');
-      let usuarios = [];
-
-      if (usuariosLocal) {
-        try {
-          usuarios = JSON.parse(usuariosLocal);
-        } catch (e) {
-          usuarios = [];
-        }
-      }
-
-      // Adicionar admin ao localStorage se não existir
-      const adminExisteLocal = usuarios.some((u: any) => u.email === admin.email);
-      if (!adminExisteLocal) {
-        usuarios.push(admin);
-        localStorage.setItem('caderninho_usuarios', JSON.stringify(usuarios));
-        console.log(`✓ Admin ${admin.email} salvo no localStorage`);
-      }
-    } catch (error) {
-      erros.push(admin.email);
-      console.error(`❌ Erro ao restaurar ${admin.email}:`, error);
+  try {
+    // Primeiro, verificar quais admins já existem
+    const response = await fetch('/api/users');
+    if (!response.ok) {
+      console.warn('⚠️ Erro ao buscar usuários do servidor');
+      return { restaurados, erros };
     }
+
+    const data = await response.json();
+    const usuariosServidor = data.data || [];
+
+    for (const admin of ADMINS_OBRIGATORIOS) {
+      try {
+        // Verificar se já existe no servidor
+        const usuarioExistente = usuariosServidor.find((u: any) => u.email === admin.email);
+
+        if (usuarioExistente) {
+          console.log(`✓ Admin ${admin.email} já existe no servidor, pulando...`);
+          continue;
+        }
+
+        // Criar novo admin no servidor
+        const createResponse = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: admin.email,
+            nome: admin.nome,
+            tipo: 'admin',
+            telefone: admin.telefone,
+            senha: admin.senha,
+          }),
+        });
+
+        if (createResponse.ok) {
+          restaurados.push(admin.email);
+          console.log(`✓ Admin ${admin.email} restaurado no servidor com sucesso`);
+        } else {
+          const errorData = await createResponse.json();
+          erros.push(admin.email);
+          console.error(`❌ Erro ao restaurar ${admin.email}:`, errorData.error);
+        }
+      } catch (error) {
+        erros.push(admin.email);
+        console.error(`❌ Erro ao restaurar ${admin.email}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao restaurar admins:', error);
   }
 
   return { restaurados, erros };
 }
 
 /**
- * Sincronizar admins entre localStorage e IndexedDB
- * NOTA: Apenas sincroniza admins que estão em ADMINS_OBRIGATORIOS
- * Impede restauração de admins deletados
- */
-export async function sincronizarAdminsLocal(): Promise<boolean> {
-  try {
-    console.log('🔄 Sincronizando admins entre localStorage e IndexedDB...');
-
-    // Obter admins do localStorage
-    const usuariosLocal = localStorage.getItem('caderninho_usuarios');
-    if (!usuariosLocal) {
-      console.log('⚠️ Nenhum usuário no localStorage');
-      return false;
-    }
-
-    const usuarios = JSON.parse(usuariosLocal);
-    const adminsLocal = usuarios.filter((u: any) => u.tipo === 'admin');
-
-    console.log(`Encontrados ${adminsLocal.length} admins no localStorage`);
-
-    // Adicionar apenas admins que estão em ADMINS_OBRIGATORIOS
-    for (const admin of adminsLocal) {
-      // Verificar se este admin está na lista de obrigatórios
-      const adminObrigatorio = ADMINS_OBRIGATORIOS.find(a => a.email === admin.email);
-      if (!adminObrigatorio) {
-        console.log(`⚠️ Admin ${admin.email} não está em ADMINS_OBRIGATORIOS, pulando...`);
-        continue;
-      }
-
-      try {
-        const usuarioExistente = await db.obterUsuarioPorEmail(admin.email);
-        if (!usuarioExistente) {
-          await db.adicionarUsuario(admin);
-          console.log(`✓ Admin ${admin.email} sincronizado`);
-        }
-      } catch (error) {
-        console.error(`Erro ao sincronizar ${admin.email}:`, error);
-      }
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Erro ao sincronizar admins:', error);
-    return false;
-  }
-}
-
-/**
- * Garantir que admins estão sempre presentes
- * Chamado ao iniciar o app
+ * Função principal para garantir que admins estão presentes
+ * Verifica no servidor e restaura se necessário
  */
 export async function garantirAdminsPresentes(): Promise<void> {
   try {
-    console.log('🔍 Verificando presença de admins...');
+    console.log('🔍 Verificando presença de admins obrigatórios no servidor...');
 
-    // 1. Sincronizar localStorage com IndexedDB
-    await sincronizarAdminsLocal();
+    // Verificar quais admins estão presentes
+    const { encontrados, faltando } = await verificarAdmins();
 
-    // 2. Verificar quais admins estão faltando
-    const { faltando } = await verificarAdmins();
+    if (faltando.length === 0) {
+      console.log('✅ Todos os admins obrigatórios estão presentes');
+      return;
+    }
 
-    // 3. Se faltarem, restaurar
-    if (faltando.length > 0) {
-      console.log(`⚠️ ${faltando.length} admin(s) faltando, restaurando...`);
-      const { restaurados, erros } = await restaurarAdmins();
-      console.log(`✓ ${restaurados.length} admin(s) restaurado(s)`);
-      if (erros.length > 0) {
-        console.error(`❌ Erro ao restaurar ${erros.length} admin(s):`, erros);
-      }
-    } else {
-      console.log('✓ Todos os admins estão presentes');
+    // Se faltam admins, tentar restaurar
+    console.log(`⚠️ ${faltando.length} admin(s) faltando, tentando restaurar...`);
+    const { restaurados, erros } = await restaurarAdmins();
+
+    if (erros.length > 0) {
+      console.error(`❌ Erro ao restaurar ${erros.length} admin(s): ${erros.join(', ')}`);
+    }
+
+    if (restaurados.length > 0) {
+      console.log(`✅ ${restaurados.length} admin(s) restaurado(s): ${restaurados.join(', ')}`);
     }
   } catch (error) {
     console.error('Erro ao garantir presença de admins:', error);
@@ -184,30 +156,10 @@ export async function garantirAdminsPresentes(): Promise<void> {
 }
 
 /**
- * Validar integridade das senhas dos admins
+ * Sincronizar admins entre localStorage e servidor - DESABILITADO
+ * Armazenamento local não é mais permitido
  */
-export async function validarSenhasAdmins(): Promise<{
-  validas: string[];
-  invalidas: string[];
-}> {
-  const validas: string[] = [];
-  const invalidas: string[] = [];
-
-  for (const admin of ADMINS_OBRIGATORIOS) {
-    try {
-      const usuario = await db.obterUsuarioPorEmail(admin.email);
-      if (usuario && usuario.senha === admin.senha) {
-        validas.push(admin.email);
-        console.log(`✓ Senha de ${admin.email} válida`);
-      } else if (usuario) {
-        invalidas.push(admin.email);
-        console.log(`❌ Senha de ${admin.email} inválida ou diferente`);
-      }
-    } catch (error) {
-      invalidas.push(admin.email);
-      console.error(`Erro ao validar senha de ${admin.email}:`, error);
-    }
-  }
-
-  return { validas, invalidas };
+export async function sincronizarAdminsLocal(): Promise<boolean> {
+  console.warn('Sincronização local desabilitada. Aplicativo usa APENAS servidor.');
+  return false;
 }
