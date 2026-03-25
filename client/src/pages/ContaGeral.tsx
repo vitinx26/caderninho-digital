@@ -47,7 +47,6 @@ function ContaGeralContent() {
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
   const [carregandoCompra, setCarregandoCompra] = useState(false);
-  const [usarCardapio, setUsarCardapio] = useState(false);
 
   // Busca de cliente
   const [buscaCliente, setBuscaCliente] = useState('');
@@ -311,34 +310,19 @@ function ContaGeralContent() {
                 />
               </div>
 
-              {/* Cardápio */}
-              {usarCardapio && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Selecionar do Cardápio</label>
-                  <CardapioSelectorSimples
-                    onItemsSelected={(items, total) => {
-                      if (items.length > 0) {
-                        const descricoes = items.map((i) => i.name).join(', ');
-                        setDescricao(descricoes);
-                        setValor(total.toString());
-                      }
-                    }}
-                    onCancel={() => setUsarCardapio(false)}
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="usar-cardapio"
-                  checked={usarCardapio}
-                  onChange={(e) => setUsarCardapio(e.target.checked)}
-                  className="rounded border-border"
+              {/* Cardápio - FIXADO */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Selecionar do Cardápio</label>
+                <CardapioSelectorSimples
+                  onItemsSelected={(items, total) => {
+                    if (items.length > 0) {
+                      const descricoes = items.map((i) => i.name).join(', ');
+                      setDescricao(descricoes);
+                      setValor(total.toString());
+                    }
+                  }}
+                  onCancel={() => {}}
                 />
-                <label htmlFor="usar-cardapio" className="text-sm text-foreground cursor-pointer">
-                  Usar cardápio
-                </label>
               </div>
 
               {/* Botão Salvar */}

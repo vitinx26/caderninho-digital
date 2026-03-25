@@ -74,18 +74,20 @@ class RealtimeSSEManager {
       });
 
       this.eventSource.onerror = () => {
-        console.error('❌ Erro SSE');
+        console.error('❌ Erro SSE - Usando polling como fallback');
         this.updateStatus('desconectado');
         this.eventSource?.close();
         this.eventSource = null;
         this.isConnecting = false;
-        this.attemptReconnect();
+        // Tentar polling direto em vez de reconectar SSE
+        this.startPolling();
       };
     } catch (error) {
       console.error('Erro ao conectar SSE:', error);
       this.updateStatus('desconectado');
       this.isConnecting = false;
-      this.attemptReconnect();
+      // Usar polling como fallback
+      this.startPolling();
     }
   }
 
@@ -167,16 +169,19 @@ class RealtimeSSEManager {
 
       console.log(`✅ Sincronização completa: ${this.state.usuarios.length} usuários, ${this.state.clientes.length} clientes, ${this.state.lancamentos.length} lançamentos`);
 
+      // Marcar como conectado (mesmo que SSE falhe, polling funciona)
       this.updateStatus('conectado');
       this.notifyListeners();
       this.connectionAttempts = 0; // Resetar contador
 
-      // Iniciar polling como fallback
+      // Sempre iniciar polling como fallback/backup
       this.startPolling();
+      console.log('📄 Polling iniciado como sincronização de backup');
     } catch (error) {
       console.error('Erro ao sincronizar:', error);
-      this.updateStatus('desconectado');
+      // Não marcar como desconectado - tentar polling mesmo assim
       this.isConnecting = false;
+      this.startPolling();
     }
   }
 
