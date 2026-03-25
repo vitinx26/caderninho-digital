@@ -62,7 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const response = await fetch('/api/users');
             const usuarios = await response.json();
-            const usuarioExiste = usuarios.some((u: any) => u.email === usuario.email);
+            // Validar que usuarios é um array antes de usar .some()
+            const usuarioExiste = Array.isArray(usuarios) && usuarios.some((u: any) => u.email === usuario.email);
             
             if (usuarioExiste) {
               setUsuarioLogado(usuario);

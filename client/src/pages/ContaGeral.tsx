@@ -23,7 +23,7 @@ import CardapioSelectorSimples from '@/components/CardapioSelectorSimples';
 
 type AbaType = 'novo-cliente' | 'nova-compra';
 
-export default function ContaGeral() {
+function ContaGeralContent() {
   const { fazer_logout } = useAuth();
   
   // ✅ NOVO: Usar CentralizedStoreContext para sincronização em tempo real
@@ -462,4 +462,8 @@ export default function ContaGeral() {
       </div>
     </div>
   );
+}
+
+export default function ContaGeral() {
+  return <ContaGeralContent />;
 }
