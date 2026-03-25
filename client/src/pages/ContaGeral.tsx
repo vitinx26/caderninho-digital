@@ -13,7 +13,6 @@ import React, { useState, useEffect } from 'react';
 import { Plus, LogOut, Save, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientes, useLancamentos, useConnectionStatus } from '@/contexts/CentralizedStoreContext';
-import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -30,8 +29,6 @@ function ContaGeralContent() {
   const { clientes, isConnected: isConnectedStore } = useClientes();
   const { lancamentos, adicionarLancamento } = useLancamentos();
   const { statusConexao } = useConnectionStatus();
-  
-  const { isOnline } = useOnlineStatus();
 
   const [aba, setAba] = useState<AbaType>('nova-compra');
 
@@ -66,7 +63,7 @@ function ContaGeralContent() {
       return;
     }
 
-    if (!isOnline) {
+    if (!isConnectedStore) {
       toast.error('Sem conexão com o servidor. Chama o proprietário.');
       return;
     }
@@ -121,7 +118,7 @@ function ContaGeralContent() {
       return;
     }
 
-    if (!isOnline) {
+    if (!isConnectedStore) {
       toast.error('Sem conexão com o servidor. Chama o proprietário.');
       return;
     }
@@ -164,8 +161,8 @@ function ContaGeralContent() {
     }
   };
 
-  // Status de conexão
-  const isConnected = isOnline && isConnectedStore;
+  // Status de conexão - usar apenas isConnectedStore (SSE/Polling)
+  const isConnected = isConnectedStore;
   const statusConexaoClass = isConnected
     ? 'text-green-600 dark:text-green-400'
     : 'text-red-600 dark:text-red-400';
@@ -328,7 +325,7 @@ function ContaGeralContent() {
               {/* Botão Salvar */}
               <Button
                 onClick={handleAdicionarCompra}
-                disabled={carregandoCompra || !isOnline || !clienteSelecionado}
+                disabled={carregandoCompra || !isConnected || !clienteSelecionado}
                 className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Save size={20} />
@@ -397,7 +394,7 @@ function ContaGeralContent() {
               {/* Botão Criar */}
               <Button
                 onClick={handleCriarCliente}
-                disabled={carregandoNovoCliente || !isOnline}
+                disabled={carregandoNovoCliente || !isConnected}
                 className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Plus size={20} />

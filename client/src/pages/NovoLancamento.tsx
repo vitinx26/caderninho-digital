@@ -8,9 +8,8 @@ import React, { useState } from 'react';
 import { ArrowLeft, Plus, Minus, MessageCircle } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCentralizedStore } from '@/contexts/CentralizedStoreContext';
+import { useCentralizedStore, useConnectionStatus } from '@/contexts/CentralizedStoreContext';
 import { useConsumptionPopup } from '@/hooks/useConsumptionPopup';
-import { useOnlineStatus, getOfflineMessage } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ConsumptionPopup from '@/components/ConsumptionPopup';
@@ -28,7 +27,7 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
   const { voltar, clienteSelecionado } = useNavigation();
   const { usuarioLogado } = useAuth();
   const { clientes, adicionarLancamento, adicionarCliente } = useCentralizedStore();
-  const { isOnline } = useOnlineStatus();
+  const { isConnected } = useConnectionStatus();
 
   // Se for cliente logado, usar seu próprio ID
   const isClienteLogado = usuarioLogado?.tipo === 'cliente';
@@ -79,8 +78,8 @@ export default function NovoLancamento({ onVoltar: onVoltarProp }: NovoLancament
     e.preventDefault();
 
     // Validar conectividade
-    if (!isOnline) {
-      toast.error(getOfflineMessage());
+    if (!isConnected) {
+      toast.error('Sem conexão com o servidor. Chama o proprietário.');
       return;
     }
 
