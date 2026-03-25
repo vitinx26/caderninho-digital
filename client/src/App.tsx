@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NavigationProvider, useNavigation } from "./contexts/NavigationContext";
+import { CentralizedStoreProvider } from "./contexts/CentralizedStoreContext";
 // import { useWebSocket } from "./hooks/useWebSocket";
 import { Layout } from './components/Layout';
 import { updateVictorPassword } from './lib/updatePassword';
@@ -102,9 +103,11 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <AuthProvider>
-            <NavigationProvider>
-              <AppContent />
-            </NavigationProvider>
+            <CentralizedStoreProvider>
+              <NavigationProvider>
+                <AppContent />
+              </NavigationProvider>
+            </CentralizedStoreProvider>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
