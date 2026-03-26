@@ -1,5 +1,6 @@
 /**
- * SERVIDOR COM POSTGRESQL
+ * SERVIDOR COM MYSQL (TiDB Cloud)
+ * Adaptado para usar schema EXISTENTE do banco
  * Persistência de dados garantida
  */
 
@@ -7,7 +8,7 @@ import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import pg from 'pg';
+import mysql from 'mysql2/promise';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,13 +21,27 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ============================================================================
-// CONEXÃO COM POSTGRESQL
+// CONEXÃO COM MYSQL (TiDB Cloud)
 // ============================================================================
 
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/caderninho',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
+// Limpar DATABASE_URL removendo parâmetro SSL inválido
+const rawDatabaseUrl = process.env.DATABASE_URL || 'mysql://root:password@localhost:3306/caderninho';
+const cleanDatabaseUrl = rawDatabaseUrl.replace(/\?ssl=.*$/, ''); // Remove ?ssl={...} do final
+
+const pool = mysql.createPool({
+  uri: cleanDatabaseUrl,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  // TiDB Cloud requer SSL obrigatório com certificado válido
+  ssl: ({
+    rejectUnauthorized: true,
+    minVersion: 'TLSv1.2'
+  } as any),
+} as any);
+
+console.log(`[DB] Conectando a: ${cleanDatabaseUrl.replace(/:[^@]*@/, ':***@')}`);
 
 // Listeners SSE
 const sseClients = new Set<any>();
@@ -37,47 +52,14 @@ const sseClients = new Set<any>();
 
 async function initializeDatabase() {
   try {
-    const client = await pool.connect();
-    
-    // Criar tabela de usuários
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        nome TEXT NOT NULL,
-        tipo TEXT DEFAULT 'cliente',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Criar tabela de clientes
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS clientes (
-        id TEXT PRIMARY KEY,
-        nome TEXT NOT NULL,
-        telefone TEXT,
-        email TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Criar tabela de lançamentos
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS lancamentos (
-        id TEXT PRIMARY KEY,
-        cliente_id TEXT REFERENCES clientes(id),
-        tipo TEXT NOT NULL,
-        valor DECIMAL(10, 2) NOT NULL,
-        descricao TEXT,
-        criado_em BIGINT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    client.release();
-    console.log('✅ Banco de dados inicializado');
-  } catch (error) {
-    console.error('❌ Erro ao inicializar banco:', error);
+    console.log('[DB] Tentando conectar ao banco de dados...');
+    const connection = await pool.getConnection();
+    console.log('[DB] ✅ Conexão estabelecida com sucesso!');
+    connection.release();
+    console.log('[DB] ✅ Banco de dados pronto (usando schema existente)');
+  } catch (error: any) {
+    console.error('[DB] ❌ Erro ao inicializar banco:', error?.message || error);
+    console.error('[DB] Detalhes:', error);
   }
 }
 
@@ -90,283 +72,378 @@ function notifySSEClients(data: any) {
   sseClients.forEach(client => {
     try {
       client.write(message);
-    } catch (e) {
+    } catch (error) {
       sseClients.delete(client);
     }
   });
 }
 
 // ============================================================================
-// ROTAS: USUÁRIOS
+// ROTA: SSE (Server-Sent Events)
+// ============================================================================
+
+app.get('/api/events/subscribe', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  sseClients.add(res);
+  console.log(`[SSE] Cliente conectado. Total: ${sseClients.size}`);
+
+  // Enviar sincronização completa ao conectar
+  const syncEvent = { type: 'sync:full', data: { users: [], clientes: [], lancamentos: [] } };
+  res.write(`data: ${JSON.stringify(syncEvent)}\n\n`);
+
+  req.on('close', () => {
+    sseClients.delete(res);
+    console.log(`[SSE] Cliente desconectado. Total: ${sseClients.size}`);
+  });
+});
+
+// ============================================================================
+// ROTAS: USUÁRIOS (tabela 'users')
 // ============================================================================
 
 app.get('/api/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
-    res.status(500).json({ error: 'Erro ao buscar usuários' });
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute('SELECT * FROM users ORDER BY id DESC LIMIT 1000');
+    connection.release();
+    res.json(rows);
+  } catch (error: any) {
+    console.error('[API] Erro ao buscar usuários:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao buscar usuários', details: error?.message });
   }
 });
 
 app.post('/api/users', async (req, res) => {
   try {
-    const { email, nome, tipo } = req.body;
-    const id = Date.now().toString();
+    // Aceitar tanto 'nome' quanto 'name', 'senha' quanto 'password'
+    const { name, nome, email, telefone, password, senha, tipo } = req.body;
+    const userName = name || nome;
+    const userPassword = password || senha;
+
+    if (!userName || !email) {
+      return res.status(400).json({ error: 'Nome e email são obrigatórios' });
+    }
+
+    const connection = await pool.getConnection();
     
-    const result = await pool.query(
-      'INSERT INTO users (id, email, nome, tipo) VALUES ($1, $2, $3, $4) RETURNING *',
-      [id, email, nome, tipo || 'cliente']
-    );
-    
-    notifySSEClients({ type: 'users:created', data: result.rows[0] });
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao criar usuário:', error);
-    res.status(500).json({ error: 'Erro ao criar usuário' });
+    // Inserir usuário na tabela 'users'
+    const [userResult] = await connection.execute(
+      'INSERT INTO users (name, email, telefone, role) VALUES (?, ?, ?, ?)',
+      [userName, email, telefone || null, tipo === 'admin' ? 'admin' : 'user']
+    ) as any;
+
+    connection.release();
+
+    const novoUsuario = { 
+      id: userResult.insertId,
+      name: userName, 
+      email: email,
+      telefone: telefone,
+      role: tipo === 'admin' ? 'admin' : 'user'
+    };
+    notifySSEClients({ type: 'users:created', data: novoUsuario });
+
+    res.json(novoUsuario);
+  } catch (error: any) {
+    console.error('[API] Erro ao criar usuário:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao criar usuário', details: error?.message });
   }
 });
 
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, nome, tipo } = req.body;
-    
-    const result = await pool.query(
-      'UPDATE users SET email = $1, nome = $2, tipo = $3 WHERE id = $4 RETURNING *',
-      [email, nome, tipo, id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
+    const { nome, email, telefone } = req.body;
+
+    if (!nome || !email) {
+      return res.status(400).json({ error: 'Nome e email são obrigatórios' });
     }
-    
-    notifySSEClients({ type: 'users:updated', data: result.rows[0] });
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
-    res.status(500).json({ error: 'Erro ao atualizar usuário' });
+
+    const connection = await pool.getConnection();
+    await connection.execute(
+      'UPDATE users SET name = ?, email = ?, telefone = ? WHERE id = ?',
+      [nome, email, telefone || null, id]
+    );
+    connection.release();
+
+    const usuarioAtualizado = { id, nome, email, telefone };
+    notifySSEClients({ type: 'users:updated', data: usuarioAtualizado });
+
+    res.json(usuarioAtualizado);
+  } catch (error: any) {
+    console.error('[API] Erro ao atualizar usuário:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao atualizar usuário', details: error?.message });
   }
 });
 
 app.delete('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    const connection = await pool.getConnection();
+    await connection.execute('DELETE FROM users WHERE id = ?', [id]);
+    connection.release();
+
     notifySSEClients({ type: 'users:deleted', data: { id } });
     res.json({ success: true });
-  } catch (error) {
-    console.error('Erro ao deletar usuário:', error);
-    res.status(500).json({ error: 'Erro ao deletar usuário' });
+  } catch (error: any) {
+    console.error('[API] Erro ao deletar usuário:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao deletar usuário', details: error?.message });
   }
 });
 
 // ============================================================================
-// ROTAS: CLIENTES
+// ROTAS: CLIENTES (tabela 'clientes')
 // ============================================================================
 
 app.get('/api/clientes', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM clientes ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Erro ao buscar clientes:', error);
-    res.status(500).json({ error: 'Erro ao buscar clientes' });
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute('SELECT id, nome, telefone, email, ativo FROM clientes ORDER BY id DESC LIMIT 1000');
+    connection.release();
+    res.json(rows);
+  } catch (error: any) {
+    console.error('[API] Erro ao buscar clientes:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao buscar clientes', details: error?.message });
   }
 });
 
 app.post('/api/clientes', async (req, res) => {
   try {
     const { nome, telefone, email } = req.body;
-    const id = Date.now().toString();
-    
-    const result = await pool.query(
-      'INSERT INTO clientes (id, nome, telefone, email) VALUES ($1, $2, $3, $4) RETURNING *',
-      [id, nome, telefone, email]
-    );
-    
-    notifySSEClients({ type: 'clientes:created', data: result.rows[0] });
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao criar cliente:', error);
-    res.status(500).json({ error: 'Erro ao criar cliente' });
-  }
-});
 
-app.put('/api/clientes/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { nome, telefone, email } = req.body;
-    
-    const result = await pool.query(
-      'UPDATE clientes SET nome = $1, telefone = $2, email = $3 WHERE id = $4 RETURNING *',
-      [nome, telefone, email, id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Cliente não encontrado' });
+    if (!nome || !nome.trim()) {
+      return res.status(400).json({ error: 'Nome do cliente eh obrigatorio', message: 'Nome do cliente eh obrigatorio' });
     }
-    
-    notifySSEClients({ type: 'clientes:updated', data: result.rows[0] });
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao atualizar cliente:', error);
-    res.status(500).json({ error: 'Erro ao atualizar cliente' });
-  }
-});
 
-app.delete('/api/clientes/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+    const connection = await pool.getConnection();
     
-    await pool.query('DELETE FROM clientes WHERE id = $1', [id]);
-    notifySSEClients({ type: 'clientes:deleted', data: { id } });
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Erro ao deletar cliente:', error);
-    res.status(500).json({ error: 'Erro ao deletar cliente' });
+    // Buscar primeiro estabelecimento (padrão)
+    const [estabelecimentos] = await connection.execute(
+      'SELECT id FROM estabelecimentos LIMIT 1'
+    ) as any;
+    
+    const estabelecimentoId = estabelecimentos.length > 0 ? estabelecimentos[0].id : 1;
+    
+    const [result] = await connection.execute(
+      'INSERT INTO clientes (estabelecimentoId, nome, telefone, email, ativo) VALUES (?, ?, ?, ?, 1)',
+      [estabelecimentoId, nome.trim(), telefone || null, email || null]
+    ) as any;
+
+    connection.release();
+
+    const novoCliente = {
+      id: result.insertId,
+      nome: nome.trim(),
+      telefone: telefone || null,
+      email: email || null,
+      ativo: 1
+    };
+
+    res.json(novoCliente);
+  } catch (error: any) {
+    console.error('[API] Erro ao criar cliente:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao criar cliente', message: error?.message });
   }
 });
 
 // ============================================================================
-// ROTAS: LANÇAMENTOS
+// ROTAS: LANÇAMENTOS (tabela 'lancamentos')
 // ============================================================================
 
 app.get('/api/lancamentos', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM lancamentos ORDER BY criado_em DESC');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Erro ao buscar lançamentos:', error);
-    res.status(500).json({ error: 'Erro ao buscar lançamentos' });
+    const connection = await pool.getConnection();
+    // Usar campos que existem: id, clienteId, tipo, valor, descricao, data
+    const [rows] = await connection.execute('SELECT id, clienteId, tipo, valor, descricao, data FROM lancamentos ORDER BY id DESC LIMIT 1000');
+    connection.release();
+    res.json(rows);
+  } catch (error: any) {
+    console.error('[API] Erro ao buscar lançamentos:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao buscar lançamentos', details: error?.message });
   }
 });
 
 app.post('/api/lancamentos', async (req, res) => {
   try {
-    const { clienteId, tipo, valor, descricao } = req.body;
-    const id = Date.now().toString();
-    const criadoEm = Date.now();
-    
-    const result = await pool.query(
-      'INSERT INTO lancamentos (id, cliente_id, tipo, valor, descricao, criado_em) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [id, clienteId, tipo, valor, descricao, criadoEm]
-    );
-    
-    notifySSEClients({ type: 'lancamentos:created', data: result.rows[0] });
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao criar lançamento:', error);
-    res.status(500).json({ error: 'Erro ao criar lançamento' });
-  }
-});
+    const { cliente_id, clienteId, tipo, valor, descricao } = req.body;
+    const id_cliente = cliente_id || clienteId;
+    const estabelecimentoId = 1; // Usar estabelecimento padrão
 
-app.put('/api/lancamentos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { tipo, valor, descricao } = req.body;
-    
-    const result = await pool.query(
-      'UPDATE lancamentos SET tipo = $1, valor = $2, descricao = $3 WHERE id = $4 RETURNING *',
-      [tipo, valor, descricao, id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Lançamento não encontrado' });
-    }
-    
-    notifySSEClients({ type: 'lancamentos:updated', data: result.rows[0] });
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao atualizar lançamento:', error);
-    res.status(500).json({ error: 'Erro ao atualizar lançamento' });
+    const connection = await pool.getConnection();
+    const [result] = await connection.execute(
+      'INSERT INTO lancamentos (clienteId, estabelecimentoId, tipo, valor, descricao) VALUES (?, ?, ?, ?, ?)',
+      [id_cliente, estabelecimentoId, tipo || 'debito', Math.round(valor * 100), descricao || null]
+    ) as any;
+    connection.release();
+
+    const novoLancamento = { 
+      id: result.insertId,
+      clienteId: id_cliente, 
+      tipo: tipo || 'debito', 
+      valor: valor, 
+      descricao: descricao
+    };
+    notifySSEClients({ type: 'lancamentos:created', data: novoLancamento });
+
+    res.json(novoLancamento);
+  } catch (error: any) {
+    console.error('[API] Erro ao criar lançamento:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao criar lançamento', details: error?.message });
   }
 });
 
 app.delete('/api/lancamentos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    await pool.query('DELETE FROM lancamentos WHERE id = $1', [id]);
+    const connection = await pool.getConnection();
+    await connection.execute('DELETE FROM lancamentos WHERE id = ?', [id]);
+    connection.release();
+
     notifySSEClients({ type: 'lancamentos:deleted', data: { id } });
     res.json({ success: true });
-  } catch (error) {
-    console.error('Erro ao deletar lançamento:', error);
-    res.status(500).json({ error: 'Erro ao deletar lançamento' });
+  } catch (error: any) {
+    console.error('[API] Erro ao deletar lançamento:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao deletar lançamento', details: error?.message });
   }
 });
 
 // ============================================================================
-// ROTAS: SINCRONIZAÇÃO
+// ROTAS: CARDÁPIOS (tabela 'menus' com categories JSON)
 // ============================================================================
 
-app.get('/api/sync/full', async (req, res) => {
+app.get('/api/menus', async (req, res) => {
   try {
-    const users = await pool.query('SELECT * FROM users');
-    const clientes = await pool.query('SELECT * FROM clientes');
-    const lancamentos = await pool.query('SELECT * FROM lancamentos');
+    const connection = await pool.getConnection();
     
-    res.json({
-      users: users.rows,
-      clientes: clientes.rows,
-      lancamentos: lancamentos.rows,
-      timestamp: Date.now(),
-    });
-  } catch (error) {
-    console.error('Erro ao sincronizar:', error);
-    res.status(500).json({ error: 'Erro ao sincronizar' });
+    // Buscar menus ativos
+    const [menus] = await connection.execute(
+      'SELECT id, name, description, is_active FROM menus WHERE is_active = 1 ORDER BY id DESC LIMIT 100'
+    );
+    
+    // Para cada menu, buscar categorias e itens
+    const menusComCategorias = await Promise.all(
+      (menus as any[]).map(async (menu) => {
+        const [categories] = await connection.execute(
+          'SELECT id, name, `order` FROM menu_categories WHERE menu_id = ? ORDER BY `order` ASC',
+          [menu.id]
+        );
+        
+        // Para cada categoria, buscar itens
+        const categoriesComItens = await Promise.all(
+          (categories as any[]).map(async (cat) => {
+            const [items] = await connection.execute(
+              'SELECT id, name, price FROM menu_items WHERE category_id = ? ORDER BY `order` ASC',
+              [cat.id]
+            );
+            return {
+              id: cat.id,
+              name: cat.name,
+              items: items as any[]
+            };
+          })
+        );
+        
+        return {
+          id: menu.id,
+          name: menu.name,
+          description: menu.description,
+          is_active: menu.is_active,
+          categories: categoriesComItens
+        };
+      })
+    );
+    
+    connection.release();
+    res.json({ menus: menusComCategorias });
+  } catch (error: any) {
+    console.error('[API] Erro ao buscar cardápios:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao buscar cardápios', details: error?.message });
   }
 });
 
-app.get('/api/events/subscribe', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  
-  sseClients.add(res);
-  
-  res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
-  
-  req.on('close', () => {
-    sseClients.delete(res);
-  });
+app.post('/api/menus', async (req, res) => {
+  try {
+    const { name, categories } = req.body;
+    const id = Date.now().toString();
+
+    const connection = await pool.getConnection();
+    await connection.execute(
+      'INSERT INTO menus (id, name, categories, is_active) VALUES (?, ?, ?, 1)',
+      [id, name, JSON.stringify(categories || [])]
+    );
+    connection.release();
+
+    const menu = { id, name, categories: categories || [], is_active: 1 };
+    notifySSEClients({ type: 'menus:created', data: menu });
+
+    res.json(menu);
+  } catch (error: any) {
+    console.error('[API] Erro ao criar cardápio:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao criar cardápio', details: error?.message });
+  }
 });
 
 // ============================================================================
-// SERVIR FRONTEND
+// ROTA: ALL-CLIENTS (alias para /api/clientes)
 // ============================================================================
 
-const staticPath = path.resolve(__dirname, '..', 'dist', 'public');
-app.use(express.static(staticPath));
+app.get('/api/all-clients', async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute('SELECT id, nome, telefone, email, ativo FROM clientes ORDER BY id DESC LIMIT 1000');
+    connection.release();
+    res.json(rows);
+  } catch (error: any) {
+    console.error('[API] Erro ao buscar clientes:', error?.message || error);
+    res.status(500).json({ error: 'Erro ao buscar clientes', details: error?.message });
+  }
+});
 
+// ============================================================================
+// ROTA: HEALTH CHECK
+// ============================================================================
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ============================================================================
+// SERVIR FRONTEND ESTÁTICO
+// ============================================================================
+
+app.use(express.static(path.join(__dirname, '../dist/public')));
+
+// Fallback para SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.join(staticPath, 'index.html'));
+  res.sendFile(path.join(__dirname, '../dist/public/index.html'));
 });
 
 // ============================================================================
-// INICIAR
+// INICIAR SERVIDOR
 // ============================================================================
-
-const PORT = process.env.PORT || 3000;
 
 async function start() {
-  await initializeDatabase();
-  
-  server.listen(PORT, () => {
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`✅ SERVIDOR COM POSTGRESQL INICIADO`);
-    console.log(`${'='.repeat(60)}`);
-    console.log(`🌐 URL: http://localhost:${PORT}`);
-    console.log(`🗄️  Banco: ${process.env.DATABASE_URL || 'localhost:5432'}`);
-    console.log(`${'='.repeat(60)}\n`);
-  });
+  try {
+    await initializeDatabase();
+
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () => {
+      console.log('============================================================');
+      console.log('✅ SERVIDOR COM MYSQL + TiDB Cloud INICIADO');
+      console.log('============================================================');
+      console.log(`🌐 URL: http://localhost:${PORT}`);
+      console.log(`🗄️  Banco: ${cleanDatabaseUrl.replace(/:[^@]*@/, ':***@').substring(0, 80)}...`);
+      console.log(`🔒 SSL: Ativado (TiDB Cloud obrigatório)`);
+      console.log('============================================================');
+    });
+  } catch (error: any) {
+    console.error('[STARTUP] ❌ Erro ao iniciar servidor:', error?.message || error);
+    process.exit(1);
+  }
 }
 
-start().catch(error => {
-  console.error('Erro ao iniciar servidor:', error);
-  process.exit(1);
-});
-
-export default app;
+start();

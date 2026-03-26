@@ -1,99 +1,135 @@
 /**
- * ContaGeral - Registro rápido de compras sem login
- * Design: Minimalismo Funcional com Tipografia Forte
+ * ContaGeral.tsx - Página de Conta Geral (Compras Rápidas)
  * 
- * ✅ MIGRADO PARA: CentralizedStoreContext
- * - Sincronização em tempo real via WebSocket
- * - Novos lançamentos aparecem no Dashboard instantaneamente
- * - Clientes sincronizados de todos os administradores
- * - Sem localStorage (apenas servidor)
+ * ✅ MIGRADO PARA: React Query (useClientes, useLancamentos, useMenus)
+ * ✅ SEM SSE/Polling - Simples e confiável
+ * 
+ * Características:
+ * - Registrar compras rápidas sem login
+ * - Selecionar cliente
+ * - Selecionar itens do cardápio
+ * - Sincronização automática via React Query
  */
 
-import React, { useState, useEffect } from 'react';
-import { Plus, LogOut, Save, Wifi, WifiOff } from 'lucide-react';
+import { useState } from 'react';
+import { LogOut, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClientes, useLancamentos, useConnectionStatus } from '@/contexts/CentralizedStoreContext';
+import { useClientes, useLancamentos, useMenus, useAdicionarLancamento } from '@/hooks/useData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { obterTimestampBrasilia } from '@/lib/brasiliaTime';
-import OnlineStatusIndicator from '@/components/OnlineStatusIndicator';
-import CardapioSelectorSimples from '@/components/CardapioSelectorSimples';
+import CardapioClienteView from '@/components/CardapioClienteView';
 
-type AbaType = 'novo-cliente' | 'nova-compra';
+type AbaType = 'nova-compra' | 'novo-cliente';
 
-function ContaGeralContent() {
+export default function ContaGeral() {
   const { fazer_logout } = useAuth();
   
-  // ✅ NOVO: Usar CentralizedStoreContext para sincronização em tempo real
-  const { clientes, isConnected: isConnectedStore } = useClientes();
-  const { lancamentos, adicionarLancamento } = useLancamentos();
-  const { statusConexao } = useConnectionStatus();
+  // React Query hooks
+  const clientesQuery = useClientes();
+  const lancamentosQuery = useLancamentos();
+  const menusQuery = useMenus();
+  const adicionarLancamento = useAdicionarLancamento();
 
+  // Estado do formulário
   const [aba, setAba] = useState<AbaType>('nova-compra');
+  const [clienteSelecionado, setClienteSelecionado] = useState<number | null>(null);
+  const [valor, setValor] = useState('');
+  const [busca, setBusca] = useState('');
+  const [carregandoCompra, setCarregandoCompra] = useState(false);
 
-  // Novo Cliente
+  // Novo cliente
   const [novoClienteNome, setNovoClienteNome] = useState('');
   const [novoClienteTelefone, setNovoClienteTelefone] = useState('');
   const [novoClienteEmail, setNovoClienteEmail] = useState('');
-  const [novoClienteSenha, setNovoClienteSenha] = useState('');
   const [carregandoNovoCliente, setCarregandoNovoCliente] = useState(false);
 
-  // Nova Compra
-  const [clienteSelecionado, setClienteSelecionado] = useState('');
-  const [valor, setValor] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [carregandoCompra, setCarregandoCompra] = useState(false);
-
-  // Busca de cliente
-  const [buscaCliente, setBuscaCliente] = useState('');
+  // Dados
+  const clientes = clientesQuery.data || [];
+  const menus = menusQuery.data || [];
+  const isLoading = clientesQuery.isLoading || menusQuery.isLoading;
+  const isError = clientesQuery.isError || menusQuery.isError;
+  const isConnected = !isError;
 
   // Filtrar clientes por busca
-  const clientesFiltrados = clientes.filter((c) =>
-    c.nome.toLowerCase().includes(buscaCliente.toLowerCase())
+  const clientesFiltrados = clientes.filter(c =>
+    c.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+    c.email?.toLowerCase().includes(busca.toLowerCase())
   );
 
-  // ✅ REMOVIDO: Polling e sincronização manual
-  // Agora a sincronização é automática via WebSocket
+  // Handlers
+  const handleSalvarCompra = async () => {
+    if (!clienteSelecionado) {
+      toast.error('Selecione um cliente');
+      return;
+    }
+    
+    if (!valor || parseFloat(valor) <= 0) {
+      toast.error('Selecione itens do cardápio ou informe um valor');
+      return;
+    }
 
-  // Criar novo cliente
+    if (!isConnected) {
+      toast.error('Sem conexão com o servidor. Chama o proprietário.');
+      return;
+    }
+
+    setCarregandoCompra(true);
+    try {
+      await adicionarLancamento.mutateAsync({
+        clienteId: clienteSelecionado,
+        tipo: 'debito',
+        valor: parseFloat(valor),
+      });
+
+      toast.success(`✓ Compra de R$ ${parseFloat(valor).toFixed(2).replace('.', ',')} registrada!`);
+      
+      // Limpar formulário
+      setClienteSelecionado(null);
+      setValor('');
+      setBusca('');
+    } catch (error) {
+      console.error('Erro ao registrar compra:', error);
+      toast.error('Erro ao registrar compra');
+    } finally {
+      setCarregandoCompra(false);
+    }
+  };
+
   const handleCriarCliente = async () => {
     if (!novoClienteNome.trim()) {
       toast.error('Nome do cliente é obrigatório');
       return;
     }
 
-    if (!isConnectedStore) {
+    if (!isConnected) {
       toast.error('Sem conexão com o servidor. Chama o proprietário.');
       return;
     }
 
     setCarregandoNovoCliente(true);
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch('/api/clientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: novoClienteNome,
+          nome: novoClienteNome,
           email: novoClienteEmail || `${novoClienteNome.toLowerCase().replace(/\s+/g, '')}@caderninho.local`,
           telefone: novoClienteTelefone,
-          password: novoClienteSenha || 'senha123',
-          tipo: 'cliente',
         }),
       });
 
       if (response.ok) {
-        const novoCliente = await response.json();
         toast.success(`✓ Cliente "${novoClienteNome}" criado com sucesso!`);
-        
-        // ✅ Novo cliente aparece automaticamente no Dashboard via WebSocket
         
         // Limpar formulário
         setNovoClienteNome('');
         setNovoClienteTelefone('');
         setNovoClienteEmail('');
-        setNovoClienteSenha('');
         setAba('nova-compra');
+        
+        // Refetch clientes
+        clientesQuery.refetch();
       } else {
         const erro = await response.json();
         toast.error(`Erro: ${erro.message || 'Falha ao criar cliente'}`);
@@ -106,66 +142,16 @@ function ContaGeralContent() {
     }
   };
 
-  // Adicionar nova compra
-  const handleAdicionarCompra = async () => {
-    if (!clienteSelecionado) {
-      toast.error('Selecione um cliente');
-      return;
-    }
+  // Removido - agora usando onSelectionChange do CardapioClienteView
 
-    if (!valor || parseFloat(valor) <= 0) {
-      toast.error('Valor deve ser maior que 0');
-      return;
-    }
-
-    if (!isConnectedStore) {
-      toast.error('Sem conexão com o servidor. Chama o proprietário.');
-      return;
-    }
-
-    setCarregandoCompra(true);
-    try {
-      const timestamp = obterTimestampBrasilia();
-      
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clienteId: clienteSelecionado,
-          tipo: 'debito',
-          valor: parseFloat(valor),
-          descricao: descricao || 'Compra',
-          timestamp,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success(`✓ Compra de R$ ${parseFloat(valor).toFixed(2).replace('.', ',')} registrada!`);
-        
-        // ✅ Nova compra aparece automaticamente no Dashboard via WebSocket
-        
-        // Limpar formulário
-        setClienteSelecionado('');
-        setValor('');
-        setDescricao('');
-        setBuscaCliente('');
-      } else {
-        const erro = await response.json();
-        toast.error(`Erro: ${erro.message || 'Falha ao registrar compra'}`);
-      }
-    } catch (error) {
-      console.error('Erro ao adicionar compra:', error);
-      toast.error('Erro ao registrar compra');
-    } finally {
-      setCarregandoCompra(false);
-    }
-  };
-
-  // Status de conexão - usar apenas isConnectedStore (SSE/Polling)
-  const isConnected = isConnectedStore;
-  const statusConexaoClass = isConnected
-    ? 'text-green-600 dark:text-green-400'
-    : 'text-red-600 dark:text-red-400';
+  // Loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando dados...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -184,11 +170,13 @@ function ContaGeralContent() {
               }`}
             >
               {isConnected ? (
-                <Wifi size={18} className={statusConexaoClass} />
+                <Wifi size={18} className="text-green-600 dark:text-green-400" />
               ) : (
-                <WifiOff size={18} className={statusConexaoClass} />
+                <WifiOff size={18} className="text-red-600 dark:text-red-400" />
               )}
-              <span className={`text-sm font-medium ${statusConexaoClass}`}>
+              <span className={`text-sm font-medium ${
+                isConnected ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}>
                 {isConnected ? 'Conectado' : 'Desconectado'}
               </span>
             </div>
@@ -234,7 +222,7 @@ function ContaGeralContent() {
         </div>
 
         {/* Conteúdo das Abas */}
-        <div className="card-minimal p-6 space-y-4">
+        <div className="bg-card text-card-foreground rounded-lg shadow-lg p-6 space-y-4">
           {aba === 'nova-compra' ? (
             <>
               <h2 className="text-xl font-semibold text-foreground">Registrar Compra</h2>
@@ -245,30 +233,30 @@ function ContaGeralContent() {
                 <Input
                   type="text"
                   placeholder="Buscar cliente..."
-                  value={buscaCliente}
-                  onChange={(e) => setBuscaCliente(e.target.value)}
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
                   className="bg-background border-border"
                 />
 
-                {buscaCliente && clientesFiltrados.length > 0 ? (
+                {busca && clientesFiltrados.length > 0 ? (
                   <div className="border border-border rounded-lg max-h-48 overflow-y-auto">
                     {clientesFiltrados.map((cliente) => (
                       <button
                         key={cliente.id}
                         onClick={() => {
                           setClienteSelecionado(cliente.id);
-                          setBuscaCliente('');
+                          setBusca('');
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-muted transition-colors border-b border-border last:border-b-0"
                       >
                         <p className="font-medium text-foreground">{cliente.nome}</p>
-                        {cliente.telefone && (
-                          <p className="text-xs text-muted-foreground">{cliente.telefone}</p>
+                        {cliente.email && (
+                          <p className="text-xs text-muted-foreground">{cliente.email}</p>
                         )}
                       </button>
                     ))}
                   </div>
-                ) : buscaCliente ? (
+                ) : busca ? (
                   <p className="text-sm text-muted-foreground">Nenhum cliente encontrado</p>
                 ) : null}
 
@@ -281,88 +269,58 @@ function ContaGeralContent() {
                 )}
               </div>
 
+              {/* Seleção de Cardápio - Cliente */}
+              {menus.length > 0 ? (
+                <CardapioClienteView
+                  menus={menus}
+                  onSelectionChange={(items, total) => {
+                    // Se houver itens selecionados, usar o total
+                    if (total > 0) {
+                      setValor(total.toString());
+                    }
+                  }}
+                />
+              ) : (
+                <div className="bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 p-4 rounded-lg">
+                  <p className="text-yellow-800 dark:text-yellow-200">⚠️ Nenhum cardápio disponível</p>
+                </div>
+              )}
+
               {/* Valor */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Valor (R$)</label>
                 <Input
                   type="number"
-                  placeholder="0,00"
-                  value={valor}
-                  onChange={(e) => setValor(e.target.value)}
                   step="0.01"
                   min="0"
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
                   className="bg-background border-border"
-                />
-              </div>
-
-              {/* Descrição */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Descrição (opcional)</label>
-                <Input
-                  type="text"
-                  placeholder="Ex: Bebidas, Comida..."
-                  value={descricao}
-                  onChange={(e) => setDescricao(e.target.value)}
-                  className="bg-background border-border"
-                />
-              </div>
-
-              {/* Cardápio - FIXADO */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Selecionar do Cardápio</label>
-                <CardapioSelectorSimples
-                  onItemsSelected={(items, total) => {
-                    if (items.length > 0) {
-                      const descricoes = items.map((i) => i.name).join(', ');
-                      setDescricao(descricoes);
-                      setValor(total.toString());
-                    }
-                  }}
-                  onCancel={() => {}}
+                  placeholder="0,00"
                 />
               </div>
 
               {/* Botão Salvar */}
               <Button
-                onClick={handleAdicionarCompra}
-                disabled={carregandoCompra || !isConnected || !clienteSelecionado}
-                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={handleSalvarCompra}
+                disabled={carregandoCompra || adicionarLancamento.isPending}
+                className="w-full"
               >
-                <Save size={20} />
-                {carregandoCompra ? 'Salvando...' : 'Salvar Compra'}
+                {carregandoCompra || adicionarLancamento.isPending ? 'Salvando...' : 'Salvar Compra'}
               </Button>
-
-              {/* Info de Sincronização */}
-              <div className="text-xs text-muted-foreground text-center pt-2">
-                {isConnected
-                  ? '✅ Sincronizando em tempo real'
-                  : '⏸️ Aguardando conexão...'}
-              </div>
             </>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-foreground">Criar Novo Cliente</h2>
+              <h2 className="text-xl font-semibold text-foreground">Novo Cliente</h2>
 
               {/* Nome */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Nome *</label>
+                <label className="text-sm font-medium text-foreground">Nome</label>
                 <Input
                   type="text"
-                  placeholder="Nome do cliente"
                   value={novoClienteNome}
                   onChange={(e) => setNovoClienteNome(e.target.value)}
-                  className="bg-background border-border"
-                />
-              </div>
-
-              {/* Telefone */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Telefone (opcional)</label>
-                <Input
-                  type="tel"
-                  placeholder="(11) 99999-9999"
-                  value={novoClienteTelefone}
-                  onChange={(e) => setNovoClienteTelefone(e.target.value)}
+                  placeholder="Nome do cliente"
                   className="bg-background border-border"
                 />
               </div>
@@ -372,21 +330,21 @@ function ContaGeralContent() {
                 <label className="text-sm font-medium text-foreground">Email (opcional)</label>
                 <Input
                   type="email"
-                  placeholder="cliente@email.com"
                   value={novoClienteEmail}
                   onChange={(e) => setNovoClienteEmail(e.target.value)}
+                  placeholder="email@example.com"
                   className="bg-background border-border"
                 />
               </div>
 
-              {/* Senha */}
+              {/* Telefone */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Senha (opcional)</label>
+                <label className="text-sm font-medium text-foreground">Telefone (opcional)</label>
                 <Input
-                  type="password"
-                  placeholder="Deixe em branco para gerar automaticamente"
-                  value={novoClienteSenha}
-                  onChange={(e) => setNovoClienteSenha(e.target.value)}
+                  type="tel"
+                  value={novoClienteTelefone}
+                  onChange={(e) => setNovoClienteTelefone(e.target.value)}
+                  placeholder="11999999999"
                   className="bg-background border-border"
                 />
               </div>
@@ -394,57 +352,22 @@ function ContaGeralContent() {
               {/* Botão Criar */}
               <Button
                 onClick={handleCriarCliente}
-                disabled={carregandoNovoCliente || !isConnected}
-                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={carregandoNovoCliente}
+                className="w-full"
               >
-                <Plus size={20} />
                 {carregandoNovoCliente ? 'Criando...' : 'Criar Cliente'}
               </Button>
-
-              {/* Info de Sincronização */}
-              <div className="text-xs text-muted-foreground text-center pt-2">
-                {isConnected
-                  ? '✅ Novo cliente aparecerá no Dashboard instantaneamente'
-                  : '⏸️ Aguardando conexão...'}
-              </div>
             </>
           )}
         </div>
 
-        {/* Clientes Disponíveis */}
-        {aba === 'nova-compra' && !buscaCliente && (
-          <div className="card-minimal p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Clientes Disponíveis</h2>
-            {clientesFiltrados.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {clientesFiltrados.slice(0, 10).map((cliente) => (
-                  <button
-                    key={cliente.id}
-                    onClick={() => {
-                      setClienteSelecionado(cliente.id);
-                      setBuscaCliente('');
-                    }}
-                    className="p-3 rounded-lg border border-border hover:bg-muted transition-colors text-left"
-                  >
-                    <p className="font-medium text-foreground">{cliente.nome}</p>
-                    {cliente.telefone && (
-                      <p className="text-xs text-muted-foreground">{cliente.telefone}</p>
-                    )}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Nenhum cliente disponível. Crie um novo cliente na aba "Novo Cliente".
-              </p>
-            )}
-          </div>
-        )}
+        {/* Info */}
+        <div className="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            <strong>{clientes.length}</strong> clientes cadastrados
+          </p>
+        </div>
       </div>
     </div>
   );
-}
-
-export default function ContaGeral() {
-  return <ContaGeralContent />;
 }

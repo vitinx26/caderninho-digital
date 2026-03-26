@@ -5,11 +5,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Smartphone, Info } from 'lucide-react';
+import { Settings, Smartphone, Info, Trash2, Edit2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUsuarios } from '@/hooks/useData';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -18,12 +19,17 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function Configuracoes() {
   const { usuarioLogado } = useAuth();
+  const usuariosQuery = useUsuarios();
   const [diasParaVencer, setDiasParaVencer] = useState(30);
   const [numeroWhatsApp, setNumeroWhatsApp] = useState('');
   const [templateWhatsApp, setTemplateWhatsApp] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [pwaInstalavel, setPwaInstalavel] = useState(false);
+  const [editandoUsuario, setEditandoUsuario] = useState<any>(null);
+  const [usuarioEditNome, setUsuarioEditNome] = useState('');
+  const [usuarioEditEmail, setUsuarioEditEmail] = useState('');
+  const [usuarioEditTelefone, setUsuarioEditTelefone] = useState('');
 
   useEffect(() => {
     const carregarConfig = async () => {
@@ -199,6 +205,146 @@ export default function Configuracoes() {
             </div>
           )}
         </div>
+
+        {/* Gerenciamento de Usuários (Admin) */}
+        {usuarioLogado?.tipo === 'admin' && (
+          <div className="card-minimal p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Users size={24} className="text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Gerenciamento de Usuários</h2>
+            </div>
+            
+            {usuariosQuery.isLoading ? (
+              <p className="text-muted-foreground">Carregando usuários...</p>
+            ) : usuariosQuery.isError ? (
+              <p className="text-red-600">Erro ao carregar usuários</p>
+            ) : (usuariosQuery.data || []).length === 0 ? (
+              <p className="text-muted-foreground">Nenhum usuário cadastrado</p>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {(usuariosQuery.data || []).map((usuario: any) => (
+                  <div key={usuario.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">{usuario.nome}</p>
+                      <p className="text-sm text-muted-foreground truncate">{usuario.email}</p>
+                      <p className="text-xs text-muted-foreground">{usuario.telefone || 'Sem telefone'}</p>
+                      <p className="text-xs text-muted-foreground capitalize">Tipo: {usuario.tipo}</p>
+                    </div>
+                    <div className="flex gap-2 ml-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditandoUsuario(usuario);
+                          setUsuarioEditNome(usuario.nome);
+                          setUsuarioEditEmail(usuario.email);
+                          setUsuarioEditTelefone(usuario.telefone || '');
+                        }}
+                      >
+                        <Edit2 size={16} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={async () => {
+                          if (confirm(`Tem certeza que deseja deletar ${usuario.nome}?`)) {
+                            try {
+                              const response = await fetch(`/api/users/${usuario.id}`, {
+                                method: 'DELETE',
+                              });
+                              if (response.ok) {
+                                toast.success('Usuário deletado com sucesso');
+                                usuariosQuery.refetch?.();
+                              } else {
+                                toast.error('Erro ao deletar usuário');
+                              }
+                            } catch (error) {
+                              toast.error('Erro ao deletar usuário');
+                            }
+                          }
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Modal de Edição de Usuário */}
+        {editandoUsuario && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Editar Usuário</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Nome</label>
+                  <Input
+                    value={usuarioEditNome}
+                    onChange={(e) => setUsuarioEditNome(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Email</label>
+                  <Input
+                    value={usuarioEditEmail}
+                    onChange={(e) => setUsuarioEditEmail(e.target.value)}
+                    type="email"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Telefone</label>
+                  <Input
+                    value={usuarioEditTelefone}
+                    onChange={(e) => setUsuarioEditTelefone(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/users/${editandoUsuario.id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            nome: usuarioEditNome,
+                            email: usuarioEditEmail,
+                            telefone: usuarioEditTelefone,
+                          }),
+                        });
+                        if (response.ok) {
+                          toast.success('Usuário atualizado com sucesso');
+                          setEditandoUsuario(null);
+                          usuariosQuery.refetch?.();
+                        } else {
+                          toast.error('Erro ao atualizar usuário');
+                        }
+                      } catch (error) {
+                        toast.error('Erro ao atualizar usuário');
+                      }
+                    }}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    Salvar
+                  </Button>
+                  <Button
+                    onClick={() => setEditandoUsuario(null)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Informações */}
         <div className="card-minimal p-6 bg-muted/50">

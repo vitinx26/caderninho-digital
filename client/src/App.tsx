@@ -1,16 +1,18 @@
 /**
  * App.tsx - Componente raiz do Caderninho Digital
  * Design: Minimalismo Funcional com Tipografia Forte
+ * 
+ * ✅ MIGRADO PARA: React Query (QueryClientProvider)
+ * ✅ REMOVIDO: CentralizedStoreContext (SSE/Polling problemático)
  */
 
 import { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NavigationProvider, useNavigation } from "./contexts/NavigationContext";
-import { CentralizedStoreProvider } from "./contexts/CentralizedStoreContext";
-// import { useWebSocket } from "./hooks/useWebSocket";
 import { Layout } from './components/Layout';
 import { updateVictorPassword } from './lib/updatePassword';
 import Login from "./pages/Login";
@@ -22,23 +24,33 @@ import Configuracoes from "./pages/Configuracoes";
 import ClienteView from "./pages/ClienteView";
 import ContaGeral from "./pages/ContaGeral";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
-// import Backups from "./pages/Backups"; // Removido - armazenamento centralizado
 import GerenciarCardapios from "./pages/GerenciarCardapios";
-
 import { ClienteLayout } from "./components/ClienteLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import UpdateNotification from "./components/UpdateNotification";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
-// import * as backup from "./lib/backup"; // Removido - armazenamento centralizado
+
+// ============================================================================
+// REACT QUERY SETUP
+// ============================================================================
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5000, // Cache válido por 5s
+      retry: 2, // Retry 2 vezes em erro
+      refetchInterval: 10000, // Refetch a cada 10s
+    },
+  },
+});
+
+// ============================================================================
+// ROUTER
+// ============================================================================
 
 function RouterContent() {
   const { usuarioLogado, carregando, usuarioGeral } = useAuth();
   const { paginaAtual } = useNavigation();
-  // const { status: wsStatus } = useWebSocket(usuarioLogado);
-
-  // Nota: Migração já é feita no AuthProvider, não duplicar aqui
-
-  // Backup automático removido - armazenamento centralizado no servidor
 
   if (carregando) {
     return (
@@ -68,9 +80,7 @@ function RouterContent() {
         {paginaAtual === 'relatorios' && <Relatorios />}
         {paginaAtual === 'configuracoes' && <Configuracoes />}
         {paginaAtual === 'gerenciar-usuarios' && <GerenciarUsuarios />}
-        {/* Removido - armazenamento centralizado */}
         {paginaAtual === 'gerenciar-cardapios' && <GerenciarCardapios />}
-
       </Layout>
     );
   }
@@ -94,21 +104,23 @@ function AppContent() {
   );
 }
 
-function App() {
-  // Nota: Migração é feita automaticamente no AuthProvider
+// ============================================================================
+// APP
+// ============================================================================
 
+function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster />
-          <AuthProvider>
-            <CentralizedStoreProvider>
+          <QueryClientProvider client={queryClient}>
+            <Toaster />
+            <AuthProvider>
               <NavigationProvider>
                 <AppContent />
               </NavigationProvider>
-            </CentralizedStoreProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </QueryClientProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

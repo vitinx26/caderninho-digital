@@ -3,16 +3,15 @@
  * Mostra resumo de saldo e lista de devedores
  * Design: Minimalismo Funcional com Tipografia Forte
  * 
- * ✅ MIGRADO PARA: CentralizedStoreContext
- * - Sincronização em tempo real via WebSocket
- * - Sem polling (eliminado intervalo de 5 segundos)
- * - Atualização automática quando outro admin faz mudanças
- * - Atualização automática quando cliente faz cadastro na página inicial
+ * ✅ MIGRADO PARA: React Query
+ * - Sincronização automática a cada 10s
+ * - Sem SSE/Polling complexo
+ * - Sem CentralizedStoreContext
  */
 
-import React, { useState, useEffect } from 'react';
-import { Plus, TrendingUp, AlertCircle, MessageCircle, Wifi, WifiOff } from 'lucide-react';
-import { useCentralizedStore, useClientes, useLancamentos, useSaldos, useConnectionStatus } from '@/contexts/CentralizedStoreContext';
+import { useState } from 'react';
+import { Plus, TrendingUp, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { useClientes, useLancamentos } from '@/hooks/useData';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -21,158 +20,141 @@ import { toast } from 'sonner';
 type FiltroType = 'todos' | 'vencidos' | 'pagos' | 'alfabetico';
 
 export default function Dashboard() {
-  // ✅ NOVO: Usar CentralizedStoreContext para sincronização em tempo real
-  const { clientes, isConnected } = useClientes();
-  const { lancamentos } = useLancamentos();
-  const { clientes: clientesSaldos, calcularSaldoCliente, calcularSaldoTotal } = useSaldos();
-  const { statusConexao } = useConnectionStatus();
-
-  // Calcular saldos por cliente
-  const saldosPorCliente = clientesSaldos.map((cliente: any) => ({
-    clienteId: cliente.id,
-    clienteNome: cliente.nome,
-    saldo: calcularSaldoCliente(cliente.id),
-  }));
-  const saldoTotal = calcularSaldoTotal();
+  // React Query hooks
+  const clientesQuery = useClientes();
+  const lancamentosQuery = useLancamentos();
 
   const { irPara } = useNavigation();
   const { usuarioLogado } = useAuth();
   const [filtro, setFiltro] = useState<FiltroType>('todos');
-  const [numeroWhatsAppAdmin, setNumeroWhatsAppAdmin] = useState('');
-  const [carregando, setCarregando] = useState(true);
 
-  // Carregar número WhatsApp do admin
-  useEffect(() => {
-    const carregarConfig = async () => {
-      try {
-        const response = await fetch('/api/users/config');
-        if (response.ok) {
-          const config = await response.json();
-          if (config?.numeroWhatsAppAdmin) {
-            setNumeroWhatsAppAdmin(config.numeroWhatsAppAdmin);
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao carregar configuração:', error);
-      } finally {
-        setCarregando(false);
+  // Dados
+  const clientes = clientesQuery.data || [];
+  const lancamentos = lancamentosQuery.data || [];
+  const isLoading = clientesQuery.isLoading || lancamentosQuery.isLoading;
+  const isError = clientesQuery.isError || lancamentosQuery.isError;
+  const isConnected = !isError;
+
+  // Calcular saldos (converter de centavos para reais)
+  const calcularSaldoCliente = (clienteId: number) => {
+    return lancamentos
+      .filter((l: any) => l.clienteId === clienteId || l.cliente_id === clienteId)
+      .reduce((acc: number, l: any) => {
+        const valor = typeof l.valor === 'string' ? parseFloat(l.valor) : l.valor;
+        return l.tipo === 'debito' ? acc + (valor / 100) : acc - (valor / 100);
+      }, 0);
+  };
+
+  const calcularSaldoTotal = () => {
+    return lancamentos.reduce((acc: number, l: any) => {
+      const valor = typeof l.valor === 'string' ? parseFloat(l.valor) : l.valor;
+      return l.tipo === 'debito' ? acc + (valor / 100) : acc - (valor / 100);
+    }, 0);
+  };
+
+  // Preparar dados de saldos
+  const saldosPorCliente = clientes
+    .map((cliente: any) => ({
+      clienteId: cliente.id,
+      clienteNome: cliente.nome,
+      saldo: calcularSaldoCliente(cliente.id),
+    }))
+    .filter((s: any) => s.saldo > 0) // Mostrar apenas devedores
+    .sort((a: any, b: any) => {
+      if (filtro === 'alfabetico') {
+        return a.clienteNome.localeCompare(b.clienteNome);
       }
-    };
-    carregarConfig();
-  }, []);
+      return b.saldo - a.saldo; // Maior saldo primeiro
+    });
 
-  // ✅ REMOVIDO: Intervalo de polling (5 segundos)
-  // Agora a sincronização é em tempo real via WebSocket
+  const saldoTotal = calcularSaldoTotal();
 
-  // Filtrar e ordenar devedores
-  const devedoresFiltrados = saldosPorCliente.filter((saldo: any) => {
-    // Sempre filtrar para mostrar apenas clientes com saldo > 0
-    if (saldo.saldo === 0) return false;
-    // TODO: Adicionar status de vencimento quando implementado
-    return true;
-  });
-
-  if (filtro === 'alfabetico') {
-    devedoresFiltrados.sort((a: any, b: any) => a.clienteNome.localeCompare(b.clienteNome));
-  } else {
-    // Ordenar por saldo (maior primeiro)
-    devedoresFiltrados.sort((a: any, b: any) => b.saldo - a.saldo);
+  // Loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando dados...</p>
+      </div>
+    );
   }
 
-  // Filtrar devedores com saldo > 0 para exibição
-  const devedoresComSaldo = devedoresFiltrados.filter((s: any) => s.saldo > 0);
-
-  const statusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'pago':
-        return 'badge-paid';
-      case 'pendente':
-        return 'badge-pending';
-      case 'vencido':
-        return 'badge-overdue';
-      default:
-        return '';
-    }
-  };
-
-  const statusLabel = (status: string) => {
-    switch (status) {
-      case 'pago':
-        return 'Pago';
-      case 'pendente':
-        return 'Pendente';
-      case 'vencido':
-        return 'Vencido';
-      default:
-        return '';
-    }
-  };
-
-  // Indicador de status de conexão
-  const statusConexaoClass = isConnected
-    ? 'text-green-600 dark:text-green-400'
-    : 'text-red-600 dark:text-red-400';
-
-  const statusConexaoLabel = isConnected ? 'Conectado' : 'Desconectado';
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header com Status de Conexão */}
+    <div className="space-y-6">
+      {/* Header com Status */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{usuarioLogado?.nome || 'Caderninho Digital'}</h1>
-          <p className="text-muted-foreground mt-1">
-            {usuarioLogado?.tipo === 'admin' ? 'Resumo do seu caderninho' : 'Acompanhe seus gastos'}
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Resumo de saldos e devedores</p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted">
+          {isConnected ? (
+            <>
+              <Wifi size={18} className="text-green-600" />
+              <span className="text-sm font-medium text-green-600">Conectado</span>
+            </>
+          ) : (
+            <>
+              <WifiOff size={18} className="text-red-600" />
+              <span className="text-sm font-medium text-red-600">Desconectado</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Aviso de Desconexão */}
+      {!isConnected && (
+        <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 p-4 rounded-lg">
+          <p className="text-red-800 dark:text-red-200 font-medium">
+            ⚠️ Sem conexão com o servidor
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Status de Conexão */}
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isConnected ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
-            {isConnected ? (
-              <Wifi size={18} className={statusConexaoClass} />
-            ) : (
-              <WifiOff size={18} className={statusConexaoClass} />
-            )}
-            <span className={`text-sm font-medium ${statusConexaoClass}`}>
-              {statusConexaoLabel}
-            </span>
-          </div>
+      )}
 
-          <Button
-            onClick={() => irPara('novo-lancamento')}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <Plus size={20} />
-            Novo Lançamento
-          </Button>
+      {/* Cards de Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total de Devedores */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm font-medium">Total de Devedores</p>
+              <p className="text-3xl font-bold text-foreground mt-2">{saldosPorCliente.length}</p>
+            </div>
+            <AlertCircle size={32} className="text-yellow-600" />
+          </div>
+        </div>
+
+        {/* Saldo Total */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm font-medium">Saldo Total</p>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                R$ {saldoTotal.toFixed(2).replace('.', ',')}
+              </p>
+            </div>
+            <TrendingUp size={32} className="text-blue-600" />
+          </div>
+        </div>
+
+        {/* Total de Clientes */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm font-medium">Total de Clientes</p>
+              <p className="text-3xl font-bold text-foreground mt-2">{clientes.length}</p>
+            </div>
+            <Plus size={32} className="text-green-600" />
+          </div>
         </div>
       </div>
 
-      {/* Card de Saldo Total */}
-      <div className="card-minimal p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-sm font-medium">Valor Total a Receber</p>
-            <p className="text-4xl font-bold text-foreground mt-2 currency">
-              R$ {saldoTotal.toFixed(2).replace('.', ',')}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              ✅ Sincronizado em tempo real
-            </p>
-          </div>
-          <div className="bg-green-100 dark:bg-green-900 p-4 rounded-lg">
-            <TrendingUp size={32} className="text-green-600 dark:text-green-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filtros Rápidos */}
+      {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
         {[
           { id: 'todos', label: 'Todos' },
           { id: 'vencidos', label: 'Vencidos' },
           { id: 'pagos', label: 'Pagos' },
-          { id: 'alfabetico', label: 'Ordem Alfabética' },
+          { id: 'alfabetico', label: 'Alfabético' },
         ].map((f) => (
           <button
             key={f.id}
@@ -188,87 +170,59 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Aviso de Desconexão */}
-      {!isConnected && (
-        <div className="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 p-4 rounded-lg">
-          <p className="text-red-800 dark:text-red-200 font-medium">
-            ⚠️ Sem conexão com o servidor. Os dados podem estar desatualizados.
-          </p>
-        </div>
-      )}
-
       {/* Lista de Devedores */}
-      <div className="space-y-3">
-        <h2 className="text-xl font-semibold text-foreground">Devedores</h2>
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="p-6 border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">Devedores</h2>
+        </div>
 
-        {carregando ? (
-          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-        ) : devedoresComSaldo.length === 0 ? (
-          <div className="card-minimal p-8 text-center">
-            <AlertCircle size={32} className="mx-auto text-muted-foreground mb-2" />
-            <p className="text-muted-foreground">Nenhum devedor encontrado</p>
+        {saldosPorCliente.length === 0 ? (
+          <div className="p-6 text-center">
+            <p className="text-muted-foreground">Nenhum devedor no momento 🎉</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {devedoresComSaldo.map((saldo: any) => {
-              const lancamentosCliente = lancamentos.filter(
-                (l) => l.clienteId === saldo.clienteId && l.tipo === 'debito'
-              );
-
-              return (
-                <button
-                  key={saldo.clienteId}
-                  onClick={() => irPara('cliente', saldo.clienteId)}
-                  className="w-full card-minimal p-4 flex items-center justify-between hover:bg-muted transition-colors text-left"
-                >
-                  <div className="flex-1">
+          <div className="divide-y divide-border">
+            {saldosPorCliente.map((saldo: any) => (
+              <button
+                key={saldo.clienteId}
+                onClick={() => {
+                  irPara('cliente');
+                  // Passar clienteId para ClientePerfil
+                  sessionStorage.setItem('clienteSelecionadoId', saldo.clienteId);
+                }}
+                className="w-full px-6 py-4 hover:bg-muted transition-colors text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="font-medium text-foreground">{saldo.clienteNome}</p>
                     <p className="text-sm text-muted-foreground">
-                      {saldo.saldo > 0 ? `Deve R$ ${saldo.saldo.toFixed(2).replace('.', ',')}` : 'Sem débitos'}
+                      {lancamentos.filter(
+                        (l: any) => l.clienteId === saldo.clienteId || l.cliente_id === saldo.clienteId
+                      ).length}{' '}
+                      lançamentos
                     </p>
-                    {/* Últimas compras */}
-                    {lancamentosCliente.slice(-2).map((l) => (
-                      <p key={l.id} className="text-xs text-muted-foreground mt-1">
-                        • {l.descricao || 'Sem descrição'} - R$ {l.valor.toFixed(2).replace('.', ',')}
-                      </p>
-                    ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`badge-status ${statusBadgeClass('pendente')}`}>
-                      {statusLabel('pendente')}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const cliente = clientes.find((c) => c.id === saldo.clienteId);
-                        if (numeroWhatsAppAdmin) {
-                          const mensagem = `Olá, ${cliente?.nome}! Passando para lembrar do seu saldo de R$ ${saldo.saldo.toFixed(2).replace('.', ',')} no meu caderno.`;
-                          const url = `https://wa.me/${numeroWhatsAppAdmin}?text=${encodeURIComponent(mensagem)}`;
-                          window.open(url, '_blank');
-                        } else {
-                          toast.error('Configure seu número de WhatsApp nas Configurações');
-                        }
-                      }}
-                      className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors"
-                      title="Enviar mensagem WhatsApp"
-                    >
-                      <MessageCircle size={18} className="text-green-600 dark:text-green-400" />
-                    </button>
+                  <div className="text-right">
+                    <p className="font-semibold text-red-600">
+                      R$ {saldo.saldo.toFixed(2).replace('.', ',')}
+                    </p>
                   </div>
-                </button>
-              );
-            })}
+                </div>
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Informações de Sincronização */}
-      <div className="text-xs text-muted-foreground text-center pt-4 border-t border-border">
-        <p>
-          {isConnected
-            ? '✅ Sincronização em tempo real ativa'
-            : '⏸️ Aguardando reconexão...'}
-        </p>
+      {/* Botão Novo Lançamento */}
+      <div className="flex justify-center">
+        <Button
+          onClick={() => irPara('novo-lancamento')}
+          className="flex items-center gap-2"
+        >
+          <Plus size={18} />
+          Novo Lançamento
+        </Button>
       </div>
     </div>
   );

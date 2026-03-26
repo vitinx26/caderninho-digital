@@ -2,62 +2,122 @@
  * ClientePerfil - Página de detalhes do cliente
  * Mostra extrato, débitos, pagamentos e ações
  * Design: Minimalismo Funcional com Tipografia Forte
+ * ✅ MIGRADO PARA: React Query
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, DollarSign, MessageCircle, Trash2 } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCentralizedStore } from '@/contexts/CentralizedStoreContext';
+import { useClientes, useLancamentos, useDeletarLancamento } from '@/hooks/useData';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function ClientePerfil() {
-  const { clienteSelecionado, irPara, voltar } = useNavigation();
+  const { irPara, voltar } = useNavigation();
   const { usuarioLogado } = useAuth();
-  const { clientes, lancamentos, deletarLancamento, calcularSaldoCliente } = useCentralizedStore();
+  const clientesQuery = useClientes();
+  const lancamentosQuery = useLancamentos();
+  const deletarMutation = useDeletarLancamento();
+  
+  const [clienteSelecionadoId, setClienteSelecionadoId] = useState<number | null>(null);
+
+  // Recuperar clienteId do sessionStorage
+  useEffect(() => {
+    const id = sessionStorage.getItem('clienteSelecionadoId');
+    if (id) {
+      setClienteSelecionadoId(parseInt(id, 10));
+    }
+  }, []);
+
   const isAdmin = usuarioLogado?.tipo === 'admin';
+  const clientes = clientesQuery.data || [];
+  const lancamentos = lancamentosQuery.data || [];
 
-  const cliente = clientes.find((c) => c.id === clienteSelecionado);
-  const saldo = calcularSaldoCliente(clienteSelecionado || '');
+  // Encontrar cliente selecionado
+  const cliente = clientes.find((c: any) => c.id === clienteSelecionadoId);
 
-  if (!cliente) {
+  // Calcular saldo do cliente
+  const calcularSaldoCliente = (clienteId: number) => {
+    return lancamentos
+      .filter((l: any) => l.clienteId === clienteId || l.cliente_id === clienteId)
+      .reduce((acc: number, l: any) => {
+        const valor = typeof l.valor === 'string' ? parseFloat(l.valor) : l.valor;
+        return l.tipo === 'debito' ? acc + (valor / 100) : acc - (valor / 100);
+      }, 0);
+  };
+
+  const saldo = clienteSelecionadoId ? calcularSaldoCliente(clienteSelecionadoId) : 0;
+
+  if (clientesQuery.isLoading || lancamentosQuery.isLoading) {
     return (
-      <div className="p-6">
-        <p className="text-muted-foreground">Cliente não encontrado</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando dados do cliente...</p>
       </div>
     );
   }
 
-  const lancamentosCliente = lancamentos.filter((l) => l.cliente_id === cliente.id || l.clienteId === cliente.id);
+  if (!cliente) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={voltar}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+          >
+            <ArrowLeft size={24} className="text-foreground" />
+          </button>
+          <h1 className="text-2xl font-bold text-foreground">Cliente não encontrado</h1>
+        </div>
+        <Button onClick={voltar} variant="outline">
+          Voltar
+        </Button>
+      </div>
+    );
+  }
+
+  const lancamentosCliente = lancamentos.filter(
+    (l: any) => l.clienteId === cliente.id || l.cliente_id === cliente.id
+  );
 
   const handleWhatsApp = () => {
     if (!cliente.telefone) {
       toast.error('Cliente sem telefone cadastrado');
       return;
     }
-    const mensagem = `Olá, ${cliente.name || cliente.nome}! Passando para lembrar do seu saldo de R$ ${saldo.toFixed(2).replace('.', ',')} no meu caderno.`;
+    const mensagem = `Olá, ${cliente.nome}! Passando para lembrar do seu saldo de R$ ${saldo.toFixed(2).replace('.', ',')} no meu caderno.`;
     const telefone = cliente.telefone.replace(/\D/g, '');
     const whatsappUrl = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   const handleRegistrarPagamento = () => {
+    sessionStorage.setItem('clienteSelecionadoId', cliente.id.toString());
     irPara('novo-lancamento');
     toast.info('Selecione "Pagamento" para registrar o recebimento');
   };
 
-  const handleDeletarLancamento = async (id: string) => {
+  const handleDeletarLancamento = async (id: number) => {
+    if (!confirm('Tem certeza que deseja deletar este lançamento?')) {
+      return;
+    }
     try {
-      await deletarLancamento(id);
-      toast.success('Lançamento deletado');
+      await deletarMutation.mutateAsync(id);
+      toast.success('Lançamento deletado com sucesso');
     } catch (error) {
+      console.error('Erro ao deletar lançamento:', error);
       toast.error('Erro ao deletar lançamento');
     }
   };
 
-  const formatarData = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('pt-BR');
+  const formatarData = (data: string | number) => {
+    if (!data) return 'Data não disponível';
+    try {
+      const date = typeof data === 'string' ? new Date(data) : new Date(data);
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return 'Data inválida';
+    }
   };
 
   return (
@@ -81,14 +141,14 @@ export default function ClientePerfil() {
       {/* Saldo e Ações */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Card de Saldo */}
-        <div className="card-minimal p-6 md:col-span-2">
+        <div className="bg-card border border-border rounded-lg p-6 md:col-span-2">
           <p className="text-muted-foreground text-sm font-medium">Saldo Atual</p>
-          <p className="text-4xl font-bold text-foreground mt-2 currency">
+          <p className="text-4xl font-bold text-foreground mt-2">
             R$ {saldo.toFixed(2).replace('.', ',')}
           </p>
           <p className="text-xs text-muted-foreground mt-2">
-            Status: <span className={`badge-status ${
-              saldo > 0 ? 'badge-pending' : 'badge-paid'
+            Status: <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+              saldo > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
             }`}>
               {saldo > 0 ? 'Pendente' : 'Pago'}
             </span>
@@ -98,77 +158,75 @@ export default function ClientePerfil() {
         {/* Botão WhatsApp */}
         <Button
           onClick={handleWhatsApp}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white h-auto py-6"
+          variant="outline"
+          className="gap-2 h-fit"
         >
-          <MessageCircle size={20} />
-          <span>Cobrar via WhatsApp</span>
+          <MessageCircle size={18} />
+          WhatsApp
         </Button>
       </div>
 
-      {/* Botões de Ação */}
-      <div className="flex gap-3 flex-wrap">
-        <Button
-          onClick={() => irPara('novo-lancamento')}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          <Plus size={20} />
-          Adicionar Débito
-        </Button>
+      {/* Ações */}
+      <div className="flex gap-2 flex-wrap">
         <Button
           onClick={handleRegistrarPagamento}
-          variant="outline"
-          className="flex items-center gap-2"
+          className="gap-2"
         >
-          <DollarSign size={20} />
+          <Plus size={18} />
           Registrar Pagamento
         </Button>
       </div>
 
       {/* Extrato */}
-      <div className="space-y-3">
-        <h2 className="text-xl font-semibold text-foreground">Extrato</h2>
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="p-6 border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">Extrato ({lancamentosCliente.length})</h2>
+        </div>
 
         {lancamentosCliente.length === 0 ? (
-          <div className="card-minimal p-8 text-center">
-            <p className="text-muted-foreground">Nenhum lançamento</p>
+          <div className="p-6 text-center">
+            <p className="text-muted-foreground">Nenhum lançamento registrado</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {lancamentosCliente.map((lancamento) => (
+          <div className="divide-y divide-border">
+            {lancamentosCliente.map((lancamento: any) => (
               <div
                 key={lancamento.id}
-                className="card-minimal p-4 flex items-center justify-between"
+                className="p-6 flex items-center justify-between hover:bg-muted transition-colors"
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-foreground">{lancamento.descricao}</p>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      lancamento.tipo === 'debito'
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                    }`}>
-                      {lancamento.tipo === 'debito' ? 'Débito' : 'Pagamento'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {formatarData(lancamento.data)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <p className={`font-semibold currency ${
+                <div className="flex items-center gap-4 flex-1">
+                  <div className={`p-3 rounded-lg ${
                     lancamento.tipo === 'debito'
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-green-600 dark:text-green-400'
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-green-100 text-green-600'
                   }`}>
-                    {lancamento.tipo === 'debito' ? '+' : '-'} R$ {lancamento.valor.toFixed(2).replace('.', ',')}
+                    <DollarSign size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">
+                      {lancamento.tipo === 'debito' ? 'Débito' : 'Pagamento'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatarData(lancamento.data)}
+                    </p>
+                    {lancamento.descricao && (
+                      <p className="text-sm text-muted-foreground">{lancamento.descricao}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <p className={`font-semibold text-lg ${
+                    lancamento.tipo === 'debito' ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {lancamento.tipo === 'debito' ? '+' : '-'} R$ {(lancamento.valor / 100).toFixed(2).replace('.', ',')}
                   </p>
                   {isAdmin && (
                     <button
                       onClick={() => handleDeletarLancamento(lancamento.id)}
-                      className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
-                      title="Apenas admins podem deletar lançamentos"
+                      className="p-2 hover:bg-red-500/10 hover:text-red-600 rounded-lg transition-colors"
+                      title="Deletar lançamento"
                     >
-                      <Trash2 size={18} className="text-red-600 dark:text-red-400" />
+                      <Trash2 size={18} />
                     </button>
                   )}
                 </div>

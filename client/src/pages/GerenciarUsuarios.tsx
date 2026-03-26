@@ -2,27 +2,27 @@
  * GerenciarUsuarios - Página de administração de usuários
  * Apenas admins podem editar e deletar usuários
  * Design: Minimalismo Funcional com Tipografia Forte
+ * ✅ MIGRADO PARA: React Query
  */
 
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit2, Trash2, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Edit2, Trash2, Plus, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Usuario } from '@/types';
+import { useUsuarios } from '@/hooks/useData';
 
 export default function GerenciarUsuarios() {
   const { voltar } = useNavigation();
   const { usuarioLogado } = useAuth();
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [carregando, setCarregando] = useState(true);
+  const usuariosQuery = useUsuarios();
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [mostrarFormNovoUsuario, setMostrarFormNovoUsuario] = useState(false);
 
   // Formulário de edição
-  const [formData, setFormData] = useState<Partial<Usuario>>({});
+  const [formData, setFormData] = useState<any>({});
 
   // Novo usuário
   const [novoUsuario, setNovoUsuario] = useState({
@@ -32,39 +32,6 @@ export default function GerenciarUsuarios() {
     tipo: 'cliente' as const,
     telefone: '',
   });
-
-  // Carregar usuários do servidor
-  const carregarUsuarios = async () => {
-    try {
-      setCarregando(true);
-      const response = await fetch('/api/users');
-      if (!response.ok) {
-        throw new Error('Erro ao carregar usuários');
-      }
-      const data = await response.json();
-      // Mapear campos do servidor (name, role) para formato esperado (nome, tipo)
-      const usuariosMapeados = (data.data || []).map((u: any) => ({
-        id: u.id,
-        email: u.email,
-        nome: u.name,
-        tipo: u.role === 'admin' ? 'admin' : 'cliente',
-        telefone: u.telefone || '',
-        ativo: u.ativo,
-      }));
-      setUsuarios(usuariosMapeados);
-      toast.success('Usuários sincronizados com sucesso');
-    } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-      toast.error('Erro ao carregar usuários');
-    } finally {
-      setCarregando(false);
-    }
-  };
-
-  useEffect(() => {
-    carregarUsuarios();
-    // Polling desabilitado - carregamento único na montagem
-  }, []);
 
   // Verificar se é admin
   if (usuarioLogado?.tipo !== 'admin') {
@@ -81,7 +48,7 @@ export default function GerenciarUsuarios() {
     );
   }
 
-  const handleEditarUsuario = (usuario: Usuario) => {
+  const handleEditarUsuario = (usuario: any) => {
     setEditandoId(usuario.id);
     setFormData({ ...usuario });
   };
@@ -104,9 +71,9 @@ export default function GerenciarUsuarios() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.nome.trim(),
-          role: formData.tipo || 'user',
-          ativo: true,
+          nome: formData.nome.trim(),
+          email: formData.email.trim(),
+          telefone: formData.telefone || '',
         }),
       });
 
@@ -115,14 +82,9 @@ export default function GerenciarUsuarios() {
         throw new Error(errorData.error || 'Erro ao atualizar usuário');
       }
 
-      // Recarregar usuários após atualização
-      const usuariosResponse = await fetch('/api/users');
-      if (usuariosResponse.ok) {
-        const data = await usuariosResponse.json();
-        setUsuarios(data.data || []);
-      }
       setEditandoId(null);
       toast.success('Usuário atualizado com sucesso!');
+      usuariosQuery.refetch?.();
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error);
       toast.error('Erro ao atualizar usuário');
@@ -143,8 +105,8 @@ export default function GerenciarUsuarios() {
         throw new Error('Erro ao deletar usuário');
       }
 
-      setUsuarios(usuarios.filter(u => u.id !== id));
       toast.success('Usuário deletado com sucesso!');
+      usuariosQuery.refetch?.();
     } catch (error) {
       console.error('Erro ao deletar usuário:', error);
       toast.error('Erro ao deletar usuário');
@@ -156,16 +118,6 @@ export default function GerenciarUsuarios() {
 
     if (!novoUsuario.email.trim()) {
       toast.error('Email é obrigatório');
-      return;
-    }
-
-    if (!novoUsuario.senha.trim()) {
-      toast.error('Senha é obrigatória');
-      return;
-    }
-
-    if (novoUsuario.senha.length < 6) {
-      toast.error('Senha deve ter no mínimo 6 caracteres');
       return;
     }
 
@@ -183,7 +135,6 @@ export default function GerenciarUsuarios() {
           nome: novoUsuario.nome.trim(),
           tipo: novoUsuario.tipo,
           telefone: novoUsuario.telefone || '',
-          senha: novoUsuario.senha,
         }),
       });
 
@@ -192,8 +143,6 @@ export default function GerenciarUsuarios() {
         throw new Error(error.error || 'Erro ao criar usuário');
       }
 
-      const usuarioNovo = await response.json();
-      setUsuarios([...usuarios, usuarioNovo.data]);
       setNovoUsuario({
         email: '',
         senha: '',
@@ -203,6 +152,7 @@ export default function GerenciarUsuarios() {
       });
       setMostrarFormNovoUsuario(false);
       toast.success('Usuário criado com sucesso!');
+      usuariosQuery.refetch?.();
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao criar usuário');
@@ -219,7 +169,7 @@ export default function GerenciarUsuarios() {
               onClick={voltar}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <Users className="w-5 h-5" />
             </button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Gerenciar Usuários</h1>
@@ -228,12 +178,12 @@ export default function GerenciarUsuarios() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={carregarUsuarios}
+              onClick={() => usuariosQuery.refetch?.()}
               variant="outline"
               className="gap-2"
-              disabled={carregando}
+              disabled={usuariosQuery.isLoading}
             >
-              {carregando ? 'Sincronizando...' : 'Sincronizar'}
+              {usuariosQuery.isLoading ? 'Sincronizando...' : 'Sincronizar'}
             </Button>
             <Button
               onClick={() => setMostrarFormNovoUsuario(!mostrarFormNovoUsuario)}
@@ -297,17 +247,6 @@ export default function GerenciarUsuarios() {
                     placeholder="(11) 99999-9999"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Senha
-                  </label>
-                  <Input
-                    type="password"
-                    value={novoUsuario.senha}
-                    onChange={(e) => setNovoUsuario({ ...novoUsuario, senha: e.target.value })}
-                    placeholder="Mínimo 6 caracteres"
-                  />
-                </div>
               </div>
               <div className="flex gap-2">
                 <Button type="submit">Criar Usuário</Button>
@@ -324,17 +263,17 @@ export default function GerenciarUsuarios() {
         )}
 
         {/* Lista de Usuários */}
-        {carregando ? (
+        {usuariosQuery.isLoading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Carregando usuários...</p>
           </div>
-        ) : usuarios.length === 0 ? (
+        ) : (usuariosQuery.data || []).length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Nenhum usuário encontrado</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {usuarios.map((usuario) => (
+            {(usuariosQuery.data || []).map((usuario: any) => (
               <div
                 key={usuario.id}
                 className="bg-card border border-border rounded-lg p-4 flex items-center justify-between"
@@ -359,22 +298,8 @@ export default function GerenciarUsuarios() {
                         <Input
                           type="email"
                           value={formData.email || ''}
-                          disabled
-                          className="opacity-50"
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Tipo
-                        </label>
-                        <select
-                          value={(formData.tipo as string) || 'cliente'}
-                          onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
-                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                        >
-                          <option value="cliente">Cliente</option>
-                          <option value="admin">Admin</option>
-                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
@@ -420,7 +345,7 @@ export default function GerenciarUsuarios() {
                       </button>
                       <button
                         onClick={() => handleDeletarUsuario(usuario.id)}
-                        className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+                        className="p-2 hover:bg-red-500/10 hover:text-red-600 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

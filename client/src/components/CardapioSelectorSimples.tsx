@@ -69,25 +69,57 @@ export default function CardapioSelectorSimples({
 
       const data = await response.json();
       
-      if (data.menus && data.menus.length > 0) {
-        const activeMenu = data.menus.find((m: any) => m.is_active);
-        
-        if (activeMenu && activeMenu.categories) {
-          const formattedCategories = activeMenu.categories.map((cat: any) => ({
-            id: cat.id,
-            name: cat.name,
-            items: cat.items.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              price: item.price,
-            })),
-          }));
-          setCategories(formattedCategories);
-        } else {
-          setError('Nenhum cardápio ativo encontrado');
+      // Se não há menus, criar estrutura padrão
+      if (!data.menus || data.menus.length === 0) {
+        setCategories([
+          {
+            id: 'bebidas',
+            name: 'Bebidas',
+            items: [
+              { id: 'agua', name: 'Água', price: 2.00 },
+              { id: 'refrigerante', name: 'Refrigerante', price: 5.00 },
+              { id: 'cerveja', name: 'Cerveja', price: 8.00 },
+            ],
+          },
+          {
+            id: 'comidas',
+            name: 'Comidas',
+            items: [
+              { id: 'pastel', name: 'Pastel', price: 8.00 },
+              { id: 'coxinha', name: 'Coxinha', price: 6.00 },
+              { id: 'sanduiche', name: 'Sanduíche', price: 12.00 },
+            ],
+          },
+        ]);
+        return;
+      }
+
+      // Processar cardápios retornados
+      const processedCategories: MenuCategory[] = [];
+      
+      for (const menu of data.menus) {
+        if (menu.is_active) {
+          // Se o cardápio tem categories, usar
+          if (Array.isArray(menu.categories) && menu.categories.length > 0) {
+            const formattedCategories = menu.categories.map((cat: any) => ({
+              id: cat.id || cat.name,
+              name: cat.name,
+              items: Array.isArray(cat.items) ? cat.items.map((item: any) => ({
+                id: item.id || item.name,
+                name: item.name,
+                price: item.price || 0,
+              })) : [],
+            })).filter((cat: MenuCategory) => cat.items.length > 0);
+            
+            processedCategories.push(...formattedCategories);
+          }
         }
+      }
+
+      if (processedCategories.length === 0) {
+        setError('Nenhum cardápio ativo com itens encontrado');
       } else {
-        setError('Nenhum cardápio disponível');
+        setCategories(processedCategories);
       }
     } catch (error) {
       console.error('Erro ao carregar cardápio:', error);
@@ -98,34 +130,31 @@ export default function CardapioSelectorSimples({
   };
 
   const handleAddItem = (item: MenuItem) => {
-    const newSelectedItems = new Map(selectedItems);
-    const existing = newSelectedItems.get(item.id);
+    const newItems = new Map(selectedItems);
+    const existing = newItems.get(item.id);
     
     if (existing) {
       existing.quantity += 1;
     } else {
-      newSelectedItems.set(item.id, {
-        ...item,
-        quantity: 1,
-      });
+      newItems.set(item.id, { ...item, quantity: 1 });
     }
     
-    setSelectedItems(newSelectedItems);
+    setSelectedItems(newItems);
   };
 
   const handleRemoveItem = (itemId: string) => {
-    const newSelectedItems = new Map(selectedItems);
-    const existing = newSelectedItems.get(itemId);
+    const newItems = new Map(selectedItems);
+    const existing = newItems.get(itemId);
     
     if (existing) {
       if (existing.quantity > 1) {
         existing.quantity -= 1;
       } else {
-        newSelectedItems.delete(itemId);
+        newItems.delete(itemId);
       }
     }
     
-    setSelectedItems(newSelectedItems);
+    setSelectedItems(newItems);
   };
 
   const calculateTotal = () => {
@@ -144,7 +173,7 @@ export default function CardapioSelectorSimples({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="p-4 text-center">
         <p className="text-muted-foreground">Carregando cardápio...</p>
       </div>
     );
@@ -152,11 +181,11 @@ export default function CardapioSelectorSimples({
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
-        <p className="text-red-800 dark:text-red-300 font-medium">{error}</p>
+      <div className="p-4 bg-red-100 dark:bg-red-900 rounded-lg">
+        <p className="text-red-800 dark:text-red-200">{error}</p>
         <button
           onClick={loadActiveMenu}
-          className="mt-2 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
           Tentar Novamente
         </button>
@@ -164,109 +193,107 @@ export default function CardapioSelectorSimples({
     );
   }
 
-  if (categories.length === 0) {
-    return (
-      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900 rounded-lg">
-        <p className="text-yellow-800 dark:text-yellow-300 font-medium">Nenhum item disponível no cardápio</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4 pb-32">
-      {/* Campo de Busca */}
-      <div className="mb-4">
+    <div className="space-y-4">
+      {/* Busca */}
+      <div>
         <input
           type="text"
           placeholder="Buscar item..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border rounded-lg bg-background"
         />
       </div>
 
       {/* Categorias */}
-      {filteredCategories.map(category => (
-        <div key={category.id} className="p-4 bg-card rounded-lg border border-border">
-          <h3 className="text-lg font-semibold mb-3">{category.name}</h3>
-          
-          <div className="space-y-2">
-            {category.items.map(item => {
-              const selectedItem = selectedItems.get(item.id);
-              const quantity = selectedItem?.quantity || 0;
-              
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 rounded-lg border-2 border-border hover:border-blue-300 transition-all"
-                >
-                  <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      R$ {(item.price / 100).toFixed(2)}
+      <div className="space-y-4 max-h-96 overflow-y-auto">
+        {filteredCategories.length === 0 ? (
+          <p className="text-center text-muted-foreground">Nenhum item encontrado</p>
+        ) : (
+          filteredCategories.map(category => (
+            <div key={category.id}>
+              <h3 className="font-semibold text-foreground mb-2">{category.name}</h3>
+              <div className="space-y-2">
+                {category.items.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-2 bg-secondary rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">R$ {item.price.toFixed(2)}</p>
                     </div>
-                  </div>
-                  
-                  {quantity > 0 ? (
-                    <div className="flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg px-2 py-1">
-                      <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded"
-                      >
-                        <Minus size={16} className="text-blue-600" />
-                      </button>
-                      <span className="w-8 text-center font-semibold text-blue-600">
-                        {quantity}
-                      </span>
-                      <button
-                        onClick={() => handleAddItem(item)}
-                        className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded"
-                      >
-                        <Plus size={16} className="text-blue-600" />
-                      </button>
-                    </div>
-                  ) : (
                     <button
                       onClick={() => handleAddItem(item)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      className="p-1 bg-primary text-primary-foreground rounded hover:opacity-80"
                     >
                       <Plus size={18} />
                     </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
-      {/* Resumo e Botões - Sticky */}
+      {/* Itens Selecionados */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold">Total:</span>
-            <span className="text-2xl font-bold text-blue-600">
-              R$ {(calculateTotal() / 100).toFixed(2)}
-            </span>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={onCancel}
-              className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-background"
+        <div className="border-t border-border pt-4 space-y-2">
+          <h3 className="font-semibold text-foreground">Selecionados</h3>
+          {Array.from(selectedItems.values()).map(item => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between p-2 bg-secondary rounded-lg"
             >
-              Cancelar
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={selectedItems.size === 0}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-            >
-              Confirmar ({selectedItems.size})
-            </button>
+              <div className="flex-1">
+                <p className="font-medium text-foreground">{item.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  R$ {(item.price * item.quantity).toFixed(2)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleRemoveItem(item.id)}
+                  className="p-1 bg-red-600 text-white rounded hover:opacity-80"
+                >
+                  <Minus size={16} />
+                </button>
+                <span className="w-8 text-center font-medium">{item.quantity}</span>
+                <button
+                  onClick={() => handleAddItem(item)}
+                  className="p-1 bg-green-600 text-white rounded hover:opacity-80"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+          <div className="pt-2 border-t border-border">
+            <p className="text-lg font-bold text-foreground">
+              Total: R$ {calculateTotal().toFixed(2)}
+            </p>
           </div>
         </div>
       )}
+
+      {/* Botões */}
+      <div className="flex gap-2 pt-4">
+        <button
+          onClick={onCancel}
+          className="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:opacity-80"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={handleConfirm}
+          disabled={selectedItems.size === 0}
+          className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-80 disabled:opacity-50"
+        >
+          Confirmar
+        </button>
+      </div>
     </div>
   );
 }
